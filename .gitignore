@@ -1,0 +1,6 @@
+﻿Backend/GameTradeZone/.vs
+Backend/GameTradeZone/obj
+Backend/GameTradeZone.Domain/obj
+Backend/GameTradeZone.Infrastructure/obj
+Backend/GameTradeZone.Service/obj
+FrontEnd/.vscode
