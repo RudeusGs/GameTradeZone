@@ -1,6 +1,8 @@
 ﻿using GameTradeZone.Domain.Entities;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Common.Services;
+using GameTradeZone.Service.Interfaces;
+using GameTradeZone.Service.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +26,7 @@ namespace GameTradeZone.Service.Configurations
             #endregion 
             services.AddHttpContextAccessor();
             #region Business services
+            services.AddScoped<IAuthenticateService, AuthenticateService>();
             #endregion
             return services;
         }
