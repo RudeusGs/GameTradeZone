@@ -1,15 +1,14 @@
-﻿using GameTradeZone.Domain.Base;
-
-namespace GameTradeZone.Domain.Entities
+﻿namespace GameTradeZone.Service.Models.Dispute
 {
-    public class Dispute : EntityBase
+    public class UpdateDisputeModel
     {
+        public int Id { get; set; }
         public int PurchasedAccountID { get; set; }
         public int UserID { get; set; } //ID người tố cáo
         public int SellertID { get; set; } // ID người bị tố cáo
         public string Reason { get; set; }
-        public string Proof {  get; set; }
+        public string Proof { get; set; }
         public string Status { get; set; }
-        public string Reply {  get; set; }
+        public string Reply { get; set; }
     }
 }
