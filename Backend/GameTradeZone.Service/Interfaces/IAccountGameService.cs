@@ -13,6 +13,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> Buy(BuyAccountGameModel model);
         Task<ApiResult> GetAllByUserID(int UserId);
         Task<ApiResult> GetInforUser(int id);
+        Task<ApiResult> BargainPrice(BargainAccountGameModel model);
 
     }
 }

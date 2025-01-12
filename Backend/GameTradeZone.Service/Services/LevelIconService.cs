@@ -3,31 +3,22 @@ using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.File;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
-using GameTradeZone.Service.Models.AccountGame;
+using GameTradeZone.Service.Models.GameInfor;
+using GameTradeZone.Service.Models.LevelIcon;
 
 namespace GameTradeZone.Service.Services
 {
-    public class AccountGameService : ServiceBase, IAccountGameService
+    public class LevelIconService : ServiceBase, ILevelIconService
     {
         private readonly IFtpDirectoryService _ftpDirectoryService;
         private readonly FileUploadService _fileUploadService;
-        public AccountGameService(DataContext dataContext, IFtpDirectoryService ftpDirectoryService,FileUploadService fileUploadService, IUserService userService) : base(dataContext, userService)
+        public LevelIconService(DataContext dataContext, IFtpDirectoryService ftpDirectoryService, FileUploadService fileUploadService, IUserService userService) : base(dataContext, userService)
         {
             _ftpDirectoryService = ftpDirectoryService;
             _fileUploadService = fileUploadService;
         }
 
-        public Task<ApiResult> Add(AddAccountGameModel model)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ApiResult> BargainPrice(BargainAccountGameModel model)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ApiResult> Buy(BuyAccountGameModel model)
+        public Task<ApiResult> Add(AddLevelIconModel model)
         {
             throw new NotImplementedException();
         }
@@ -42,22 +33,12 @@ namespace GameTradeZone.Service.Services
             throw new NotImplementedException();
         }
 
-        public Task<ApiResult> GetAllByUserID(int UserId)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<ApiResult> GetById(int id)
         {
             throw new NotImplementedException();
         }
 
-        public Task<ApiResult> GetInforUser(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ApiResult> Update(UpdateAccountGameModel model)
+        public Task<ApiResult> Update(UpdateGameInforModel model)
         {
             throw new NotImplementedException();
         }
