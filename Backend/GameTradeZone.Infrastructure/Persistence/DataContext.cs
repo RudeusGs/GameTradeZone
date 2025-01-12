@@ -15,6 +15,12 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<GameField> GameFields { get; set; }
         public DbSet<AccountGame> AccountGames { get; set; }
         public DbSet<Dispute> Disputes { get; set; }
+        public DbSet<HiredService> HiredServices { get; set; }
+        public DbSet<LevelIcon> LevelIcons { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<OnGoingService> OnGoingServices { get; set;}
+        public DbSet<PurchasedAccount> PurchasedAccounts { get; set; }
+        public DbSet<Service> Services { get; set; }
 
     }
 }
