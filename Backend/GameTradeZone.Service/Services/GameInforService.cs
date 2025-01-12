@@ -1,5 +1,6 @@
 ﻿using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
+using GameTradeZone.Service.File;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
 using GameTradeZone.Service.Models.GameInfor;
@@ -9,9 +10,11 @@ namespace GameTradeZone.Service.Services
     public class GameInforService : ServiceBase, IGameInforService
     {
         private readonly IFtpDirectoryService _ftpDirectoryService;
-        public GameInforService(DataContext dataContext, IFtpDirectoryService ftpDirectoryService, IUserService userService) : base(dataContext, userService)
+        private readonly FileUploadService _fileUploadService;
+        public GameInforService(DataContext dataContext, IFtpDirectoryService ftpDirectoryService, FileUploadService fileUploadService, IUserService userService) : base(dataContext, userService)
         {
             _ftpDirectoryService = ftpDirectoryService;
+            _fileUploadService = fileUploadService;
         }
 
         public Task<ApiResult> Add(AddGameInforModel model)

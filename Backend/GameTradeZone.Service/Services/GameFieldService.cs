@@ -27,6 +27,11 @@ namespace GameTradeZone.Service.Services
             throw new NotImplementedException();
         }
 
+        public Task<ApiResult> GetByGameInforID(int id)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<ApiResult> GetById(int id)
         {
             throw new NotImplementedException();
