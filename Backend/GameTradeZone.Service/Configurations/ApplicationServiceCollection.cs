@@ -27,6 +27,8 @@ namespace GameTradeZone.Service.Configurations
             services.AddHttpContextAccessor();
             #region Business services
             services.AddScoped<IAuthenticateService, AuthenticateService>();
+            services.AddScoped<IServiceService, ServiceService>();
+            services.AddScoped<IGameInforService, GameInforService>();
             #endregion
             return services;
         }

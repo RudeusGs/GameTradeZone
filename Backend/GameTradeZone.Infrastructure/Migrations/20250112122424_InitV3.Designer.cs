@@ -4,6 +4,7 @@ using GameTradeZone.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GameTradeZone.Infrastructure.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250112122424_InitV3")]
+    partial class InitV3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -423,8 +426,8 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<string>("Feedback")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("GameInforID")
-                        .HasColumnType("int");
+                    b.Property<string>("GameInforID")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Image")
                         .HasColumnType("nvarchar(max)");
@@ -444,7 +447,7 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<decimal?>("ServicePrice")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<DateTime?>("ServiceTime")
+                    b.Property<DateTime>("ServiceTime")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("UpdatedDate")

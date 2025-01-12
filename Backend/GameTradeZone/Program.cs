@@ -2,6 +2,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using GameTradeZone.Infrastructure.Configurations;
 using GameTradeZone.Service.Configurations;
+using GameTradeZone.Service.File;
 namespace GameTradeZone
 {
     public class Program
@@ -19,7 +20,7 @@ namespace GameTradeZone
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "DRAGONACC 2024 WEB API",
+                    Title = "GAMETRADEZONE 2025 WEB API",
                     Version = "v1",
                 });
 
@@ -62,6 +63,7 @@ namespace GameTradeZone
 
             builder.Services.AddApplicationServices();
             builder.Services.AddInfrastructureServices(builder.Configuration);
+            builder.Services.AddScoped<FileUploadService>();
             var app = builder.Build();
 
             if (app.Environment.IsDevelopment())
