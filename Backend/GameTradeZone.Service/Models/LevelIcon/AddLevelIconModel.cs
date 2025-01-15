@@ -1,8 +1,10 @@
-﻿namespace GameTradeZone.Service.Models.LevelIcon
+﻿using Microsoft.AspNetCore.Http;
+
+namespace GameTradeZone.Service.Models.LevelIcon
 {
     public class AddLevelIconModel
     {
         public string IconName { get; set; }
-        public string IconImage { get; set; }
+        public List<IFormFile>? Files { get; set; }
     }
 }

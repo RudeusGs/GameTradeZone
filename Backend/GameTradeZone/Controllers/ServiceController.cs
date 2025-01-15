@@ -88,5 +88,19 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [Authorize]
+        [HttpPost("RentService")]
+        public async Task<IActionResult> RentService(RentedServiceModel model)
+        {
+            try
+            {
+                var result = await _iServiceService.RentedService(model);
+                return Response(result);
+            }
+            catch(Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }

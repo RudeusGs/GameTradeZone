@@ -10,5 +10,6 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> Add(AddGameInforModel model);
         Task<ApiResult> Update(UpdateGameInforModel model);
         Task<ApiResult> Delete(int id);
+        Task<ApiResult> GetByGameFieldID(int id);
     }
 }

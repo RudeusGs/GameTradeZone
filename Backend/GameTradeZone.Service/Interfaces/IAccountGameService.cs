@@ -6,7 +6,7 @@ namespace GameTradeZone.Service.Interfaces
     public interface IAccountGameService
     {
         Task<ApiResult> GetAll();
-        Task<ApiResult> GetById(int id);
+        Task<ApiResult> GetByIdByAdmin(int id);
         Task<ApiResult> Add(AddAccountGameModel model);
         Task<ApiResult> Update(UpdateAccountGameModel model);
         Task<ApiResult> Delete(int id);

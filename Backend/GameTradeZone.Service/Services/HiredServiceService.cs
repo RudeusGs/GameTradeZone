@@ -1,7 +1,9 @@
-﻿using GameTradeZone.Infrastructure.Persistence;
+﻿using GameTradeZone.Domain.Entities;
+using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameTradeZone.Service.Services
 {
@@ -11,19 +13,74 @@ namespace GameTradeZone.Service.Services
         {
         }
 
-        public Task<ApiResult> Delete(int id)
+        public async Task<ApiResult> ConfirmService(int id, string status)
         {
-            throw new NotImplementedException();
+            var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.Id == id);
+            if (hiredService == null || hiredService.IsDelete == true) 
+            {
+                return new ApiResult { Message = "Không tìm thấy thành phần này!" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                var newOnGoing = new OnGoingService
+                {
+                    Status = status,
+                    UpdatedDate = DateTime.Now,
+                };
+                _dataContext.OnGoingServices.Update(newOnGoing);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult { Message = "Thay đổi trạng thái thành công!" };
+            }
+            catch (Exception e)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Error: {e.Message}" };
+            }
         }
 
-        public Task<ApiResult> GetAll()
+        public async Task<ApiResult> Delete(int id)
         {
-            throw new NotImplementedException();
+            var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.Id == id);
+            if(hiredService == null || hiredService.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy thành phần này!" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                hiredService.IsDelete = true;
+                hiredService.DeleteDate = DateTime.Now;
+
+                _dataContext.HiredServices.Update(hiredService);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult { Message = "Xóa thành công!" };
+            }
+            catch (Exception e)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Error: {e.Message}" };
+            }
         }
 
-        public Task<ApiResult> GetAllByUserId(int id)
+        public async Task<ApiResult> GetAll()
         {
-            throw new NotImplementedException();
+            var hiredService = await _dataContext.HiredServices.Where(x => x.IsDelete == false).ToListAsync();
+            return new(hiredService);
+        }
+
+        public async Task<ApiResult> GetAllByServiceID(int id)
+        {
+            var hiredService = await _dataContext.HiredServices.Where(x => x.ServiceID == id && x.IsDelete == false).ToListAsync();
+            return new(hiredService);
+        }
+
+        public async Task<ApiResult> GetAllByUserId(int id)
+        {
+            var hiredService = await _dataContext.HiredServices.Where(x => x.UserID == id && x.IsDelete == false).ToListAsync();
+            return new(hiredService);
         }
     }
 }

@@ -2,7 +2,7 @@
 {
     public class BargainAccountGameModel
     {
-        public int Id { get; set; }
+        public int Id { get; set; } //Id Account
         public int UserID { get; set; }
         public decimal BargainAmount { get; set; }
     }
