@@ -37,6 +37,7 @@ namespace GameTradeZone.Service.Services
             throw new NotImplementedException();
         }
 
+
         public Task<ApiResult> GetAll()
         {
             throw new NotImplementedException();
@@ -48,6 +49,11 @@ namespace GameTradeZone.Service.Services
         }
 
         public Task<ApiResult> GetById(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ApiResult> GetByIdByAdmin(int id)
         {
             throw new NotImplementedException();
         }

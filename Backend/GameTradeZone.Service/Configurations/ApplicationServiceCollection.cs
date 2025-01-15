@@ -29,6 +29,14 @@ namespace GameTradeZone.Service.Configurations
             services.AddScoped<IAuthenticateService, AuthenticateService>();
             services.AddScoped<IServiceService, ServiceService>();
             services.AddScoped<IGameInforService, GameInforService>();
+            services.AddScoped<IGameFieldService, GameFieldService>();
+            services.AddScoped<IPurchasedAccountService, PurchasedAccountService>();
+            services.AddScoped<IOnGoingServiceService, OnGoingServiceService>();
+            services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<ILevelIconService, LevelIconService>();
+            services.AddScoped<IHiredServiceService, HiredServiceService>();
+            services.AddScoped<IDisputeService, DisputeService>();
+            services.AddScoped<IAccountGameService, AccountGameService>();
             #endregion
             return services;
         }

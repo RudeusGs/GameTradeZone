@@ -9,7 +9,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> GetAll();
         Task<ApiResult> GetById(int id);
         Task<ApiResult> Add(AddLevelIconModel model);
-        Task<ApiResult> Update(UpdateGameInforModel model);
+        Task<ApiResult> Update(UpdateLevelIconModel model);
         Task<ApiResult> Delete(int id);
     }
 }

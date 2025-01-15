@@ -1,4 +1,5 @@
-﻿using GameTradeZone.Infrastructure.Persistence;
+﻿using GameTradeZone.Domain.Entities;
+using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.File;
 using GameTradeZone.Service.Interfaces;
@@ -21,7 +22,7 @@ namespace GameTradeZone.Service.Services
         public async Task<ApiResult> Add(AddServiceModel model)
         {
             var gameInfor = await _dataContext.GameInfors.FirstOrDefaultAsync(x => x.Id == model.GameInforID);
-            if(gameInfor == null)
+            if(gameInfor == null || gameInfor.IsDelete == true)
             {
                 return new ApiResult
                 {
@@ -30,7 +31,7 @@ namespace GameTradeZone.Service.Services
             }
             var service = await _dataContext.Services
             .FirstOrDefaultAsync(x => x.ServiceName == model.ServiceName && x.GameInforID == model.GameInforID && x.CreaterID == _userService.UserId);
-            if(service != null)
+            if(service != null && service.IsDelete == false)
             {
                 return new ApiResult
                 {
@@ -72,7 +73,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
-                return new ApiResult(newService);
+                return new ApiResult { Message = "Thêm dịch vụ thành công!"};
             }
             catch (Exception e)
             {
@@ -92,6 +93,10 @@ namespace GameTradeZone.Service.Services
                     Message = "Dịch vụ không tồn tại!"
                 };
             }
+            if(service.IsDelete == true)
+            {
+                return new ApiResult { Message = "Dịch vụ nãy đã được xóa! Không thể xóa nữa" };
+            }
 
             using var tran = await _dataContext.Database.BeginTransactionAsync();
             try
@@ -106,7 +111,7 @@ namespace GameTradeZone.Service.Services
 
                 return new ApiResult
                 {
-                    Message = "Dịch vụ đã được đánh dấu là đã xóa!"
+                    Message = "Xóa thành công!"
                 };
             }
             catch (Exception e)
@@ -119,18 +124,74 @@ namespace GameTradeZone.Service.Services
             }
         }
 
-
         public async Task<ApiResult> GetAll()
         {
-            var services = await _dataContext.Services.ToListAsync();
+            var services = await _dataContext.Services.Where(x => x.IsDelete == false).ToListAsync();
             return new(services);
         }
 
-
+        public async Task<ApiResult> GetAllByUserId(int id)
+        {
+            var service = await _dataContext.Services.Where(x => x.CreaterID == id && x.IsDelete == false).ToListAsync();
+            return new(service);
+        }
         public async Task<ApiResult> GetById(int id)
         {
-            var result = await _dataContext.Services.FirstOrDefaultAsync(x => x.Id == id);
-            return new(result);
+            var service = await _dataContext.Services.FirstOrDefaultAsync(x => x.Id == id && x.IsDelete == false);
+            return new(service);
+        }
+
+        public async Task<ApiResult> GetGameById(int id)
+        {
+            var service = await _dataContext.Services.FirstOrDefaultAsync(x => x.GameInforID == id && x.IsDelete == false);
+            return new(service);
+        }
+
+        public async Task<ApiResult> RentedService(RentedServiceModel model)
+        {
+            var service = await _dataContext.Services.FirstOrDefaultAsync(x => x.Id == model.Id);
+            if(service == null)
+            {
+                return new ApiResult { Message = "Dịch vụ không tồn tại không thể thuê" };
+            }
+            if(service.IsDelete == true)
+            {
+                return new ApiResult { Message = "Dịch vụ đã bị xóa" };
+            }
+
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+
+            try
+            {
+                var newOnGoing = new OnGoingService
+                {
+                    ServiceID = model.Id,
+                    UserID = _userService.UserId,
+                    Status = "Chờ xác nhận",
+                    Reason = null,
+                    FeedBack = null,
+                    CreatedDate = DateTime.Now,
+                };
+                var newHired = new HiredService 
+                { 
+                    ServiceID = model.Id,
+                    UserID = _userService.UserId,
+                    Status = "Đang chờ xác nhận",
+                    Reason = null,
+                    CreatedDate= DateTime.Now,
+                };
+                _dataContext.OnGoingServices.Add(newOnGoing);
+                _dataContext.HiredServices.Add(newHired);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+
+                return new ApiResult { Message = "Thuê dịch vụ thành công! Vui lòng chờ xác nhận", };
+            }
+            catch (Exception e)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Error: {e.Message}" };
+            }
         }
 
         public async Task<ApiResult> Update(UpdateServiceModel model)
@@ -168,7 +229,7 @@ namespace GameTradeZone.Service.Services
                             : $"{service.Image};{string.Join(";", fileUploads)}";
                     }
                 }
-
+                _dataContext.Services.Update(service);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
