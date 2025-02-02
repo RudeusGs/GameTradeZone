@@ -3,6 +3,10 @@ using Microsoft.OpenApi.Models;
 using GameTradeZone.Infrastructure.Configurations;
 using GameTradeZone.Service.Configurations;
 using GameTradeZone.Service.File;
+using GameTradeZone.Service.Interfaces;
+using GameTradeZone.Service.Services;
+using YourProject.Services.Clients;
+
 namespace GameTradeZone
 {
     public class Program
@@ -14,6 +18,15 @@ namespace GameTradeZone
             // Add services to the container.
             builder.Services.AddControllers();
 
+            // Register HttpClient service
+            builder.Services.AddHttpClient();
+
+            // Register SepayApiClient service
+            builder.Services.AddScoped<SepayApiClient>();
+
+            // Register the RechargeBankService
+            builder.Services.AddScoped<IRechargeBankService, RechargeBankService>();
+
             // Configure Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
@@ -24,10 +37,11 @@ namespace GameTradeZone
                     Version = "v1",
                 });
 
+                // Add Bearer Authentication
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey,
+                    Type = SecuritySchemeType.Http,
                     Scheme = "Bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
@@ -52,25 +66,31 @@ namespace GameTradeZone
                 options.CustomSchemaIds(type => type.ToString());
             });
 
+            // Configure CORS policy
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAnyCorsPolicy",
-                    builder => builder
+                    policy => policy
                         .AllowAnyOrigin()
                         .AllowAnyMethod()
                         .AllowAnyHeader());
             });
 
+            // Register Application Services
             builder.Services.AddApplicationServices();
             builder.Services.AddInfrastructureServices(builder.Configuration);
             builder.Services.AddScoped<FileUploadService>();
+
             var app = builder.Build();
 
+            // Enable Swagger in development mode
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            // Serve static files
             app.UseStaticFiles();
             app.UseStaticFiles(new StaticFileOptions
             {
@@ -78,11 +98,11 @@ namespace GameTradeZone
                 RequestPath = "/public"
             });
 
+            // Configure middleware pipeline
             app.UseHttpsRedirection();
             app.UseRouting();
             app.UseCors("AllowAnyCorsPolicy");
             app.UseAuthorization();
-
             app.MapControllers();
 
             app.Run();
