@@ -21,7 +21,7 @@ public class RechargeBankService : IRechargeBankService
         _httpClient = httpClient;
         _context = context;
     }
-
+    // xem giao dịch nạp tiền
     public async Task<ApiResult> GetAllRechargeBankTransactions()
     {
         try
@@ -29,7 +29,6 @@ public class RechargeBankService : IRechargeBankService
             var baseUrl = _configuration["SepayApi:BaseUrl"];
             var apiKey = _configuration["SepayApi:ApiKey"];
             var fullUrl = $"{baseUrl}/userapi/transactions/list";
-            Console.WriteLine($"Requesting: {fullUrl}");
 
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
             var response = await _httpClient.GetAsync(fullUrl);
