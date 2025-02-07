@@ -1,4 +1,5 @@
-﻿using GameTradeZone.Service.Models;
+﻿using GameTradeZone.Domain.Entities;
+using GameTradeZone.Service.Models;
 using GameTradeZone.Service.Models.RechargeBank;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ namespace GameTradeZone.Service.Interfaces
     public interface IRechargeBankService
     {
         Task<ApiResult> GetAllRechargeBankTransactions();
+  
 
     }
 }

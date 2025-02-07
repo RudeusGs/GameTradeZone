@@ -6,6 +6,8 @@ using GameTradeZone.Service.File;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Services;
 using YourProject.Services.Clients;
+using Microsoft.EntityFrameworkCore;
+using GameTradeZone.Infrastructure.Persistence;
 
 namespace GameTradeZone
 {
@@ -14,17 +16,16 @@ namespace GameTradeZone
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-            // Add services to the container.
+            builder.WebHost.UseUrls("https://*:7232");
+            builder.Services.AddDbContext<DataContext>(options =>
+            {
+                options.UseSqlServer(connectionString);
+            });
             builder.Services.AddControllers();
-
-            // Register HttpClient service
             builder.Services.AddHttpClient();
-
-            // Register SepayApiClient service
             builder.Services.AddScoped<SepayApiClient>();
-
-            // Register the RechargeBankService
             builder.Services.AddScoped<IRechargeBankService, RechargeBankService>();
 
             // Configure Swagger/OpenAPI
