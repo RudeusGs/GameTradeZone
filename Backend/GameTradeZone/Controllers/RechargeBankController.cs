@@ -1,4 +1,5 @@
 ﻿using GameTradeZone.Service.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -12,7 +13,7 @@ public class RechargeBankController : ControllerBase
     {
         _rechargeBankService = rechargeBankService;
     }
-
+    [Authorize]
     [HttpGet("transactions")]
     public async Task<IActionResult> GetAllTransactions()
     {

@@ -37,7 +37,7 @@ namespace GameTradeZone
                     Title = "GAMETRADEZONE 2025 WEB API",
                     Version = "v1",
                 });
-
+                options.OperationFilter<SwaggerFileOperationFilter>();
                 // Add Bearer Authentication
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {

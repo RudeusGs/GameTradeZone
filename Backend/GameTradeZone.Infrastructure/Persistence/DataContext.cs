@@ -27,7 +27,7 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<BankTransactionInfor> BankTransactionInfors { get; set; }
         public DbSet<SepayWebHooksReceiver> SepayWebHooksReceivers { get; set; }
         public DbSet<TransactionInfor> TransactionInfors { get; set; }
-
+        public DbSet<PostInfo> PostInfos { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
