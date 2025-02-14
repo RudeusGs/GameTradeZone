@@ -60,7 +60,7 @@ namespace GameTradeZone.Controllers
 
         [Authorize]
         [HttpPost("Delete")]
-        public async Task<IActionResult> Update(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
