@@ -1,4 +1,5 @@
 ﻿using GameTradeZone.Domain.Base;
+using Microsoft.Identity.Client;
 
 namespace GameTradeZone.Domain.Entities
 {

@@ -1,6 +1,5 @@
 ﻿using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models.GameInfor;
-using GameTradeZone.Service.Models.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

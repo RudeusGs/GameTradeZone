@@ -54,7 +54,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
-                return new ApiResult(newGameInfor);
+                return new ApiResult { Message = "Thêm thành công!"};
             }
             catch (Exception ex)
             {

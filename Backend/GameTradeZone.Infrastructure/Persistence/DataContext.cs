@@ -21,6 +21,7 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<OnGoingService> OnGoingServices { get; set;}
         public DbSet<PurchasedAccount> PurchasedAccounts { get; set; }
         public DbSet<Service> Services { get; set; }
+        public DbSet<BargainAccountGame> BargainAccounts { get; set;}
 
     }
 }
