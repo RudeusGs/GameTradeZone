@@ -8,6 +8,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GameTradeZone.Infrastructure\GameTradeZone.Infrastructure.csproj" />
+	<PackageReference Include="CloudinaryDotNet" Version="1.27.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\BankTransactionInfor\" />
   </ItemGroup>
 
 </Project>

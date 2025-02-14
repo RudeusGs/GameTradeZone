@@ -4,6 +4,7 @@ using GameTradeZone.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GameTradeZone.Infrastructure.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250204122352_AddSepayReceivers")]
+    partial class AddSepayReceivers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,7 +114,7 @@ namespace GameTradeZone.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BankTransactionInfors");
+                    b.ToTable("bankTransactionInfors");
                 });
 
             modelBuilder.Entity("GameTradeZone.Domain.Entities.Dispute", b =>
@@ -385,50 +388,6 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.ToTable("OnGoingServices");
                 });
 
-            modelBuilder.Entity("GameTradeZone.Domain.Entities.PostInfo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Caption")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("CommentsCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeleteDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("LikesCount")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("PostInfos");
-                });
-
             modelBuilder.Entity("GameTradeZone.Domain.Entities.PurchasedAccount", b =>
                 {
                     b.Property<int>("Id")
@@ -610,7 +569,7 @@ namespace GameTradeZone.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SepayWebHooksReceivers", (string)null);
+                    b.ToTable("SepayWebHooksReceivers");
                 });
 
             modelBuilder.Entity("GameTradeZone.Domain.Entities.Service", b =>
@@ -666,40 +625,6 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Services");
-                });
-
-            modelBuilder.Entity("GameTradeZone.Domain.Entities.TransactionInfor", b =>
-                {
-                    b.Property<string>("ReferenceCode")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("AccountNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeleteDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("TransactionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("TransferAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ReferenceCode");
-
-                    b.ToTable("TransactionInfors");
                 });
 
             modelBuilder.Entity("GameTradeZone.Domain.Entities.User", b =>
@@ -965,17 +890,6 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("GameTradeZone.Domain.Entities.PostInfo", b =>
-                {
-                    b.HasOne("GameTradeZone.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>

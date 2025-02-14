@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\Backend",
+    "\\Backend\\GameTradeZone",
+    "\\Backend\\GameTradeZone.Domain",
+    "\\Backend\\GameTradeZone.Domain\\Entities",
+    "\\Backend\\GameTradeZone.Infrastructure",
+    "\\Backend\\GameTradeZone.Service",
+    "\\Backend\\GameTradeZone.Service\\Models\\Dispute"
+  ],
+  "SelectedNode": "\\Backend\\GameTradeZone.Domain\\Entities\\Dispute.cs",
+  "PreviewInSolutionExplorer": false
+}

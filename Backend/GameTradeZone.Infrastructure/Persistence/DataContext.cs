@@ -21,6 +21,18 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<OnGoingService> OnGoingServices { get; set;}
         public DbSet<PurchasedAccount> PurchasedAccounts { get; set; }
         public DbSet<Service> Services { get; set; }
+        public DbSet<WithDrawnMoney> WithDrawnMoneys { get; set; }
+        public DbSet<RechargeCard> RechargeCards { get; set; }
+        public DbSet<RechargeBank> RechargeBanks { get; set; }
+        public DbSet<BankTransactionInfor> BankTransactionInfors { get; set; }
+        public DbSet<SepayWebHooksReceiver> SepayWebHooksReceivers { get; set; }
+        public DbSet<TransactionInfor> TransactionInfors { get; set; }
+        public DbSet<PostInfo> PostInfos { get; set; }
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
 
+            builder.Entity<SepayWebHooksReceiver>().ToTable("SepayWebHooksReceivers");
+        }
     }
 }
