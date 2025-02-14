@@ -31,6 +31,7 @@ namespace GameTradeZone.Infrastructure.Persistence
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+        public DbSet<BargainAccountGame> BargainAccounts { get; set;}
 
             builder.Entity<SepayWebHooksReceiver>().ToTable("SepayWebHooksReceivers");
         }

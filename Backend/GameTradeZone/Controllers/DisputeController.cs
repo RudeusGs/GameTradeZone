@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GameTradeZone.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     public class DisputeController : BaseController
     {
         public IDisputeService _disputeService;

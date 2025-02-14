@@ -15,4 +15,8 @@
     <Folder Include="Models\BankTransactionInfor\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Models\BargainAccount\" />
+  </ItemGroup>
+
 </Project>

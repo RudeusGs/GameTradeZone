@@ -6,13 +6,13 @@ namespace GameTradeZone.Service.Interfaces
     public interface IAccountGameService
     {
         Task<ApiResult> GetAll();
-        Task<ApiResult> GetByIdByAdmin(int id);
         Task<ApiResult> Add(AddAccountGameModel model);
         Task<ApiResult> Update(UpdateAccountGameModel model);
         Task<ApiResult> Delete(int id);
         Task<ApiResult> Buy(BuyAccountGameModel model);
+        Task<ApiResult> Accept(int id);
         Task<ApiResult> GetAllByUserID(int UserId);
-        Task<ApiResult> GetInforUser(int id);
+        Task<ApiResult> GetInforUser();
         Task<ApiResult> BargainPrice(BargainAccountGameModel model);
 
     }

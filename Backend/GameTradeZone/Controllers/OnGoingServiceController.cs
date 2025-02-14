@@ -1,6 +1,10 @@
-﻿namespace GameTradeZone.Controllers
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace GameTradeZone.Controllers
 {
-    public class OnGoingServiceController
+    [Route("api/[controller]")]
+    [ApiController]
+    public class OnGoingServiceController : BaseController
     {
     }
 }
