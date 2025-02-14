@@ -37,11 +37,10 @@ namespace GameTradeZone
                     Version = "v1",
                 });
                 options.OperationFilter<SwaggerFileOperationFilter>();
-                // Add Bearer Authentication
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
-                    Type = SecuritySchemeType.Http,
+                    Type = SecuritySchemeType.ApiKey,
                     Scheme = "Bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,

@@ -56,7 +56,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
-                return new ApiResult { Message = "Thành công" };
+                return new ApiResult(newPurchased);
             }
             catch (Exception ex)
             {
@@ -109,7 +109,7 @@ namespace GameTradeZone.Service.Services
 
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Thêm tài khoản thành công!" };
+                return new ApiResult(newAccountGame);
             }
             catch(Exception ex)
             {
@@ -155,7 +155,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.AccountGames.Update(newAccountGame);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Đặt giá thành công vui lòng chờ!" };
+                return new ApiResult();
             }
             catch (Exception ex)
             {
@@ -192,7 +192,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.Add(newPurchasedAccount);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Mua thành công!" };
+                return new ApiResult();
             }
             catch(Exception ex)
             {
@@ -216,7 +216,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.Update(accountGame);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Xóa thành công" };
+                return new ApiResult();
 
             }
             catch (Exception ex)
@@ -285,7 +285,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
-                return new ApiResult { Message = "Cập nhật thành công!" };
+                return new ApiResult();
             }
             catch (Exception ex)
             {

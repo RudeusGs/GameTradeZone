@@ -27,7 +27,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.Notifications.Update(noTi);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Xóa thành công" };
+                return new ApiResult ();
             }
             catch(Exception e)
             {
@@ -61,7 +61,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.Notifications.Update(noTi);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Đọc thành công" };
+                return new ApiResult();
             }
             catch (Exception e)
             {

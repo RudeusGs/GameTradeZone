@@ -50,7 +50,7 @@ namespace GameTradeZone.Service.Services
                 }
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Thêm thành công!" };
+                return new ApiResult(newIcon);
             }
             catch(Exception e)
             {
@@ -75,7 +75,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.LevelIcons.Update(icon);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Xóa thành công!" };
+                return new ApiResult ();
             }
             catch (Exception e)
             {
@@ -124,7 +124,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
-                return new ApiResult { Message = "Cập nhật thành công!" };
+                return new ApiResult ();
             }
             catch(Exception e)
             {

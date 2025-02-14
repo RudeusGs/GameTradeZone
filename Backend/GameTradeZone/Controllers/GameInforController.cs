@@ -42,7 +42,19 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
-
+        [HttpGet("Get-Field")]
+        public async Task<IActionResult> GetField(int id)
+        {
+            try
+            {
+                var result = await _iGameInforService.GetByGameFieldID(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
         [Authorize]
         [HttpPost("Add")]
         public async Task<IActionResult> Add(AddGameInforModel model)
