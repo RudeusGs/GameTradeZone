@@ -21,28 +21,7 @@ namespace GameTradeZone.Controllers
             try
             {
                 var result = await _authenticateService.Login(request);
-                var userToken = result.Data as UserToken;
-                if (userToken != null)
-                {
-                    var token = userToken.Token;
-                    var userId = userToken.UserId;
-                    Console.WriteLine($"Type of result.Data: {result.Data?.GetType()}");
-                    Console.WriteLine($"UserId: {userToken?.UserId}, Token: {userToken?.Token}");
-                    return Ok(new
-                    {
-                        Message = "Login successful",
-                        Token = token,
-                        UserId = userId
-
-                    });
-
-                }
-                else
-                {
-                    return BadRequest(new { Message = "Login failed" });
-                }
-           /*     return Response(result);*/
-
+                return Response(result);
             }
             catch (Exception ex)
             {
