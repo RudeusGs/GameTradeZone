@@ -73,7 +73,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
-                return new ApiResult { Message = "Thêm dịch vụ thành công!"};
+                return new ApiResult(newService);
             }
             catch (Exception e)
             {
@@ -109,10 +109,7 @@ namespace GameTradeZone.Service.Services
 
                 await tran.CommitAsync();
 
-                return new ApiResult
-                {
-                    Message = "Xóa thành công!"
-                };
+                return new ApiResult();
             }
             catch (Exception e)
             {
@@ -185,7 +182,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
-                return new ApiResult { Message = "Thuê dịch vụ thành công! Vui lòng chờ xác nhận", };
+                return new ApiResult();
             }
             catch (Exception e)
             {
@@ -233,7 +230,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
 
-                return new ApiResult { Message = "Cập nhật thành công!" };
+                return new ApiResult();
             }
             catch (Exception e)
             {

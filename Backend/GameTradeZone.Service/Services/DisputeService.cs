@@ -84,7 +84,7 @@ namespace GameTradeZone.Service.Services
                 }
 
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Thêm thành công!" };
+                return new ApiResult(newDispute);
             }
             catch (Exception ex)
             {
@@ -112,10 +112,7 @@ namespace GameTradeZone.Service.Services
 
                 await tran.CommitAsync();
 
-                return new ApiResult
-                {
-                    Message = "Xóa thành công!"
-                };
+                return new ApiResult();
             }
             catch (Exception e)
             {
@@ -166,7 +163,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.Disputes.Update(dispute);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Trà lời thành công!" };
+                return new ApiResult ();
             }
             catch(Exception e)
             {
@@ -203,7 +200,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.Disputes.Update(dispute);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Cập nhật thành công" };
+                return new ApiResult();
             }
             catch (Exception e)
             {

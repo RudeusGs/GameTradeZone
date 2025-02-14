@@ -35,7 +35,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.AccountGames.Update(newAccount);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Xác nhận thành công!" };
+                return new ApiResult (newAccount);
             }
             catch(Exception e)
             {
@@ -60,7 +60,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.PurchasedAccounts.Update(purChased);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Xóa thành công!" };
+                return new ApiResult();
             }
             catch (Exception e)
             {
