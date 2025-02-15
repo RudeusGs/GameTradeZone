@@ -19,56 +19,9 @@ namespace GameTradeZone.Service.Services
             _fileUploadService = fileUploadService;
         }
 
-        public async Task<ApiResult> Accept(int id)
-        {
-            var accountGame = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.Id == id);
-            if (accountGame == null || accountGame.IsDelete == true)
-            {
-                return new ApiResult { Message = "Tài khoản này không tồn tại!" };
-            }
-            if (accountGame.Status == "Đã bán")
-            {
-                return new ApiResult { Message = "Tài khoản này đã bán!" };
-            }
-
-            var bargain = await _dataContext.BargainAccounts.FirstOrDefaultAsync(x => x.AccountGameID == id);
-            if (bargain == null)
-            {
-                return new ApiResult { Message = "Không tìm thấy thông tin thỏa thuận." };
-            }
-
-            var tran = await _dataContext.Database.BeginTransactionAsync();
-            try
-            {
-                var newPurchased = new PurchasedAccount
-                {
-                    GameName = accountGame.GameName,
-                    AccountName = accountGame.AccountName,
-                    Password = accountGame.Password,
-                    SellerID = _userService.UserId,
-                    UserID = bargain.UserID,
-                    CreatedDate = DateTime.UtcNow,
-                };
-
-                _dataContext.PurchasedAccounts.Add(newPurchased);
-                accountGame.Status = "Đã bán";
-                _dataContext.AccountGames.Update(accountGame);
-                await _dataContext.SaveChangesAsync();
-                await tran.CommitAsync();
-
-                return new ApiResult(newPurchased);
-            }
-            catch (Exception ex)
-            {
-                await tran.RollbackAsync();
-                return new ApiResult { Message = $"Error: {ex.Message}" };
-            }
-        }
-
-
         public async Task<ApiResult> Add(AddAccountGameModel model)
         {
-            var accountGame = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.GameName == model.GameName && x.AccountName == model.AccountName);
+            var accountGame = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.GameInforID == model.GameInforID && x.AccountName == model.AccountName);
             if(accountGame != null && accountGame.IsDelete == false)
             {
                 return new ApiResult { Message = "Tài khoản game này đã tồn tại!" };
@@ -77,13 +30,16 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = "Tài khoản này đã được bán" };
             }
+            if(model.Price < model.PriceMin)
+            {
+                return new ApiResult { Message = "Số tiền đặt sai!"};
+            }
             var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {
                 var newAccountGame = new AccountGame
                 {
                     GameInforID = model.GameInforID,
-                    GameName = model.GameName,
                     AccountName = model.AccountName,
                     Password = model.Password,
                     Price = model.Price,
@@ -119,87 +75,74 @@ namespace GameTradeZone.Service.Services
             
         }
 
-        public async Task<ApiResult> BargainPrice(BargainAccountGameModel model)
-        {
-            var accountGame = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.Id == model.Id);
-            if(accountGame == null || accountGame.IsDelete == true) {
-                return new ApiResult { Message = "Tài khoản này không tồn tại" };
-            }   
-            if(accountGame.Status == "Đã bán")
-            {
-                return new ApiResult { Message = "Tài khoản này đã được bán không thể đặt giá" };
-            }
-            if(accountGame.PriceMin > model.BargainAmount)
-            {
-                return new ApiResult { Message = "Không thể trả giá thấp hơn giá nhỏ nhất" };
-            }
-            if(model.BargainAmount % 1000 == 0)
-            {
-                return new ApiResult { Message = "Số tiền đặt phải chia hết cho 1000" };
-            }
-            var tran = await _dataContext.Database.BeginTransactionAsync();
-            try
-            {
-                var newBargain = new BargainAccountGame
-                {
-                    AccountGameID = model.Id,
-                    UserID = _userService.UserId,
-                    BargainPrice = model.BargainAmount,
-                    CreatedDate = DateTime.UtcNow,
-                };
-                var newAccountGame = new AccountGame
-                {
-                    PriceMin = model.BargainAmount,
-                };
-                _dataContext.BargainAccounts.Add(newBargain);
-                _dataContext.AccountGames.Update(newAccountGame);
-                await _dataContext.SaveChangesAsync();
-                await tran.CommitAsync();
-                return new ApiResult();
-            }
-            catch (Exception ex)
-            {
-                await tran.RollbackAsync();
-                return new ApiResult { Message = $"Error: {ex.Message}" };
-            }
-        }
-
         public async Task<ApiResult> Buy(BuyAccountGameModel model)
         {
             var accountGame = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.Id == model.Id);
-            if(accountGame == null || accountGame.IsDelete == true) 
+            if (accountGame == null || accountGame.IsDelete == true)
             {
                 return new ApiResult { Message = "Tài khoản này không tồn tại hoặc đã bị xóa!" };
             }
-            if(accountGame.Status == "Đã bán")
+            if (accountGame.Status == "Đã bán")
             {
                 return new ApiResult { Message = "Tài khoản này đã được bán!" };
             }
-            var tran = await _dataContext.Database.BeginTransactionAsync();
-            try
+            var gameInfo = await _dataContext.GameInfors.FirstOrDefaultAsync(x => x.Id == accountGame.GameInforID);
+            if (gameInfo == null)
             {
-                var newPurchasedAccount = new PurchasedAccount
-                {
-                    UserID = _userService.UserId,
-                    SellerID = accountGame.UserID,
-                    GameName = accountGame.GameName,
-                    AccountName = accountGame.AccountName,
-                    Password = accountGame.Password,
-                    StatusBuyer = null,
-                    StatusSeller = "Đang chờ",
-                    CreatedDate = DateTime.Now,
-                };
-                _dataContext.Add(newPurchasedAccount);
-                await _dataContext.SaveChangesAsync();
-                await tran.CommitAsync();
-                return new ApiResult();
+                return new ApiResult { Message = "Thông tin game không tồn tại!" };
             }
-            catch(Exception ex)
+            var buyer = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == _userService.UserId);
+            var seller = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == accountGame.UserID);
+            if (buyer == null || seller == null)
             {
-                await tran.RollbackAsync();
-                return new ApiResult { Message = $"Error: {ex.Message}" };
+                return new ApiResult { Message = "Thông tin người mua không tồn tại!" };
+            }
+            if (buyer.Balance < accountGame.Price)
+            {
+                return new ApiResult { Message = "Số dư không đủ" };
+            }
+            if(buyer.Id == seller.Id )
+            {
+                return new ApiResult { Message = "Không thể tự mua tài khoản của chính mình" };
+            }
+            using (var tran = await _dataContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    buyer.Balance -= accountGame.Price;
+                    _dataContext.Users.Update(buyer);
+
+                    var newPurchasedAccount = new PurchasedAccount
+                    {
+                        UserID = _userService.UserId,
+                        SellerID = accountGame.UserID,
+                        GameName = gameInfo.GameName,
+                        AccountName = accountGame.AccountName,
+                        Password = accountGame.Password,
+                        Price = accountGame.Price,
+                        AccountGameId = accountGame.Id,
+                        StatusBuyer = "Chưa xác nhận",
+                        StatusSeller = "Đang chờ",
+                        IsDelete = false,
+                        CreatedDate = DateTime.Now,
+                    };
+                    
+                    _dataContext.Add(newPurchasedAccount);
+                    accountGame.Status = "Đã bán";
+                    _dataContext.Update(accountGame);
+                    await _dataContext.SaveChangesAsync();
+                    await tran.CommitAsync();
+
+                    return new ApiResult();
+                }
+                catch (Exception ex)
+                {
+                    await tran.RollbackAsync();
+                    return new ApiResult { Message = $"Error: {ex.Message}" };
+                }
             }
         }
+
 
         public async Task<ApiResult> Delete(int id)
         {
@@ -263,16 +206,16 @@ namespace GameTradeZone.Service.Services
             try
             {
                 accountGame.GameInforID = model.GameInforID ?? accountGame.GameInforID;
-                accountGame.GameName = model.GameName ?? accountGame.GameName;
                 accountGame.AccountName = model.AccountName ?? accountGame.AccountName;
                 accountGame.Password = model.Password ?? accountGame.Password;
                 accountGame.Price = model.Price != 0 ? model.Price : accountGame.Price;
+                accountGame.PriceMin = model.PriceMin != 0 ? model.PriceMin : accountGame.Price;
                 accountGame.UpdatedDate = DateTime.UtcNow;
 
                 if (model.Files != null && model.Files.Any())
                 {
                     var fileUploadService = new FileUploadService(_ftpDirectoryService);
-                    var fileUploads = await fileUploadService.UploadFiles("accountgame", accountGame.Id, model.Files);
+                    var fileUploads = await fileUploadService.UploadFiles("gameaccount", accountGame.Id, model.Files);
 
                     if (fileUploads.Any())
                     {
@@ -284,7 +227,6 @@ namespace GameTradeZone.Service.Services
 
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-
                 return new ApiResult();
             }
             catch (Exception ex)
