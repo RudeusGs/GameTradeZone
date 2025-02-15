@@ -1,5 +1,6 @@
 ﻿using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
+using GameTradeZone.Service.Models.PurchasedAccount;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -63,11 +64,11 @@ namespace GameTradeZone.Controllers
 
         [Authorize]
         [HttpPost("Confirm-Account")]
-        public async Task<IActionResult> ConfirmAccount(int id, string status)
+        public async Task<IActionResult> ConfirmAccount(ComfirmModel model)
         {
             try
             {
-                var result = await _purchasedAccountService.ComfirmAccount(id, status);
+                var result = await _purchasedAccountService.ComfirmAccount(model);
                 return Response(result);
             }
             catch (Exception e)

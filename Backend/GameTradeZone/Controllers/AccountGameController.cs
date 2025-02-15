@@ -107,42 +107,12 @@ namespace GameTradeZone.Controllers
         }
 
         [Authorize]
-        [HttpPost("Accept")]
-        public async Task<IActionResult> Accept(int id)
-        {
-            try
-            {
-                var result = await _accountGameService.Accept(id);
-                return Response(result);
-            }
-            catch (Exception e)
-            {
-                return Response(e.Message, 500);
-            }
-        }
-
-        [Authorize]
         [HttpGet("Get-Infor-User")]
         public async Task<IActionResult> GetInforUser()
         {
             try
             {
                 var result = await _accountGameService.GetInforUser();
-                return Response(result);
-            }
-            catch (Exception e)
-            {
-                return Response(e.Message, 500);
-            }
-        }
-
-        [Authorize]
-        [HttpPost("Bargain-Price")]
-        public async Task<IActionResult> BargainPrice(BargainAccountGameModel model)
-        {
-            try
-            {
-                var result = await _accountGameService.BargainPrice(model);
                 return Response(result);
             }
             catch (Exception e)

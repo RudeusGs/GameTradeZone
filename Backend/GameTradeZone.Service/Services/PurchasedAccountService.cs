@@ -3,7 +3,9 @@ using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
+using GameTradeZone.Service.Models.PurchasedAccount;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Principal;
 
 namespace GameTradeZone.Service.Services
 {
@@ -13,36 +15,96 @@ namespace GameTradeZone.Service.Services
         {
         }
 
-        public async Task<ApiResult> ComfirmAccount(int id, string status)
+        public async Task<ApiResult> ComfirmAccount(ComfirmModel model)
         {
-            var purChased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
-            if (purChased == null)
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == model.Id);        
+            if (purchased == null)
             {
                 return new ApiResult { Message = "Không tìm thấy tài khoản này" };
             }
-            if(purChased.IsDelete == true)
+            var accountGame = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.Id == purchased.AccountGameId);
+            if (purchased.IsDelete == true)
             {
                 return new ApiResult { Message = "Thành phần này đã bị xóa!" };
             }
-            var tran = await _dataContext.Database.BeginTransactionAsync();
-            try
+            var buyer = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == purchased.UserID);
+            var seller = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == purchased.SellerID);
+            if (seller == null || buyer == null || accountGame == null)
             {
-                var newAccount = new AccountGame 
-                { 
-                    Status = status,
-                    UpdatedDate = DateTime.Now,
-                };
-                _dataContext.AccountGames.Update(newAccount);
-                await _dataContext.SaveChangesAsync();
-                await tran.CommitAsync();
-                return new ApiResult (newAccount);
-            }
-            catch(Exception e)
-            {
-                await tran.RollbackAsync();
-                return new ApiResult { Message = $"Error: {e.Message}" };
+                return new ApiResult { Message = "Không tìm thấy thông tin" };
             }
 
+            using (var tran = await _dataContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (model.Status == "Từ chối")
+                    {
+                        purchased.StatusBuyer = "Đã từ chối";
+                        purchased.StatusSeller = "Người mua từ chối";
+                        purchased.Reason = model.Reason;
+                        purchased.UpdatedDate = DateTime.Now;  
+                        buyer.Balance += purchased.Price;
+                        _dataContext.Users.Update(buyer);
+
+                        _dataContext.PurchasedAccounts.Update(purchased);
+                        await _dataContext.SaveChangesAsync();
+                        await tran.CommitAsync();
+
+                        return new ApiResult(purchased);
+                    }
+                    else if (model.Status == "Đồng ý")
+                    {
+                        accountGame.CustomerFeedback = model.Feedback;
+                        purchased.StatusBuyer = "Mua thành công";
+                        purchased.StatusSeller = "Thành công";
+                        purchased.UpdatedDate = DateTime.Now;
+                        seller.Balance += purchased.Price;
+                        UpdateSellerLevel(seller, purchased.Price);
+                        UpdateSellerLevel(buyer, purchased.Price);
+                        _dataContext.AccountGames.Update(accountGame);
+                        _dataContext.Users.Update(seller);
+                        _dataContext.PurchasedAccounts.Update(purchased);
+                        await _dataContext.SaveChangesAsync();
+                        await tran.CommitAsync();
+
+                        return new ApiResult(purchased);
+                    }
+                    else
+                    {
+                        return new ApiResult { Message = "Trạng thái không hợp lệ" };
+                    }
+                }
+                catch (Exception e)
+                {
+                    await tran.RollbackAsync();
+                    return new ApiResult { Message = $"Error: {e.Message}" };
+                }
+            }
+        }
+
+        private void UpdateSellerLevel(User seller, decimal? transactionAmount)
+        {
+
+            decimal[] thresholds = new decimal[]
+            {
+        100000m,  // level 0 -> 1
+        300000m,  // level 1 -> 2
+        500000m,  // level 2 -> 3
+        700000m,  // level 3 -> 4
+        1300000m, // level 4 -> 5
+        1600000m, // level 5 -> 6
+        2000000m, // level 6 -> 7
+        2500000m, // level 7 -> 8
+        3000000m, // level 8 -> 9
+        4000000m  // level 9 -> 10
+            };
+            seller.Experience = seller.Level + transactionAmount;
+            while (seller.Level < thresholds.Length && seller.Experience >= thresholds[seller.Level])
+            {
+                seller.Experience -= thresholds[seller.Level];
+                seller.Level++;
+            }
         }
 
         public async Task<ApiResult> Delete(int id)
@@ -70,6 +132,16 @@ namespace GameTradeZone.Service.Services
 
         }
 
+        public Task<ApiResult> EmailRequest()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ApiResult> EmailResponse(string email)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<ApiResult> GetAll()
         {
             var purChased = await _dataContext.PurchasedAccounts.Where(x => x.IsDelete == false).ToListAsync();
@@ -80,6 +152,16 @@ namespace GameTradeZone.Service.Services
         {
             var purChased = await _dataContext.PurchasedAccounts.Where(x => x.UserID == id && x.IsDelete == false).ToListAsync();
             return new(purChased);
+        }
+
+        public Task<ApiResult> OTPRequest()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ApiResult> OTPResponse(string response)
+        {
+            throw new NotImplementedException();
         }
     }
 }
