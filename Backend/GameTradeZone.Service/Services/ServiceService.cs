@@ -38,6 +38,15 @@ namespace GameTradeZone.Service.Services
                     Message = "Bạn đã thêm dịch vụ này trước đó! Không thể thêm dịch vụ giống nhau."
                 };
             }
+            var user = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == _userService.UserId);
+            if(user == null)
+            {
+                return new ApiResult { Message = "User không tồn tại" };
+            }
+            if(user.Level < 8)
+            {
+                return new ApiResult { Message = "Bạn chưa đủ cấp để có thể làm dịch vụ" };
+            }
             using var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {

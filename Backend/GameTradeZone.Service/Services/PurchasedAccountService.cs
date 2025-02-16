@@ -1,4 +1,5 @@
-﻿using GameTradeZone.Domain.Entities;
+﻿using Azure;
+using GameTradeZone.Domain.Entities;
 using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
@@ -43,10 +44,10 @@ namespace GameTradeZone.Service.Services
                         purchased.StatusBuyer = "Đã từ chối";
                         purchased.StatusSeller = "Người mua từ chối";
                         purchased.Reason = model.Reason;
-                        purchased.UpdatedDate = DateTime.Now;  
-                        buyer.Balance += purchased.Price;
+                        purchased.UpdatedDate = DateTime.Now;
+                        decimal buyerAmount = purchased.Price * 0.96m;
+                        buyer.Balance += buyerAmount;
                         _dataContext.Users.Update(buyer);
-
                         _dataContext.PurchasedAccounts.Update(purchased);
                         await _dataContext.SaveChangesAsync();
                         await tran.CommitAsync();
@@ -59,7 +60,8 @@ namespace GameTradeZone.Service.Services
                         purchased.StatusBuyer = "Mua thành công";
                         purchased.StatusSeller = "Thành công";
                         purchased.UpdatedDate = DateTime.Now;
-                        seller.Balance += purchased.Price;
+                        decimal sellerAmount = purchased.Price * 0.93m;
+                        seller.Balance += sellerAmount;
                         UpdateSellerLevel(seller, purchased.Price);
                         UpdateSellerLevel(buyer, purchased.Price);
                         _dataContext.AccountGames.Update(accountGame);
@@ -132,14 +134,82 @@ namespace GameTradeZone.Service.Services
 
         }
 
-        public Task<ApiResult> EmailRequest()
+        public async Task<ApiResult> EmailRequest(int id)
         {
-            throw new NotImplementedException();
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
+            if (purchased == null || purchased.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy giao dịch này" };
+            }
+            if(purchased.StatusBuyer == "Đã từ chối")
+            {
+                return new ApiResult { Message = "Bạn đã từ chối tài khoản này không thể yêu cầu gửi thông tin" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                var newNoti = new Notification
+                {
+                    TypeNoti = "Yêu cầu gửi gmail",
+                    Content = $"Giao dịch tài khoản mã số {purchased.Id}: đã yêu cầu gửi thông tin(tài khoản gmail, số điện thoại,...) đăng ký tài khoản trò chơi, để đổi mật khẩu",
+                    SenderID = _userService.UserId,
+                    UserID = purchased.SellerID,
+                    IsRead = false,
+                    IsDelete = false,
+                    CreatedDate = DateTime.Now,
+                };
+                purchased.Email = "Đang chờ";
+                purchased.OTPEmail = "Đang chờ";
+                _dataContext.PurchasedAccounts.Update(purchased);
+                _dataContext.Notifications.Add(newNoti);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Gửi email thất bại: {ex.Message}" };
+            }
         }
 
-        public Task<ApiResult> EmailResponse(string email)
+        public async Task<ApiResult> EmailResponse(int id, string email)
         {
-            throw new NotImplementedException();
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
+            if (purchased == null || purchased.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy giao dịch này" };
+            }
+            if(purchased.Email == null)
+            {
+                return new ApiResult { Message = "Không có yêu cầu nào được thực hiện" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                var newNoti = new Notification
+                {
+                    TypeNoti = "Đã gửi Gmail",
+                    Content = $"Giao dịch tài khoản mã số {purchased.Id}: đã gửi thông tin đăng ký tài khoản là {email}",
+                    SenderID = _userService.UserId,
+                    UserID = purchased.UserID,
+                    IsRead = false,
+                    IsDelete = false,
+                    CreatedDate = DateTime.Now,
+                };
+                purchased.Email = email;
+                purchased.UpdatedDate = DateTime.Now;
+                _dataContext.Notifications.Add(newNoti);
+                _dataContext.PurchasedAccounts.Update(purchased);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Gửi email thất bại: {ex.Message}" };
+            }
         }
 
         public async Task<ApiResult> GetAll()
@@ -154,14 +224,79 @@ namespace GameTradeZone.Service.Services
             return new(purChased);
         }
 
-        public Task<ApiResult> OTPRequest()
+        public async Task<ApiResult> OTPRequest(int id)
         {
-            throw new NotImplementedException();
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
+            if (purchased == null || purchased.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy giao dịch này" };
+            }
+            if (purchased.StatusBuyer == "Đã từ chối")
+            {
+                return new ApiResult { Message = "Bạn đã từ chối tài khoản này không thể yêu cầu gửi thông tin" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                var newNoti = new Notification
+                {
+                    TypeNoti = "Yêu cầu gửi OTP",
+                    Content = $"Giao dịch tài khoản mã số {purchased.Id}: đã yêu cầu gửi OTP, để hoàn tất đổi mật khẩu",
+                    SenderID = _userService.UserId,
+                    UserID = purchased.SellerID,
+                    IsRead = false,
+                    IsDelete = false,
+                    CreatedDate = DateTime.Now,
+                };
+                _dataContext.Notifications.Add(newNoti);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Gửi email thất bại: {ex.Message}" };
+            }
         }
 
-        public Task<ApiResult> OTPResponse(string response)
+        public async Task<ApiResult> OTPResponse(int id, string response)
         {
-            throw new NotImplementedException();
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
+            if (purchased == null || purchased.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy giao dịch này" };
+            }
+            if (purchased.StatusBuyer == "Đã từ chối")
+            {
+                return new ApiResult { Message = "Bạn đã từ chối tài khoản này không thể yêu cầu gửi thông tin" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                var newNoti = new Notification
+                {
+                    TypeNoti = "Đã gửi OTP",
+                    Content = $"Giao dịch tài khoản mã số {purchased.Id}: đã gửi OTP là {response}",
+                    SenderID = _userService.UserId,
+                    UserID = purchased.UserID,
+                    IsRead = false,
+                    IsDelete = false,
+                    CreatedDate = DateTime.Now,
+                };
+                purchased.OTPEmail = response;
+                purchased.UpdatedDate = DateTime.Now;
+                _dataContext.Notifications.Add(newNoti);
+                _dataContext.PurchasedAccounts.Update(purchased);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Gửi email thất bại: {ex.Message}" };
+            }
         }
     }
 }

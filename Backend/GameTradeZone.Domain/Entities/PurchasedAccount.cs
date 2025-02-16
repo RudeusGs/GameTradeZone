@@ -12,7 +12,7 @@ namespace GameTradeZone.Domain.Entities
         public string? GameName { get; set; }
         public string? AccountName { get; set; }
         public string? Password { get; set; }
-        public decimal? Price { get; set; }
+        public decimal Price { get; set; }
         public string? StatusBuyer { get; set; } // Đồng ý, Không đồng ý
         public string? StatusSeller { get; set; } // Đang chờ, hoàn thành, từ chối
         public string? Reason { get; set; } // Lý do từ chối

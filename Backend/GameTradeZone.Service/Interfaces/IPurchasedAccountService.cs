@@ -9,9 +9,9 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> GetAllByUserID(int id);
         Task<ApiResult> Delete(int id);
         Task<ApiResult> ComfirmAccount(ComfirmModel model);
-        Task<ApiResult> EmailRequest();
-        Task<ApiResult> EmailResponse(string email);
-        Task<ApiResult> OTPRequest();
-        Task<ApiResult> OTPResponse(string response);
+        Task<ApiResult> EmailRequest(int id);
+        Task<ApiResult> EmailResponse(int id, string email);
+        Task<ApiResult> OTPRequest(int id);
+        Task<ApiResult> OTPResponse(int id, string response);
     }
 }
