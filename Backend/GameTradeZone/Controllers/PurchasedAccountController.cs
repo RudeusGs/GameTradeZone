@@ -76,5 +76,65 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+
+        [Authorize]
+        [HttpPost("Email-request")]
+        public async Task<IActionResult> EmailRequest(int id)
+        {
+            try
+            {
+                var result = await _purchasedAccountService.EmailRequest(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("Email-response")]
+        public async Task<IActionResult> EmailResponse(int id, string model)
+        {
+            try
+            {
+                var result = await _purchasedAccountService.EmailResponse(id, model);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("OTP-request")]
+        public async Task<IActionResult> OTPRequest(int id)
+        {
+            try
+            {
+                var result = await _purchasedAccountService.OTPRequest(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("OTP-response")]
+        public async Task<IActionResult> OTPResponse(int id, string model)
+        {
+            try
+            {
+                var result = await _purchasedAccountService.OTPResponse(id, model);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }
