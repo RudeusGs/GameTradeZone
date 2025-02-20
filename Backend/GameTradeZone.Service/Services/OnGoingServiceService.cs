@@ -3,6 +3,7 @@ using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
+using GameTradeZone.Service.Models.OngoingService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
 
@@ -14,9 +15,9 @@ namespace GameTradeZone.Service.Services
         {
         }
 
-        public async Task<ApiResult> ConfirmService(int id, string status)
+        public async Task<ApiResult> ConfirmService(ConfirmServiceModel model)
         {
-            var onGoingService = await _dataContext.OnGoingServices.FirstOrDefaultAsync(x => x.Id == id);
+            var onGoingService = await _dataContext.OnGoingServices.FirstOrDefaultAsync(x => x.Id == model.Id);
             if(onGoingService == null) 
             {
                 return new ApiResult { Message = "Không tìm thấy dịch vụ này!" };
@@ -25,18 +26,46 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = "Dịch vụ này đã bị xóa" };
             }
+            var service = await _dataContext.Services.FirstOrDefaultAsync(x => x.Id == onGoingService.ServiceID);
+            if (service == null)
+            {
+                return new ApiResult { Message = "Dịch vụ không tồn tại" };
+            }
+            var user = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == service.CreaterID);
+            if(user == null)
+            {
+                return new ApiResult { Message = "User không tồn tại!" };
+            }
+            var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.ServiceID == onGoingService.ServiceID);
+            if(hiredService == null)
+            {
+                return new ApiResult { Message = "Không tồn tại!" };
+            }
             var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {
-                var newHiredService = new HiredService
+                if(model.Status == "Từ chối")
                 {
-                    Status = status,
-                    UpdatedDate = DateTime.Now,
-                };
-                _dataContext.HiredServices.Update(newHiredService);
+                    hiredService.Reason = model.Reason;
+                    hiredService.Status = "Từ chối";
+                }
+                else if(model.Status == "Đồng ý")
+                {
+                    hiredService.Status = "Thành công";
+                    decimal serviceAmount = service.ServicePrice * 0.94m;
+                    user.Balance += service.ServicePrice;
+                    _dataContext.Users.Update(user);
+                    await _dataContext.SaveChangesAsync();
+                    await tran.CommitAsync();
+                }
+                else
+                {
+                    return new ApiResult { Message = "Trạng thái không đúng" };
+                }               
+
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult (newHiredService);
+                return new ApiResult ();
             }
             catch(Exception e)
             {

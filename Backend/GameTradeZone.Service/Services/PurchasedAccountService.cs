@@ -1,12 +1,10 @@
-﻿using Azure;
-using GameTradeZone.Domain.Entities;
+﻿using GameTradeZone.Domain.Entities;
 using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
 using GameTradeZone.Service.Models.PurchasedAccount;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Principal;
 
 namespace GameTradeZone.Service.Services
 {

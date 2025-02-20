@@ -166,9 +166,18 @@ namespace GameTradeZone.Service.Services
             }
 
             var tran = await _dataContext.Database.BeginTransactionAsync();
-
+            var rentedUser = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == _userService.UserId);
+            if(rentedUser == null)
+            {
+                return new ApiResult { Message = "User không tồn tại!" };
+            }
+            if(rentedUser.Balance < service.ServicePrice)
+            {
+                return new ApiResult { Message = "Không đủ tiền!" };
+            }          
             try
             {
+                rentedUser.Balance -= service.ServicePrice;
                 var newOnGoing = new OnGoingService
                 {
                     ServiceID = model.Id,
@@ -186,6 +195,7 @@ namespace GameTradeZone.Service.Services
                     Reason = null,
                     CreatedDate= DateTime.Now,
                 };
+                _dataContext.Users.Update(rentedUser);
                 _dataContext.OnGoingServices.Add(newOnGoing);
                 _dataContext.HiredServices.Add(newHired);
                 await _dataContext.SaveChangesAsync();
