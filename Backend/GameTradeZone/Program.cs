@@ -7,6 +7,7 @@ using GameTradeZone.Service.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Services.Clients;
+using GameTradeZone.Service.Services;
 
 namespace GameTradeZone
 {
