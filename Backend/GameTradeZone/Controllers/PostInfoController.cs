@@ -1,6 +1,4 @@
 ﻿using GameTradeZone.Service.Interfaces;
-using GameTradeZone.Service.Models.Post;
-using GameTradeZone.Service.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

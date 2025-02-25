@@ -2,6 +2,7 @@
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameTradeZone.Service.Services
 {
@@ -11,19 +12,62 @@ namespace GameTradeZone.Service.Services
         {
         }
 
-        public Task<ApiResult> Delete(int id)
+        public async Task<ApiResult> Delete(int id)
         {
-            throw new NotImplementedException();
+            var noTi = await _dataContext.Notifications.FirstOrDefaultAsync(x => x.Id == id);
+            if (noTi == null || noTi.IsDelete == true) 
+            {
+                return new ApiResult { Message = "Thông báo này không tồn tại hoặc đã bị xóa" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                noTi.IsDelete = true;
+                noTi.DeleteDate = DateTime.Now;
+                _dataContext.Notifications.Update(noTi);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult ();
+            }
+            catch(Exception e)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Error: {e.Message}" };   
+            }
         }
 
-        public Task<ApiResult> GetAllByUserId(int UserId)
+        public async Task<ApiResult> GetAllByUserId(int UserId)
         {
-            throw new NotImplementedException();
+            var noTi = await _dataContext.Notifications.Where(x => x.UserID == UserId && x.IsDelete == false).ToListAsync();
+            return new(noTi);
         }
 
-        public Task<ApiResult> Read(int id)
+        public async Task<ApiResult> Read(int id)
         {
-            throw new NotImplementedException();
+            var noTi = await _dataContext.Notifications.FirstOrDefaultAsync(x => x.Id == id);
+            if (noTi == null || noTi.IsDelete == true)
+            {
+                return new ApiResult { Message = "Thông báo này không tồn tại hoặc đã bị xóa" };
+            }
+            if(noTi.IsRead == true)
+            {
+                return new ApiResult { Message = "Thông báo này đã được đọc" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                noTi.IsRead = true;
+                noTi.UpdatedDate = DateTime.Now;
+                _dataContext.Notifications.Update(noTi);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
+            }
+            catch (Exception e)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Error: {e.Message}" };
+            }
         }
     }
 }

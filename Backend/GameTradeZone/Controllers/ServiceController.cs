@@ -61,7 +61,7 @@ namespace GameTradeZone.Controllers
 
         [Authorize]
         [HttpPost("Delete")]
-        public async Task<IActionResult> Update(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
@@ -84,6 +84,20 @@ namespace GameTradeZone.Controllers
                 return Response(result);
             }
             catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+        [Authorize]
+        [HttpPost("RentService")]
+        public async Task<IActionResult> RentService(RentedServiceModel model)
+        {
+            try
+            {
+                var result = await _iServiceService.RentedService(model);
+                return Response(result);
+            }
+            catch(Exception e)
             {
                 return Response(e.Message, 500);
             }

@@ -4,10 +4,9 @@ using GameTradeZone.Infrastructure.Configurations;
 using GameTradeZone.Service.Configurations;
 using GameTradeZone.Service.File;
 using GameTradeZone.Service.Interfaces;
-using GameTradeZone.Service.Services;
-using YourProject.Services.Clients;
 using Microsoft.EntityFrameworkCore;
 using GameTradeZone.Infrastructure.Persistence;
+using GameTradeZone.Services.Clients;
 
 namespace GameTradeZone
 {
@@ -44,7 +43,6 @@ namespace GameTradeZone
                     Version = "v1",
                 });
                 options.OperationFilter<SwaggerFileOperationFilter>();
-                // Add Bearer Authentication
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",

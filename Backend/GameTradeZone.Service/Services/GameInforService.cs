@@ -22,7 +22,7 @@ namespace GameTradeZone.Service.Services
         public async Task<ApiResult> Add(AddGameInforModel model)
         {
             var gameInfor = await _dataContext.GameInfors.FirstOrDefaultAsync(x => x.GameName == model.GameName);
-            if(gameInfor != null) 
+            if(gameInfor != null && gameInfor.IsDelete == false) 
             {
                 return new ApiResult { Message = "Game này đã tồn tại vui lòng thêm game khác" };
             }
@@ -67,7 +67,7 @@ namespace GameTradeZone.Service.Services
         {
             var gameInfor = await _dataContext.GameInfors.FirstOrDefaultAsync(x => x.Id == id);
 
-            if (gameInfor == null)
+            if (gameInfor == null || gameInfor.IsDelete == true)
             {
                 return new ApiResult
                 {
@@ -86,10 +86,7 @@ namespace GameTradeZone.Service.Services
 
                 await tran.CommitAsync();
 
-                return new ApiResult
-                {
-                    Message = "Game này đã được đánh dấu là đã xóa!"
-                };
+                return new ApiResult();
             }
             catch (Exception e)
             {
@@ -103,13 +100,19 @@ namespace GameTradeZone.Service.Services
 
         public async Task<ApiResult> GetAll()
         {
-            var gameInfor = await _dataContext.GameInfors.ToListAsync();
+            var gameInfor = await _dataContext.GameInfors.Where(x => x.IsDelete == false).ToListAsync();
+            return new(gameInfor);
+        }
+
+        public async Task<ApiResult> GetByGameFieldID(int id)
+        {
+            var gameInfor = await _dataContext.GameFields.Where(x => x.GameInforID == id && x.IsDelete == false).ToListAsync();
             return new(gameInfor);
         }
 
         public async Task<ApiResult> GetById(int id)
         {
-            var gameInfor = await _dataContext.GameInfors.FirstOrDefaultAsync(x =>x.Id == id);
+            var gameInfor = await _dataContext.GameInfors.FirstOrDefaultAsync(x =>x.Id == id && x.IsDelete == false);
             return new(gameInfor);
         }
 
@@ -144,7 +147,7 @@ namespace GameTradeZone.Service.Services
                 }
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Cập nhật thành công!" };
+                return new ApiResult();
 
             }
             catch(Exception e)

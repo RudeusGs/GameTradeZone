@@ -36,17 +36,14 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("CustomerFeedback")
-                        .HasColumnType("int");
+                    b.Property<string>("CustomerFeedback")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("GameInforID")
                         .HasColumnType("int");
-
-                    b.Property<string>("GameName")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Image")
                         .HasColumnType("nvarchar(max)");
@@ -57,7 +54,7 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<string>("Password")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("Price")
+                    b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal?>("PriceMin")
@@ -158,9 +155,6 @@ namespace GameTradeZone.Infrastructure.Migrations
 
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal>("DisputePrice")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("HiredServiceID")
                         .HasColumnType("int");
@@ -468,6 +462,9 @@ namespace GameTradeZone.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AccountGameId")
+                        .HasColumnType("int");
+
                     b.Property<string>("AccountName")
                         .HasColumnType("nvarchar(max)");
 
@@ -477,17 +474,23 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("GameName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsDelete")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("MyFeedback")
-                        .HasColumnType("int");
+                    b.Property<string>("OTPEmail")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Password")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");
@@ -770,10 +773,13 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<decimal?>("Experience")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("Level")
+                    b.Property<int>("Level")
                         .HasColumnType("int");
 
                     b.Property<bool>("LockoutEnabled")

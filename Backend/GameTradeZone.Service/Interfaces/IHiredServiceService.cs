@@ -7,5 +7,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> GetAll();
         Task<ApiResult> GetAllByUserId(int id);
         Task<ApiResult> Delete(int id);
+        Task<ApiResult> GetAllByServiceID(int id);
+        Task<ApiResult> ConfirmService(int id, string status);
     }
 }
