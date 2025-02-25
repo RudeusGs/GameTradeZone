@@ -9,7 +9,7 @@ namespace GameTradeZone.Controllers
 {
     [Route("api/posts")]
     [ApiController]
-    public class PostInfoController : Controller
+    public class PostInfoController : BaseController
     {
         private readonly IPostInfoService _postService;
         public PostInfoController(IPostInfoService postService)
@@ -17,39 +17,60 @@ namespace GameTradeZone.Controllers
             _postService = postService;
         }
 
-        // API tạo bài viết
+       
         [HttpPost("create")]
         [Authorize]
-        public async Task<IActionResult> CreatePost([FromForm] string caption,[FromForm] string content, [FromForm] IFormFile? image)
+        public async Task<IActionResult> CreatePost([FromForm] string caption, [FromForm] string content, [FromForm] IFormFile? image)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var post = await _postService.CreatePost(userId,caption ,content, image);
-            return Ok(post);
+            try
+            {
+                var post = await _postService.CreatePost(caption, content, image);
+                return Response(post);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
         }
 
-
-        // API lấy danh sách bài viết mới nhất
         [HttpGet("latest")]
         public async Task<IActionResult> GetAllPosts()
         {
-            var posts = await _postService.GetAllPosts();
-            return Ok(posts);
+            try
+            {
+                var posts = await _postService.GetAllPosts();
+                return Response(posts);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
         }
-
-        // API xóa bài viết
+       
         [HttpDelete("delete/{id}")]
         [Authorize]
         public async Task<IActionResult> DeletePost(int id)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            if (userId == 0)
-                return Unauthorized(new { Message = "Người dùng chưa đăng nhập!" });
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userIdClaim == null)
+                {
+                    return Response(new { Message = "Người dùng chưa đăng nhập!" });
+                }
+                var userId = int.Parse(userIdClaim);
+                var success = await _postService.DeletePost(id, userId);
+                if (!success)
+                {
+                    return Response(new { Message = "Không thể xóa bài viết!" });
+                }
 
-            var success = await _postService.DeletePost(id, userId);
-            if (!success)
-                return NotFound(new { Message = "Không thể xóa bài viết!" });
-
-            return Ok(new { Message = "Bài viết đã được xóa!" });
+                return Response(new { Message = "Bài viết đã được xóa!" });
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
         }
     }
 }

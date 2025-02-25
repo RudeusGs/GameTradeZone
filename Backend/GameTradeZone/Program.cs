@@ -22,11 +22,17 @@ namespace GameTradeZone
             builder.Services.AddDbContext<DataContext>(options =>
             {
                 options.UseSqlServer(connectionString);
+                options.EnableDetailedErrors(); 
+                options.EnableSensitiveDataLogging();
             });
             builder.Services.AddControllers();
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<SepayApiClient>();
             builder.Services.AddScoped<IRechargeBankService, RechargeBankService>();
+            builder.Services.AddScoped<CloudinaryService>();
+            builder.Services.AddScoped<IPostInfoService, PostInfoService>();
+            builder.Services.AddScoped<IPostService, PostService>();
+            builder.Services.AddHttpContextAccessor();  
 
             // Configure Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
@@ -42,7 +48,7 @@ namespace GameTradeZone
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
-                    Type = SecuritySchemeType.Http,
+                    Type = SecuritySchemeType.ApiKey,
                     Scheme = "Bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,

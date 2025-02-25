@@ -11,7 +11,7 @@ namespace GameTradeZone.Controllers
 {
     [Route("api/webhook")]
     [ApiController]
-    public class WebhookController : ControllerBase
+    public class WebhookController : BaseController
     {
         private readonly DataContext _context;
 
@@ -51,11 +51,11 @@ namespace GameTradeZone.Controllers
                 await _context.TransactionInfors.AddAsync(transaction);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { Message = "Nạp tiền thành công!", UserId = user.Id, NewBalance = user.Balance });
+                return Response(new { Message = "Thành công" });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return StatusCode(500, new { Message = "Error!", Error = ex.Message });
+                return Response(e.Message, 500);
             }
         }
     }
