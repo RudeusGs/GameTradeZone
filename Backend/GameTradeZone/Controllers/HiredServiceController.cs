@@ -1,5 +1,6 @@
 ﻿using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
+using GameTradeZone.Service.Models.HiredService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -77,11 +78,11 @@ namespace GameTradeZone.Controllers
 
         [Authorize]
         [HttpPost("Confirm-Service")]
-        public async Task<IActionResult> ConfirmService(int id, string status)
+        public async Task<IActionResult> ConfirmService(AcceptServiceModel model)
         {
             try
             {
-                var result = await _hiredServiceService.ConfirmService(id, status);
+                var result = await _hiredServiceService.ConfirmService(model);
                 return Response(result);
             }
             catch (Exception e)

@@ -36,7 +36,7 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = "User không tồn tại!" };
             }
-            var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.ServiceID == onGoingService.ServiceID);
+            var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.Id == onGoingService.Id);
             if(hiredService == null)
             {
                 return new ApiResult { Message = "Không tồn tại!" };
@@ -48,6 +48,10 @@ namespace GameTradeZone.Service.Services
                 {
                     hiredService.Reason = model.Reason;
                     hiredService.Status = "Từ chối";
+                    _dataContext.HiredServices.Update(hiredService);
+                    await _dataContext.SaveChangesAsync();
+                    await tran.CommitAsync();
+                    return new ApiResult(hiredService);
                 }
                 else if(model.Status == "Đồng ý")
                 {
@@ -57,15 +61,12 @@ namespace GameTradeZone.Service.Services
                     _dataContext.Users.Update(user);
                     await _dataContext.SaveChangesAsync();
                     await tran.CommitAsync();
+                    return new ApiResult(hiredService);
                 }
                 else
                 {
                     return new ApiResult { Message = "Trạng thái không đúng" };
                 }               
-
-                await _dataContext.SaveChangesAsync();
-                await tran.CommitAsync();
-                return new ApiResult ();
             }
             catch(Exception e)
             {

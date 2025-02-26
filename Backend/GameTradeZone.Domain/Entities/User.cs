@@ -7,7 +7,7 @@ namespace GameTradeZone.Domain.Entities
         public string? FullName { get; set; }
         public decimal? Balance { get; set; }
         public int? Coin { get; set; }
-        public Decimal? Experience { get; set; } = 0;
+        public long? Experience { get; set; } = 0;
         public int Level { get; set; } = 0;
         public bool Status { get; set; }
         public string? Avatar { get; set; }
