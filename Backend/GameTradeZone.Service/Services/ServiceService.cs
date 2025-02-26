@@ -58,7 +58,7 @@ namespace GameTradeZone.Service.Services
                     ServicePrice = model.ServicePrice,
                     ServiceTime = model.ServiceTime,
                     CreaterID = _userService.UserId,
-                    ServiceLevel = "Cấp 1",
+                    ServiceLevel = 1,
                     RentedC = 0,
                     Feedback = null,
                     IsDelete = false,
@@ -156,25 +156,40 @@ namespace GameTradeZone.Service.Services
         public async Task<ApiResult> RentedService(RentedServiceModel model)
         {
             var service = await _dataContext.Services.FirstOrDefaultAsync(x => x.Id == model.Id);
-            if(service == null)
+            if (service == null)
             {
                 return new ApiResult { Message = "Dịch vụ không tồn tại không thể thuê" };
             }
-            if(service.IsDelete == true)
+            if (service.IsDelete == true)
             {
                 return new ApiResult { Message = "Dịch vụ đã bị xóa" };
             }
 
-            var tran = await _dataContext.Database.BeginTransactionAsync();
             var rentedUser = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == _userService.UserId);
-            if(rentedUser == null)
+            if (rentedUser == null)
             {
                 return new ApiResult { Message = "User không tồn tại!" };
             }
-            if(rentedUser.Balance < service.ServicePrice)
+            if (rentedUser.Balance < service.ServicePrice)
             {
                 return new ApiResult { Message = "Không đủ tiền!" };
-            }          
+            }
+
+            var existingOnGoing = await _dataContext.OnGoingServices
+                .FirstOrDefaultAsync(x => x.ServiceID == model.Id && x.UserID == _userService.UserId && x.Status != "Hoàn thành");
+            if (existingOnGoing != null)
+            {
+                return new ApiResult { Message = "Bạn đã thuê dịch vụ này và nó đang trong quá trình xử lý." };
+            }
+
+            var existingHired = await _dataContext.HiredServices
+                .FirstOrDefaultAsync(x => x.ServiceID == model.Id && x.UserID == _userService.UserId && x.Status != "Hoàn thành");
+            if (existingHired != null)
+            {
+                return new ApiResult { Message = "Dịch vụ này đã được thuê và đang chờ xử lý." };
+            }
+
+            var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {
                 rentedUser.Balance -= service.ServicePrice;
@@ -187,15 +202,14 @@ namespace GameTradeZone.Service.Services
                     FeedBack = null,
                     CreatedDate = DateTime.Now,
                 };
-                var newHired = new HiredService 
-                { 
+                var newHired = new HiredService
+                {
                     ServiceID = model.Id,
                     UserID = _userService.UserId,
                     Status = "Đang chờ xác nhận",
                     Reason = null,
-                    CreatedDate= DateTime.Now,
+                    CreatedDate = DateTime.Now,
                 };
-                _dataContext.Users.Update(rentedUser);
                 _dataContext.OnGoingServices.Add(newOnGoing);
                 _dataContext.HiredServices.Add(newHired);
                 await _dataContext.SaveChangesAsync();
@@ -203,10 +217,24 @@ namespace GameTradeZone.Service.Services
 
                 return new ApiResult();
             }
+            catch (DbUpdateException ex)
+            {
+                await tran.RollbackAsync();
+                var innerMessage = ex.InnerException?.Message ?? "Không có chi tiết nội bộ.";
+                Console.WriteLine($"DbUpdateException: {ex.Message}");
+                Console.WriteLine($"InnerException: {innerMessage}");
+                return new ApiResult { Message = $"Lỗi cập nhật cơ sở dữ liệu: {innerMessage}" };
+            }
             catch (Exception e)
             {
                 await tran.RollbackAsync();
-                return new ApiResult { Message = $"Error: {e.Message}" };
+                Console.WriteLine($"Error: {e.Message}");
+                Console.WriteLine($"StackTrace: {e.StackTrace}");
+                if (e.InnerException != null)
+                {
+                    Console.WriteLine($"InnerException: {e.InnerException.Message}");
+                }
+                return new ApiResult { Message = $"Error: {e.Message} - {e.StackTrace}" };
             }
         }
 

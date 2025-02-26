@@ -8,7 +8,7 @@ namespace GameTradeZone.Domain.Entities
         public string? ServiceName { get; set; }
         public int? CreaterID { get; set; } // Người tạo dịch vụ
         public string? Decription { get; set; }
-        public string? ServiceLevel { get; set; } // Số lượng thuê càng nhiều level càng cao
+        public int? ServiceLevel { get; set; } // Số lượng thuê càng nhiều level càng cao
         public decimal ServicePrice { get; set; }
         public TimeSpan? ServiceTime { get; set; } // Thời gian ước tính khi làm dịch vụ đó
         public int? RentedC {  get; set; } // Số lượng dịch vụ đã được thuê

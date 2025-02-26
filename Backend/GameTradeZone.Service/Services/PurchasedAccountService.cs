@@ -5,6 +5,7 @@ using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
 using GameTradeZone.Service.Models.PurchasedAccount;
 using Microsoft.EntityFrameworkCore;
+using System.Runtime.InteropServices;
 
 namespace GameTradeZone.Service.Services
 {
@@ -60,8 +61,8 @@ namespace GameTradeZone.Service.Services
                         purchased.UpdatedDate = DateTime.Now;
                         decimal sellerAmount = purchased.Price * 0.93m;
                         seller.Balance += sellerAmount;
-                        UpdateSellerLevel(seller, purchased.Price);
-                        UpdateSellerLevel(buyer, purchased.Price);
+                        UpdateSellerLevel(seller, (long)purchased.Price);
+                        UpdateSellerLevel(buyer, (long)purchased.Price);
                         _dataContext.AccountGames.Update(accountGame);
                         _dataContext.Users.Update(seller);
                         _dataContext.PurchasedAccounts.Update(purchased);
@@ -83,21 +84,21 @@ namespace GameTradeZone.Service.Services
             }
         }
 
-        private void UpdateSellerLevel(User seller, decimal? transactionAmount)
+        private void UpdateSellerLevel(User seller, long? transactionAmount)
         {
 
-            decimal[] thresholds = new decimal[]
+            long[] thresholds = new long[]
             {
-        100000m,  // level 0 -> 1
-        300000m,  // level 1 -> 2
-        500000m,  // level 2 -> 3
-        700000m,  // level 3 -> 4
-        1300000m, // level 4 -> 5
-        1600000m, // level 5 -> 6
-        2000000m, // level 6 -> 7
-        2500000m, // level 7 -> 8
-        3000000m, // level 8 -> 9
-        4000000m  // level 9 -> 10
+        100000,  // level 0 -> 1
+        300000,  // level 1 -> 2
+        500000,  // level 2 -> 3
+        700000,  // level 3 -> 4
+        1300000, // level 4 -> 5
+        1600000, // level 5 -> 6
+        2000000, // level 6 -> 7
+        2500000, // level 7 -> 8
+        3000000, // level 8 -> 9
+        4000000  // level 9 -> 10
             };
             seller.Experience = seller.Level + transactionAmount;
             while (seller.Level < thresholds.Length && seller.Experience >= thresholds[seller.Level])

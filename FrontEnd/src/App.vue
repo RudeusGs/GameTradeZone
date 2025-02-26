@@ -2,24 +2,14 @@
 import { ref } from 'vue'
 import { RouterView } from 'vue-router'
 import NavbarView from './components/NavbarView.vue'
-import SidebarView from './components/SidebarView.vue'
 
-const isSidebarOpen = ref(false)
-
-const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value
-}
 </script>
 
 <template>
-  <!-- NavbarView -->
-  <NavbarView @toggleSidebar="toggleSidebar" />
+  <NavbarView/>
 
-  <!-- Sidebar -->
-  <SidebarView :isSidebarOpen="isSidebarOpen" />
 
-  <!-- Main Content Area -->
-  <div class="content" :class="{ 'with-sidebar': isSidebarOpen }">
+  <div class="cosmo-content">
     <RouterView />
   </div>
 </template>
@@ -27,36 +17,41 @@ const toggleSidebar = () => {
 <style scoped>
 body {
   background-color: #121212;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Arial', sans-serif;
   color: #e0e0e0;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
-.content {
-  padding: 100px 20px 20px;
+.cosmo-content {
+  margin-top: 60px;
+  margin-left: 0;
   transition: margin-left 0.3s ease;
+  min-height: calc(100vh - 60px);
 }
 
-.content.with-sidebar {
-  margin-left: 260px;
-}
-
-h1 {
-  font-size: 2rem;
-  font-weight: 700;
+.cosmo-content.with-sidebar {
+  margin-left: 280px;
 }
 
 @media (max-width: 768px) {
-  .sidebar {
+  .cosmo-sidebar {
     width: 220px;
     transform: translateX(-220px);
   }
-  .sidebar.active {
+  .cosmo-sidebar.active {
     transform: translateX(0);
   }
-  .content.with-sidebar {
+  .cosmo-topbar {
+    height: 50px;
+  }
+  .cosmo-content {
+    margin-top: 50px;
     margin-left: 0;
+  }
+  .cosmo-content.with-sidebar {
+    margin-left: 220px;
   }
 }
 </style>
