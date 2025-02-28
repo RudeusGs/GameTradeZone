@@ -1,4 +1,5 @@
 ﻿using GameTradeZone.Service.Models;
+using GameTradeZone.Service.Models.HiredService;
 
 namespace GameTradeZone.Service.Interfaces
 {
@@ -8,6 +9,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> GetAllByUserId(int id);
         Task<ApiResult> Delete(int id);
         Task<ApiResult> GetAllByServiceID(int id);
-        Task<ApiResult> ConfirmService(int id, string status);
+        Task<ApiResult> ConfirmService(AcceptServiceModel model);
+        Task<ApiResult> SendProof(ProofDoneService model);
     }
 }
