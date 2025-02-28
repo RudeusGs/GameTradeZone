@@ -1,7 +1,8 @@
 <template>
   <div class="cosmo-topbar d-flex justify-content-between align-items-center p-3 position-fixed w-100">
-    <div class="d-flex align-items-center">
-      <span class="cosmo-logo" @click="toggleSlidePanel">
+    <div class="d-flex align-items-center">   
+      <!-- Thêm class "menu-toggle" cho GTZ -->
+      <span class="cosmo-logo menu-toggle" @click="toggleSlidePanel">
         <a href="/" @click.prevent>GTZ</a>
         <i :class="['fas', isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down', 'ms-1', 'cosmo-arrow-icon']"></i>
       </span>
@@ -29,7 +30,7 @@
                 </ul>
               </div>
               <div class="grid-column">
-                <h4 class="column-title">QUẢN LÝ</h4>
+                <h4 class="column-title">ĐẤU GIÁ</h4>
                 <ul class="column-list">
                   <li>Arcane</li>
                   <li>Vũ Trụ</li>
@@ -37,7 +38,7 @@
                 </ul>
               </div>
               <div class="grid-column">
-                <h4 class="column-title">RIOT GAMES</h4>
+                <h4 class="column-title">DIỄN ĐÀN</h4>
                 <ul class="column-list">
                   <li>Kinh Doanh</li>
                   <li>LOL Esports</li>
@@ -51,23 +52,50 @@
       </transition>
     </div>
     <div class="d-flex align-items-center position-relative">
+      <a href="/" class="cosmo-home">
+        <i class="fas fa-home"></i>
+      </a>
       <button class="cosmo-btn">
-        <i class="fas fa-coins me-1"></i> <a href="recharge">Nạp Tiền</a>
+        <i class="fas fa-coins me-1"></i>
+        <a href="recharge">Nạp Tiền</a>
       </button>
+      <!-- Thêm class "menu-toggle" cho nút Thêm -->
+      <button class="cosmo-btn ms-2 menu-toggle" @click="toggleAddMenu">
+        <i class="fas fa-plus me-1"></i> Thêm
+      </button>
+      <transition name="cosmo-fade">
+        <div v-if="isAddMenuOpen" class="cosmo-add-menu position-absolute shadow rounded">
+          <p class="mb-1"><i class="fas fa-user-plus me-2"></i><a href="/add-account">Tài khoản</a></p>
+          <p class="mb-0"><i class="fas fa-gamepad me-2"></i><a href="/add-service">Dịch vụ</a></p>
+        </div>
+      </transition>
       <i class="fas fa-calendar-alt fa-lg cosmo-icon text-light mx-2" @mouseover="bounceIcon($event)" @mouseout="resetIcon($event)"></i>
       <div class="position-relative">
-        <i class="fas fa-bell fa-lg cosmo-icon text-light mx-2" @click="toggleNotifications">
+        <!-- Thêm class "menu-toggle" cho icon thông báo -->
+        <i class="fas fa-bell fa-lg cosmo-icon text-light mx-2 menu-toggle" @click="toggleNotifications">
           <span v-if="notifications" class="cosmo-badge position-absolute top-0 start-100 translate-middle p-1">
             {{ notifications }}
           </span>
         </i>
+        <transition name="cosmo-fade">
+          <div v-if="isNotificationOpen" class="cosmo-notification-dropdown position-absolute shadow rounded">
+            <p>No new notifications</p>
+          </div>
+        </transition>
       </div>
-      <i class="fas fa-user-circle fa-lg cosmo-icon text-light mx-2" @click="toggleUserMenu"></i>
+      <!-- Thêm class "menu-toggle" cho icon user -->
+      <i class="fas fa-user-circle fa-lg cosmo-icon text-light mx-2 menu-toggle" @click="toggleUserMenu"></i>
       <transition name="cosmo-fade">
         <div v-if="isUserMenuOpen" class="cosmo-user-menu position-absolute shadow rounded">
-          <p class="mb-1" @click="goToProfile"><i class="fas fa-user me-2"></i><a href="/profile">Thông tin</a></p>
-          <p class="mb-1" @click="goToSettings"><i class="fas fa-cog me-2"></i><a href="/purchased">Tài khoản</a></p>
-          <p class="mb-0"><i class="fas fa-sign-out-alt me-2"></i> <a href="/login">Đăng Xuất</a></p>
+          <p class="mb-1" @click="goToProfile">
+            <i class="fas fa-user me-2"></i><a href="/profile">Thông tin</a>
+          </p>
+          <p class="mb-1" @click="goToSettings">
+            <i class="fas fa-cog me-2"></i><a href="/purchased">Tài khoản</a>
+          </p>
+          <p class="mb-0">
+            <i class="fas fa-sign-out-alt me-2"></i> <a href="/login">Đăng Xuất</a>
+          </p>
         </div>
       </transition>
     </div>
@@ -82,9 +110,14 @@ export default {
       isUserMenuOpen: false,
       notifications: 3,
       isSlidePanelOpen: false,
+      isNotificationOpen: false,
+      isAddMenuOpen: false,
     };
   },
   methods: {
+    toggleAddMenu() {
+      this.isAddMenuOpen = !this.isAddMenuOpen;
+    },
     toggleSidebar() {
       this.$emit('toggleSidebar');
     },
@@ -101,7 +134,10 @@ export default {
       event.target.classList.remove('animate-rotate', 'animate-pulse', 'animate-bounce');
     },
     toggleNotifications() {
-      this.notifications = 0;
+      this.isNotificationOpen = !this.isNotificationOpen;
+      if (this.isNotificationOpen) {
+        this.notifications = 0;
+      }
     },
     toggleUserMenu() {
       this.isUserMenuOpen = !this.isUserMenuOpen;
@@ -109,6 +145,36 @@ export default {
     toggleSlidePanel() {
       this.isSlidePanelOpen = !this.isSlidePanelOpen;
     },
+    // Đóng tất cả các menu xổ xuống
+    closeAllMenus() {
+      this.isUserMenuOpen = false;
+      this.isAddMenuOpen = false;
+      this.isNotificationOpen = false;
+      this.isSlidePanelOpen = false;
+    },
+    // Xử lý sự kiện click bên ngoài các dropdown
+    handleClickOutside(event) {
+      // Nếu click vào một phần tử có class "menu-toggle" thì không đóng menu
+      if (event.target.closest('.menu-toggle')) {
+        return;
+      }
+      // Nếu click vào bất kỳ dropdown nào thì không đóng menu
+      if (
+        event.target.closest('.cosmo-user-menu') ||
+        event.target.closest('.cosmo-add-menu') ||
+        event.target.closest('.cosmo-notification-dropdown') ||
+        event.target.closest('.slide-panel')
+      ) {
+        return;
+      }
+      this.closeAllMenus();
+    },
+  },
+  mounted() {
+    document.addEventListener('click', this.handleClickOutside);
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this.handleClickOutside);
   },
 };
 </script>
@@ -154,7 +220,7 @@ a {
 
 .cosmo-btn:hover {
   background: #00ffff;
-  color: #1a0933;
+  color: #212121;
   box-shadow: 0 0 20px #00ffff;
   transform: translateY(-2px);
 }
@@ -193,7 +259,36 @@ a {
   color: #ff00ff;
 }
 
-/* Slide Panel and Grid */
+.cosmo-add-menu {
+  right: 180px;
+  top: 60px;
+  width: 160px;
+  padding: 10px;
+  background: linear-gradient(135deg, #0d1b2a 0%, #1a0933 100%);
+  color: #e0e0e0;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+  z-index: 999;
+  backdrop-filter: blur(5px);
+}
+
+.cosmo-add-menu p {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  border-radius: 4px;
+}
+
+.cosmo-add-menu p:hover {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  transform: translateX(2px);
+}
+
 .slide-panel {
   position: fixed;
   top: 60px;
@@ -356,6 +451,36 @@ a {
   transform: translateX(2px);
 }
 
+.cosmo-home {
+  margin-right: 10px;
+  font-size: 1.5rem;
+  color: #e0e0e0;
+  transition: color 0.3s, transform 0.3s;
+}
+
+.cosmo-home:hover {
+  color: #00ffff;
+  transform: scale(1.1);
+}
+
+.cosmo-notification-dropdown {
+  top: 100%;
+  right: 0;
+  width: 200px;
+  padding: 10px;
+  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+  color: #e0e0e0;
+  z-index: 1000;
+}
+
+.cosmo-notification-dropdown p {
+  margin: 0;
+  padding: 5px 0;
+}
+
 .cosmo-fade-enter-active,
 .cosmo-fade-leave-active {
   transition: opacity 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
@@ -395,7 +520,7 @@ a {
     padding: 10px;
   }
   .slide-grid {
-    grid-template-columns: repeat(2, 1fr); /* 2 cột trên mobile */
+    grid-template-columns: repeat(2, 1fr);
     gap: 5px;
   }
   .grid-column {
@@ -425,6 +550,12 @@ a {
   .cosmo-icon:hover {
     transform: scale(1.1);
     border-radius: 50%;
+  }
+  .cosmo-home {
+    font-size: 1.2rem;
+  }
+  .cosmo-notification-dropdown {
+    width: 160px;
   }
 }
 </style>
