@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 using System;
 using System.Threading.Tasks;
 using GameTradeZone.Domain.Entities;
+using GameTradeZone.Service.WebSoketHUB;
+using Microsoft.AspNetCore.SignalR;
 
 namespace GameTradeZone.Controllers
 {
@@ -14,10 +16,12 @@ namespace GameTradeZone.Controllers
     public class WebhookController : BaseController
     {
         private readonly DataContext _context;
+        private readonly IHubContext<TransactionHub> _hubContext;
 
-        public WebhookController(DataContext context)
+        public WebhookController(DataContext context, IHubContext<TransactionHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         [HttpPost("sepay")]
@@ -50,7 +54,7 @@ namespace GameTradeZone.Controllers
                 };
                 await _context.TransactionInfors.AddAsync(transaction);
                 await _context.SaveChangesAsync();
-
+                await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveTransactionStatus", $"Giao dịch {transaction.ReferenceCode} thành công! Tổng tiền hiện tại: {user.Balance}");
                 return Response(new { Message = "Thành công" });
             }
             catch (Exception e)
