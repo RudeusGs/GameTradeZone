@@ -109,61 +109,66 @@ using System.Text;
                 }
             }
 
-            public async Task<ApiResult> Register(RegisterModel model)
+        public async Task<ApiResult> Register(RegisterModel model)
+        {
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
             {
-                using var transaction = await _dbContext.Database.BeginTransactionAsync();
-                try
+                var userExist = await _userManager.FindByNameAsync(model.UserName);
+                if (userExist != null)
                 {
-                    var userExist = await _userManager.FindByNameAsync(model.UserName);
-                    if (userExist != null)
+                    return new ApiResult()
                     {
-                        return new ApiResult()
-                        {
-                            Message = $"{model.Email} is already in use. Please try again!"
-                        };
-                    }
-
-                    User user = new User()
-                    {
-                        CreatedDate = DateTime.Now,
-                        UserName = model.UserName,
-                        Email = model.Email,
-                        FullName = model.FullName,
-                        Coin = 10,
-                        SecurityStamp = Guid.NewGuid().ToString(),
-                        Balance = 10000,
-                        Level = 1
-                    };
-
-                    var newUserResult = await _userManager.CreateAsync(user, model.Password);
-
-                    if (!newUserResult.Succeeded)
-                    {
-                        var err = newUserResult.Errors.Select(x => x.Description);
-                        return new() { Message = string.Join('\n', err) };
-                    }
-                    if (!await _roleManager.RoleExistsAsync(RoleConstants.USER))
-                    {
-                        await _roleManager.CreateAsync(new IdentityRole<int>(RoleConstants.USER));
-                    }
-                    if (!await _roleManager.RoleExistsAsync(RoleConstants.ADMIN))
-                    {
-                        await _roleManager.CreateAsync(new IdentityRole<int>(RoleConstants.ADMIN));
-                    }
-
-                    await _dbContext.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    return new ApiResult();
+                        Message = $"{model.Email}  đã được sử dụng. Vui lòng thử lại!"
+                    }; ;
                 }
-                catch (Exception e)
+
+                User user = new User()
                 {
-                    await transaction.RollbackAsync();
-                    throw new Exception(e.ToString());
+                    UserName = model.UserName,
+                    Email = model.Email,
+                    FullName = model.FullName,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    Balance = 10000,
+                    Coin = 2,
+                    BankName = model.BankName,
+                    BankNumber = model.BankNumber,
+                    Level = 0,
+                    Experience = 0,
+                    CreatedDate = DateTime.Now,
+                };
+
+                var newUserResult = await _userManager.CreateAsync(user, model.Password);
+
+                if (!newUserResult.Succeeded)
+                {
+                    var err = newUserResult.Errors.Select(x => x.Description);
+                    return new() { Message = string.Join('\n', err) };
                 }
+
+                if (!await _roleManager.RoleExistsAsync(RoleConstants.USER.ToString()))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole<int>(RoleConstants.USER.ToString()));
+                }
+
+                await _userManager.AddToRoleAsync(user, RoleConstants.USER.ToString());
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ApiResult()
+                {
+                };
+
             }
+            catch (Exception e)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception(e.ToString());
+            }
+        }
 
-            private UserToken GenerateUserToken(User user, string role, bool isExternalLogin = false)
+        private UserToken GenerateUserToken(User user, string role, bool isExternalLogin = false)
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
 
