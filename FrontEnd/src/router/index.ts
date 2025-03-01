@@ -8,6 +8,9 @@ import PolicyView from '@/views/PolicyView.vue'
 import RechargeView from '@/views/RechargeView.vue'
 import HPurchasedView from '@/views/HPurchasedView.vue'
 import AddAccountView from '@/views/Add-AccountView.vue'
+import AddServiceView from '@/views/Add-ServiceView.vue'
+import ListAuctionView from '@/views/ListAuctionView.vue'
+import DetailAuctionView from '@/views/DetailAuctionView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -55,6 +58,21 @@ const router = createRouter({
       path: '/add-account',
       name: 'add-account',
       component: AddAccountView,
+    },
+    {
+      path: '/add-service',
+      name: 'add-service',
+      component: AddServiceView,
+    },
+    {
+      path: '/list-auction',
+      name: 'list-auction',
+      component: ListAuctionView,
+    },
+    {
+      path: '/detail-auction',
+      name: 'detail-auction',
+      component: DetailAuctionView,
     },
   ],
 })

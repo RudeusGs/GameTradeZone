@@ -3,17 +3,22 @@ export interface LoginModel{
     password: string,
   }
   
-  export interface UserInfoModel {
-    userName: string;
-    id: number;
-    email: string;
-    fullName?: string;
-    balance: string;
-    coin: number;
-    level: number;
-    status: boolean;
-    experience: number;
-  }     
+// models/user-model.ts
+export interface UserInfoModel {
+  userName: string;
+  id: number;
+  email: string;
+  fullName?: string;
+  balance: number;
+  coin: number;
+  level: number;
+  status: boolean;
+  experience?: number | null;
+  bankName: string; 
+  bankNumber: string; 
+  avatar?: string | null;
+  createdDate?: string | null;
+}   
   
  export  interface LoginResponseModel{
     userId:number,
