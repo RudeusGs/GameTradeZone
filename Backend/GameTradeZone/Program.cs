@@ -7,6 +7,8 @@ using GameTradeZone.Service.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Services.Clients;
+using GameTradeZone.Service.Services;
+using GameTradeZone.Service.WebSoketHUB;
 
 namespace GameTradeZone
 {
@@ -21,11 +23,18 @@ namespace GameTradeZone
             builder.Services.AddDbContext<DataContext>(options =>
             {
                 options.UseSqlServer(connectionString);
+                options.EnableDetailedErrors(); 
+                options.EnableSensitiveDataLogging();
             });
+            builder.Services.AddSignalR();
             builder.Services.AddControllers();
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<SepayApiClient>();
             builder.Services.AddScoped<IRechargeBankService, RechargeBankService>();
+            builder.Services.AddScoped<CloudinaryService>();
+            builder.Services.AddScoped<IPostInfoService, PostInfoService>();
+            builder.Services.AddScoped<IPostService, PostService>();
+            builder.Services.AddHttpContextAccessor();  
 
             // Configure Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
@@ -101,9 +110,9 @@ namespace GameTradeZone
             app.UseHttpsRedirection();
             app.UseRouting();
             app.UseCors("AllowAnyCorsPolicy");
+            app.MapHub<TransactionHub>("/transactionHub");
             app.UseAuthorization();
             app.MapControllers();
-
             app.Run();
         }
     }

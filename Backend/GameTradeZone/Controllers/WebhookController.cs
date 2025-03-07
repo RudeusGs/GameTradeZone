@@ -6,18 +6,22 @@ using System.Text.RegularExpressions;
 using System;
 using System.Threading.Tasks;
 using GameTradeZone.Domain.Entities;
+using GameTradeZone.Service.WebSoketHUB;
+using Microsoft.AspNetCore.SignalR;
 
 namespace GameTradeZone.Controllers
 {
     [Route("api/webhook")]
     [ApiController]
-    public class WebhookController : ControllerBase
+    public class WebhookController : BaseController
     {
         private readonly DataContext _context;
+        private readonly IHubContext<TransactionHub> _hubContext;
 
-        public WebhookController(DataContext context)
+        public WebhookController(DataContext context, IHubContext<TransactionHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         [HttpPost("sepay")]
@@ -50,12 +54,12 @@ namespace GameTradeZone.Controllers
                 };
                 await _context.TransactionInfors.AddAsync(transaction);
                 await _context.SaveChangesAsync();
-
-                return Ok(new { Message = "Nạp tiền thành công!", UserId = user.Id, NewBalance = user.Balance });
+                await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveTransactionStatus", $"Giao dịch {transaction.ReferenceCode} thành công! Tổng tiền hiện tại: {user.Balance}");
+                return Response(new { Message = "Thành công" });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return StatusCode(500, new { Message = "Error!", Error = ex.Message });
+                return Response(e.Message, 500);
             }
         }
     }

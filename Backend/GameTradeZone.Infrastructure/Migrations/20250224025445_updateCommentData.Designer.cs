@@ -4,6 +4,7 @@ using GameTradeZone.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GameTradeZone.Infrastructure.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250224025445_updateCommentData")]
+    partial class updateCommentData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,14 +39,17 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CustomerFeedback")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("CustomerFeedback")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("GameInforID")
                         .HasColumnType("int");
+
+                    b.Property<string>("GameName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Image")
                         .HasColumnType("nvarchar(max)");
@@ -54,7 +60,7 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<string>("Password")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("Price")
+                    b.Property<decimal?>("Price")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal?>("PriceMin")
@@ -155,6 +161,9 @@ namespace GameTradeZone.Infrastructure.Migrations
 
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DisputePrice")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("HiredServiceID")
                         .HasColumnType("int");
@@ -462,9 +471,6 @@ namespace GameTradeZone.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AccountGameId")
-                        .HasColumnType("int");
-
                     b.Property<string>("AccountName")
                         .HasColumnType("nvarchar(max)");
 
@@ -474,23 +480,17 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("GameName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsDelete")
                         .HasColumnType("bit");
 
-                    b.Property<string>("OTPEmail")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("MyFeedback")
+                        .HasColumnType("int");
 
                     b.Property<string>("Password")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");
@@ -773,13 +773,10 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<decimal?>("Experience")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Level")
+                    b.Property<int?>("Level")
                         .HasColumnType("int");
 
                     b.Property<bool>("LockoutEnabled")

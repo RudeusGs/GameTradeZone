@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace GameTradeZone.Service.Services
@@ -14,15 +15,31 @@ namespace GameTradeZone.Service.Services
     {
         private readonly DataContext _context;
         private readonly CloudinaryService _cloudinaryService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public PostInfoService(DataContext context, CloudinaryService cloudinaryService)
+        public PostInfoService(DataContext context, CloudinaryService cloudinaryService, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _cloudinaryService = cloudinaryService;
+            _httpContextAccessor = httpContextAccessor;
+
         }
 
-        public async Task<PostInfo> CreatePost(int userId, string caption, string content, IFormFile? image)
+        private int? GetCurrentUserId()
         {
+            var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)
+                       ?? _httpContextAccessor.HttpContext?.User.FindFirst("unique_name");
+
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                return null; 
+            return userId;
+        }
+
+        public async Task<PostInfo> CreatePost(string caption, string content, IFormFile? image)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                throw new UnauthorizedAccessException("User is not logged in");
             string imageUrl = null;
             if (image != null)
             {
@@ -31,7 +48,7 @@ namespace GameTradeZone.Service.Services
 
             var post = new PostInfo
             {
-                UserId = userId,
+                UserId = userId.Value,
                 Caption = caption,
                 Content = content,
                 ImageUrl = imageUrl,
@@ -47,13 +64,14 @@ namespace GameTradeZone.Service.Services
         {
             return await _context.PostInfos.Include(p => p.User).ToListAsync();
         }
+
         public async Task<bool> DeletePost(int postId, int userId)
         {
             var post = await _context.PostInfos.FirstOrDefaultAsync(p => p.Id == postId && p.UserId == userId);
 
             if (post == null)
             {
-                return false; 
+                return false;
             }
 
             _context.PostInfos.Remove(post);
