@@ -1,14 +1,25 @@
 <template>
-  <div class="cosmo-topbar d-flex justify-content-between align-items-center p-3 position-fixed w-100">
-    <div class="d-flex align-items-center">   
+  <div
+    class="cosmo-topbar d-flex justify-content-between align-items-center p-3 position-fixed w-100"
+  >
+    <div class="d-flex align-items-center">
       <!-- Thêm class "menu-toggle" cho GTZ -->
       <span class="cosmo-logo menu-toggle" @click="toggleSlidePanel">
         <a href="/" @click.prevent>GTZ</a>
-        <i :class="['fas', isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down', 'ms-1', 'cosmo-arrow-icon']"></i>
+        <i
+          :class="[
+            'fas',
+            isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down',
+            'ms-1',
+            'cosmo-arrow-icon',
+          ]"
+        ></i>
       </span>
       <transition name="slide">
         <div v-if="isSlidePanelOpen" class="slide-panel">
-          <div class="slide-content d-flex justify-content-center align-items-center">
+          <div
+            class="slide-content d-flex justify-content-center align-items-center"
+          >
             <div class="slide-grid">
               <div class="grid-column">
                 <h4 class="column-title">TRÒ CHƠI</h4>
@@ -40,7 +51,7 @@
               <div class="grid-column">
                 <h4 class="column-title">DIỄN ĐÀN</h4>
                 <ul class="column-list">
-                  <li>Kinh Doanh</li>
+                  <li @click="$router.push('/forums')">Diễn đàn</li>
                   <li>LOL Esports</li>
                   <li>Valorant Esports</li>
                   <li>Hỗ Trợ Riot</li>
@@ -64,29 +75,57 @@
         <i class="fas fa-plus me-1"></i> Thêm
       </button>
       <transition name="cosmo-fade">
-        <div v-if="isAddMenuOpen" class="cosmo-add-menu position-absolute shadow rounded">
-          <p class="mb-1"><i class="fas fa-user-plus me-2"></i><a href="/add-account">Tài khoản</a></p>
-          <p class="mb-0"><i class="fas fa-gamepad me-2"></i><a href="/add-service">Dịch vụ</a></p>
+        <div
+          v-if="isAddMenuOpen"
+          class="cosmo-add-menu position-absolute shadow rounded"
+        >
+          <p class="mb-1">
+            <i class="fas fa-user-plus me-2"></i
+            ><a href="/add-account">Tài khoản</a>
+          </p>
+          <p class="mb-0">
+            <i class="fas fa-gamepad me-2"></i
+            ><a href="/add-service">Dịch vụ</a>
+          </p>
         </div>
       </transition>
-      <i class="fas fa-calendar-alt fa-lg cosmo-icon text-light mx-2" @mouseover="bounceIcon($event)" @mouseout="resetIcon($event)"></i>
+      <i
+        class="fas fa-calendar-alt fa-lg cosmo-icon text-light mx-2"
+        @mouseover="bounceIcon($event)"
+        @mouseout="resetIcon($event)"
+      ></i>
       <div class="position-relative">
         <!-- Thêm class "menu-toggle" cho icon thông báo -->
-        <i class="fas fa-bell fa-lg cosmo-icon text-light mx-2 menu-toggle" @click="toggleNotifications">
-          <span v-if="notifications" class="cosmo-badge position-absolute top-0 start-100 translate-middle p-1">
+        <i
+          class="fas fa-bell fa-lg cosmo-icon text-light mx-2 menu-toggle"
+          @click="toggleNotifications"
+        >
+          <span
+            v-if="notifications"
+            class="cosmo-badge position-absolute top-0 start-100 translate-middle p-1"
+          >
             {{ notifications }}
           </span>
         </i>
         <transition name="cosmo-fade">
-          <div v-if="isNotificationOpen" class="cosmo-notification-dropdown position-absolute shadow rounded">
+          <div
+            v-if="isNotificationOpen"
+            class="cosmo-notification-dropdown position-absolute shadow rounded"
+          >
             <p>No new notifications</p>
           </div>
         </transition>
       </div>
       <!-- Thêm class "menu-toggle" cho icon user -->
-      <i class="fas fa-user-circle fa-lg cosmo-icon text-light mx-2 menu-toggle" @click="toggleUserMenu"></i>
+      <i
+        class="fas fa-user-circle fa-lg cosmo-icon text-light mx-2 menu-toggle"
+        @click="toggleUserMenu"
+      ></i>
       <transition name="cosmo-fade">
-        <div v-if="isUserMenuOpen" class="cosmo-user-menu position-absolute shadow rounded">
+        <div
+          v-if="isUserMenuOpen"
+          class="cosmo-user-menu position-absolute shadow rounded"
+        >
           <p class="mb-1" @click="goToProfile">
             <i class="fas fa-user me-2"></i><a href="/profile">Thông tin</a>
           </p>
@@ -94,7 +133,8 @@
             <i class="fas fa-cog me-2"></i><a href="/purchased">Tài khoản</a>
           </p>
           <p class="mb-0">
-            <i class="fas fa-sign-out-alt me-2"></i> <a href="/login">Đăng Xuất</a>
+            <i class="fas fa-sign-out-alt me-2"></i>
+            <a href="/login">Đăng Xuất</a>
           </p>
         </div>
       </transition>
@@ -104,7 +144,7 @@
 
 <script>
 export default {
-  name: 'CosmoTopbar',
+  name: "CosmoTopbar",
   data() {
     return {
       isUserMenuOpen: false,
@@ -119,19 +159,23 @@ export default {
       this.isAddMenuOpen = !this.isAddMenuOpen;
     },
     toggleSidebar() {
-      this.$emit('toggleSidebar');
+      this.$emit("toggleSidebar");
     },
     rotateIcon(event) {
-      event.target.classList.add('animate-rotate');
+      event.target.classList.add("animate-rotate");
     },
     pulseIcon(event) {
-      event.target.classList.add('animate-pulse');
+      event.target.classList.add("animate-pulse");
     },
     bounceIcon(event) {
-      event.target.classList.add('animate-bounce');
+      event.target.classList.add("animate-bounce");
     },
     resetIcon(event) {
-      event.target.classList.remove('animate-rotate', 'animate-pulse', 'animate-bounce');
+      event.target.classList.remove(
+        "animate-rotate",
+        "animate-pulse",
+        "animate-bounce"
+      );
     },
     toggleNotifications() {
       this.isNotificationOpen = !this.isNotificationOpen;
@@ -155,15 +199,15 @@ export default {
     // Xử lý sự kiện click bên ngoài các dropdown
     handleClickOutside(event) {
       // Nếu click vào một phần tử có class "menu-toggle" thì không đóng menu
-      if (event.target.closest('.menu-toggle')) {
+      if (event.target.closest(".menu-toggle")) {
         return;
       }
       // Nếu click vào bất kỳ dropdown nào thì không đóng menu
       if (
-        event.target.closest('.cosmo-user-menu') ||
-        event.target.closest('.cosmo-add-menu') ||
-        event.target.closest('.cosmo-notification-dropdown') ||
-        event.target.closest('.slide-panel')
+        event.target.closest(".cosmo-user-menu") ||
+        event.target.closest(".cosmo-add-menu") ||
+        event.target.closest(".cosmo-notification-dropdown") ||
+        event.target.closest(".slide-panel")
       ) {
         return;
       }
@@ -171,10 +215,10 @@ export default {
     },
   },
   mounted() {
-    document.addEventListener('click', this.handleClickOutside);
+    document.addEventListener("click", this.handleClickOutside);
   },
   beforeDestroy() {
-    document.removeEventListener('click', this.handleClickOutside);
+    document.removeEventListener("click", this.handleClickOutside);
   },
 };
 </script>
@@ -184,7 +228,7 @@ export default {
   height: 60px;
   background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
   z-index: 1050;
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
   top: 0;
   border-bottom: 1px solid rgba(0, 255, 255, 0.1);
@@ -377,20 +421,40 @@ a {
 }
 
 @keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
-  60% { transform: translateY(-5px); }
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
 }
 
 .animate-rotate {

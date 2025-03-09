@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using System;
 using System.Threading.Tasks;
 using GameTradeZone.Domain.Entities;
-using GameTradeZone.Service.WebSoketHUB;
+using GameTradeZone.Service.WebSoketHUB; // Giả sử đây là namespace chứa TransactionHub
 using Microsoft.AspNetCore.SignalR;
 
 namespace GameTradeZone.Controllers
@@ -29,32 +29,38 @@ namespace GameTradeZone.Controllers
         {
             try
             {
-             // cái này check nội dung tin nhắn xem user id bao nhiêu để gửi  
+                // Kiểm tra nội dung tin nhắn để lấy UserId
                 var match = Regex.Match(payload.Content, @"USERID\s*(\d+)");
                 if (!match.Success)
                 {
-                    return BadRequest(new { Message = " không tìm thấy UserId!" });
+                    return BadRequest(new { Message = "Không tìm thấy UserId trong nội dung!" });
                 }
 
                 int userId = int.Parse(match.Groups[1].Value);
+
+                // Tìm người dùng theo UserId trong database
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
                 if (user == null)
                 {
                     return BadRequest(new { Message = "Không tìm thấy User" });
                 }
+
+                // Cập nhật số dư của người dùng
                 user.Balance += payload.TransferAmount;
+
+                // Tạo bản ghi giao dịch
                 var transaction = new TransactionInfor
                 {
                     AccountNumber = payload.AccountNumber,
                     ReferenceCode = payload.ReferenceCode,
                     TransferAmount = payload.TransferAmount,
-                    /*chưa cập nhật ngày tháng :>> bị lỗi 400 datetime ko hiểu kiểu gì để string thì nhận chắc
-                    do nó ko trả về date time */
-                UserId = user.Id
+                    UserId = user.Id,
                 };
+
                 await _context.TransactionInfors.AddAsync(transaction);
                 await _context.SaveChangesAsync();
-                await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveTransactionStatus", $"Giao dịch {transaction.ReferenceCode} thành công! Tổng tiền hiện tại: {user.Balance}");
+                string notifyMessage = $"Giao dịch {transaction.ReferenceCode} thành công! Tổng tiền hiện tại: {user.Balance} VNĐ";
+                await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveTransactionStatus", notifyMessage);
                 return Response(new { Message = "Thành công" });
             }
             catch (Exception e)

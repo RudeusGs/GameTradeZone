@@ -11,7 +11,7 @@ namespace GameTradeZone.Service.Interfaces
 {
     public interface IPostInfoService
     {
-        Task<PostInfo> CreatePost(string caption,string content, IFormFile? image);
+        Task<PostInfo> CreatePost(string caption,int categoryId,string content, IFormFile? image);
         Task<List<PostInfo>> GetAllPosts();
         Task<bool> DeletePost(int postId, int userId);
     }

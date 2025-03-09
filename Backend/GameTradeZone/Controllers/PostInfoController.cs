@@ -18,11 +18,11 @@ namespace GameTradeZone.Controllers
        
         [HttpPost("create")]
         [Authorize]
-        public async Task<IActionResult> CreatePost([FromForm] string caption, [FromForm] string content, [FromForm] IFormFile? image)
+        public async Task<IActionResult> CreatePost([FromForm] string caption, [FromForm] int categoryid ,[FromForm] string content, [FromForm] IFormFile? image)
         {
             try
             {
-                var post = await _postService.CreatePost(caption, content, image);
+                var post = await _postService.CreatePost(caption,categoryid ,content, image);
                 return Response(post);
             }
             catch (Exception e)

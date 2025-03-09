@@ -194,6 +194,31 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.ToTable("Disputes");
                 });
 
+            modelBuilder.Entity("GameTradeZone.Domain.Entities.ForumsCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IconClass")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PostCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ForumsCategories");
+                });
+
             modelBuilder.Entity("GameTradeZone.Domain.Entities.GameField", b =>
                 {
                     b.Property<int>("Id")
@@ -270,8 +295,14 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Decription")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsDelete")
                         .HasColumnType("bit");
@@ -421,6 +452,9 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<string>("Caption")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
 
                     b.Property<int>("CommentsCount")
                         .HasColumnType("int");
@@ -682,13 +716,13 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<int?>("RentedC")
                         .HasColumnType("int");
 
-                    b.Property<string>("ServiceLevel")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("ServiceLevel")
+                        .HasColumnType("int");
 
                     b.Property<string>("ServiceName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("ServicePrice")
+                    b.Property<decimal>("ServicePrice")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<TimeSpan?>("ServiceTime")
@@ -773,8 +807,8 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<decimal?>("Experience")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<long?>("Experience")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
