@@ -6,5 +6,7 @@ namespace GameTradeZone.Service.Interfaces
     {
         Task<ApiResult> GetAll();
         Task<ApiResult> GetById(int id);
+        Task<ApiResult> UpdateRoles(int id, List<string> newRoles);
+        Task<ApiResult> BlockAccount(int id);
     }
 }

@@ -78,7 +78,18 @@ const filteredServices = computed(() => {
     <!-- Header -->
     <header class="header">
       <div class="header-content">
-        <h1 class="header-title">GameTradeZone</h1>
+        <div class="header-title-container">
+          <div class="pyramid-loader">
+            <div class="wrapper">
+              <span class="side side1"></span>
+              <span class="side side2"></span>
+              <span class="side side3"></span>
+              <span class="side side4"></span>
+              <span class="shadow"></span>
+            </div>  
+          </div>
+          <h1 class="header-title">GameTradeZone</h1>
+        </div>
         <p class="header-subtitle">Nơi giao dịch tài khoản và dịch vụ game đỉnh cao</p>
         <div class="search-bar">
           <input v-model="searchQuery" type="text" placeholder="Tìm kiếm tài khoản hoặc dịch vụ..." class="search-input" />
@@ -156,12 +167,83 @@ const filteredServices = computed(() => {
 </template>
 
 <style scoped>
+/* Pyramid Loader */
+.pyramid-loader {
+  width: 100px; /* Giảm kích thước để vừa với header */
+  height: 100px;
+  display: block;
+  transform-style: preserve-3d;
+  transform: rotateX(-20deg);
+  margin-right: 20px; /* Khoảng cách với tiêu đề */
+}
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+.pyramid-loader .wrapper .side {
+  width: 40px; /* Giảm kích thước các mặt */
+  height: 40px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  transform-origin: center top;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.pyramid-loader .wrapper .side1 {
+  transform: rotateZ(-30deg) rotateY(90deg);
+  background: conic-gradient(#2BDEAC, #F028FD, #D8CCE6, #2F2585);
+}
+
+.pyramid-loader .wrapper .side2 {
+  transform: rotateZ(30deg) rotateY(90deg);
+  background: conic-gradient(#2F2585, #D8CCE6, #F028FD, #2BDEAC);
+}
+
+.pyramid-loader .wrapper .side3 {
+  transform: rotateX(30deg);
+  background: conic-gradient(#2F2585, #D8CCE6, #F028FD, #2BDEAC);
+}
+
+.pyramid-loader .wrapper .side4 {
+  transform: rotateX(-30deg);
+  background: conic-gradient(#2BDEAC, #F028FD, #D8CCE6, #2F2585);
+}
+
+.pyramid-loader .wrapper .shadow {
+  width: 30px; /* Giảm kích thước bóng */
+  height: 30px;
+  background: #8B5AD5;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  transform: rotateX(90deg) translateZ(-20px); /* Điều chỉnh độ sâu bóng */
+  filter: blur(8px);
+}
+
 /* Tổng thể */
 .trade-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%); /* Đồng bộ gradient với navbar */
-  font-family: 'Arial', sans-serif; /* Đồng bộ font với navbar */
-  color: #f0f0f0; /* Màu chữ xám nhạt, tương tự navbar */
+  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
+  font-family: 'Arial', sans-serif;
+  color: #f0f0f0;
   position: relative;
   overflow: hidden;
 }
@@ -171,20 +253,20 @@ const filteredServices = computed(() => {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%); /* Giữ gradient nhưng đồng bộ */
+  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
 }
 
 .particle {
   position: absolute;
   width: 5px;
   height: 5px;
-  background: rgba(0, 179, 224, 0.5); /* Thay màu particle thành #00b3e0, đồng bộ với navbar */
+  background: rgba(0, 179, 224, 0.5);
   border-radius: 50%;
   animation: float 10s infinite ease-in-out;
 }
 
 .particle:nth-child(odd) {
-  background: rgba(255, 0, 255, 0.5); /* Thay màu magenta để đồng bộ với navbar */
+  background: rgba(255, 0, 255, 0.5);
 }
 
 .particle:nth-child(1) { left: 10%; top: 20%; animation-duration: 12s; }
@@ -218,10 +300,10 @@ const filteredServices = computed(() => {
 .header {
   padding: 60px 20px;
   text-align: center;
-  background: linear-gradient(to bottom, rgba(26, 9, 51, 0.9), transparent); /* Đồng bộ gradient với navbar */
+  background: linear-gradient(to bottom, rgba(26, 9, 51, 0.9), transparent);
   position: relative;
   z-index: 1;
-  box-shadow: 0 0 20px rgba(0, 204, 255, 0.2); /* Bóng đổ nhẹ, đồng bộ với navbar */
+  box-shadow: 0 0 20px rgba(0, 204, 255, 0.2);
 }
 
 .header-content {
@@ -229,25 +311,33 @@ const filteredServices = computed(() => {
   margin: 0 auto;
 }
 
+.header-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
 .header-title {
   font-size: 3.5rem;
   font-weight: 800;
-  letter-spacing: 3px; /* Tăng letter-spacing để đồng bộ với navbar */
-  color: #f8f8f8; /* Màu chữ kem nhạt, đồng bộ với navbar */
-  text-shadow: 0 0 15px #00b3e0, 0 0 5px #ff00ff; /* Glow giống logo navbar */
-  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Đồng bộ transition với navbar */
+  letter-spacing: 3px;
+  color: #f8f8f8;
+  text-shadow: 0 0 15px #00b3e0, 0 0 5px #ff00ff;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  margin: 0;
 }
 
 .header-title:hover {
-  color: #00b3e0; /* Màu hover đồng bộ với navbar */
-  transform: scale(1.05); /* Hiệu ứng zoom nhẹ, đồng bộ với navbar */
+  color: #00b3e0;
+  transform: scale(1.05);
 }
 
 .header-subtitle {
   font-size: 1.4rem;
-  color: #e0e0e0; /* Màu chữ xám nhạt, đồng bộ với navbar */
+  color: #e0e0e0;
   margin-bottom: 30px;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Bóng chữ nhẹ, đồng bộ với navbar */
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .search-bar {
@@ -259,19 +349,19 @@ const filteredServices = computed(() => {
 .search-input {
   width: 100%;
   padding: 15px 50px 15px 20px;
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt hơn, đồng bộ với navbar */
-  border: 1px solid #00b3e0; /* Viền cyan, đồng bộ với navbar */
-  border-radius: 8px; /* Bo tròn ít hơn, đồng bộ với navbar */
+  background: rgba(28, 37, 38, 0.9);
+  border: 1px solid #00b3e0;
+  border-radius: 8px;
   color: #f0f0f0;
   font-size: 1.1rem;
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4); /* Bóng đổ nhẹ, đồng bộ với navbar */
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
+  transition: all 0.2s ease-in-out;
 }
 
 .search-input:focus {
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.6); /* Bóng đổ focus, đồng bộ với navbar */
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.6);
   outline: none;
-  border-color: #ff00ff; /* Màu focus magenta, đồng bộ với navbar */
+  border-color: #ff00ff;
 }
 
 .search-icon {
@@ -279,23 +369,23 @@ const filteredServices = computed(() => {
   right: 20px;
   top: 50%;
   transform: translateY(-50%);
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
+  color: #00b3e0;
   font-size: 1.2rem;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
+  transition: all 0.2s ease-in-out;
 }
 
 .search-icon:hover {
-  color: #ff00ff; /* Màu hover magenta, đồng bộ với navbar */
+  color: #ff00ff;
 }
 
 /* Filter Bar */
 .filter-bar {
   padding: 20px 40px;
-  background: rgba(13, 27, 42, 0.9); /* Nền trong suốt hơn, đồng bộ với navbar */
-  border-bottom: 1px solid #00b3e0; /* Viền cyan, đồng bộ với navbar */
+  background: rgba(13, 27, 42, 0.9);
+  border-bottom: 1px solid #00b3e0;
   position: relative;
   z-index: 1;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2); /* Bóng đổ nhẹ, đồng bộ với navbar */
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
 }
 
 .filter-options {
@@ -306,40 +396,40 @@ const filteredServices = computed(() => {
 }
 
 .filter-options button {
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  color: #f0f0f0; /* Màu chữ xám nhạt, đồng bộ với navbar */
+  background: rgba(28, 37, 38, 0.9);
+  color: #f0f0f0;
   padding: 10px 25px;
-  border: 1px solid #00b3e0; /* Viền cyan, đồng bộ với navbar */
-  border-radius: 8px; /* Bo tròn ít hơn, đồng bộ với navbar */
+  border: 1px solid #00b3e0;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Bóng chữ nhẹ, đồng bộ với navbar */
+  transition: all 0.2s ease-in-out;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .filter-options button.active,
 .filter-options button:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient màu navbar */
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4); /* Bóng đổ hover, đồng bộ với navbar */
-  transform: translateY(-1px); /* Hiệu ứng nâng nhẹ, đồng bộ với navbar */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff);
+  color: #f8f8f8;
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
+  transform: translateY(-1px);
 }
 
 /* Section Titles */
 .section-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
+  color: #00b3e0;
   text-align: center;
   margin-bottom: 30px;
-  text-shadow: 0 0 10px #00b3e0, 0 0 5px #ff00ff; /* Glow giống navbar */
+  text-shadow: 0 0 10px #00b3e0, 0 0 5px #ff00ff;
   position: relative;
   z-index: 1;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
+  transition: all 0.2s ease-in-out;
 }
 
 .section-title:hover {
-  transform: scale(1.05); /* Hiệu ứng zoom nhẹ, đồng bộ với navbar */
+  transform: scale(1.05);
 }
 
 /* Account Gallery */
@@ -360,19 +450,18 @@ const filteredServices = computed(() => {
 
 .account-item {
   width: 400px;
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  border-radius: 8px; /* Bo tròn ít hơn, đồng bộ với navbar */
+  background: rgba(28, 37, 38, 0.9);
+  border-radius: 8px;
   overflow: hidden;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
+  transition: all 0.2s ease-in-out;
   position: relative;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2); /* Bóng đổ nhẹ, đồng bộ với navbar */
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
 }
 
 .account-item:hover {
-  transform: translateY(-5px); /* Giảm hiệu ứng nâng, đồng bộ với navbar */
-  box-shadow: 0 0 20px rgba(0, 204, 255, 0.4); /* Bóng đổ hover, đồng bộ với navbar */
+  transform: translateY(-5px);
+  box-shadow: 0 0 20px rgba(0, 204, 255, 0.4);
 }
-
 
 .item-image {
   position: relative;
@@ -382,7 +471,7 @@ const filteredServices = computed(() => {
   width: 100%;
   height: 250px;
   object-fit: cover;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
+  transition: all 0.2s ease-in-out;
 }
 
 .account-item:hover .item-image img {
@@ -395,7 +484,7 @@ const filteredServices = computed(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to top, rgba(26, 9, 51, 0.7), transparent); /* Đồng bộ gradient với navbar */
+  background: linear-gradient(to top, rgba(26, 9, 51, 0.7), transparent);
 }
 
 .status-badge {
@@ -403,16 +492,16 @@ const filteredServices = computed(() => {
   top: 15px;
   right: 15px;
   padding: 6px 12px;
-  border-radius: 8px; /* Bo tròn ít hơn, đồng bộ với navbar */
+  border-radius: 8px;
   font-size: 0.9rem;
   text-transform: uppercase;
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  box-shadow: 0 0 5px rgba(0, 204, 255, 0.3); /* Bóng đổ nhẹ, đồng bộ với navbar */
+  background: rgba(28, 37, 38, 0.9);
+  box-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
 }
 
-.status-badge.open { color: #00b3e0; } /* Màu cyan, đồng bộ với navbar */
-.status-badge.bidding { color: #ff00ff; } /* Màu magenta, đồng bộ với navbar */
-.status-badge.sold { color: #808080; } /* Màu xám, đồng bộ với navbar */
+.status-badge.open { color: #00b3e0; }
+.status-badge.bidding { color: #ff00ff; }
+.status-badge.sold { color: #808080; }
 
 .item-details {
   padding: 20px;
@@ -424,19 +513,19 @@ const filteredServices = computed(() => {
 .item-name {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
+  color: #f8f8f8;
   margin: 0;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Bóng chữ nhẹ, đồng bộ với navbar */
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .item-game {
   font-size: 1.1rem;
-  color: #e0e0e0; /* Màu chữ xám nhạt, đồng bộ với navbar */
+  color: #e0e0e0;
 }
 
 .item-seller {
   font-size: 0.95rem;
-  color: #b0b0b0; /* Màu chữ xám nhạt hơn, đồng bộ với navbar */
+  color: #b0b0b0;
 }
 
 .price-box {
@@ -448,12 +537,12 @@ const filteredServices = computed(() => {
 .item-price {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
+  color: #00b3e0;
 }
 
 .item-bid {
   font-size: 1.3rem;
-  color: #ff00ff; /* Màu magenta, đồng bộ với navbar */
+  color: #ff00ff;
 }
 
 .item-actions {
@@ -464,56 +553,56 @@ const filteredServices = computed(() => {
 .bid-btn, .buy-btn {
   flex: 1;
   padding: 12px;
-  border: 1px solid #00b3e0; /* Viền cyan, đồng bộ với navbar */
-  border-radius: 8px; /* Bo tròn ít hơn, đồng bộ với navbar */
+  border: 1px solid #00b3e0;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  color: #f0f0f0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Bóng chữ nhẹ, đồng bộ với navbar */
+  transition: all 0.2s ease-in-out;
+  background: rgba(28, 37, 38, 0.9);
+  color: #f0f0f0;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .bid-btn:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient màu navbar */
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4); /* Bóng đổ hover, đồng bộ với navbar */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff);
+  color: #f8f8f8;
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
 }
 
 .buy-btn:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient màu navbar */
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4); /* Bóng đổ hover, đồng bộ với navbar */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff);
+  color: #f8f8f8;
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
 }
 
 .bid-btn:disabled, .buy-btn:disabled {
-  background: rgba(28, 37, 38, 0.5); /* Nền mờ hơn khi disabled, đồng bộ với navbar */
-  color: #808080; /* Màu xám, đồng bộ với navbar */
-  border-color: #808080; /* Viền xám, đồng bộ với navbar */
+  background: rgba(28, 37, 38, 0.5);
+  color: #808080;
+  border-color: #808080;
   cursor: not-allowed;
 }
 
 /* Services Gallery */
 .services-gallery {
   padding: 60px 40px;
-  background: rgba(13, 27, 42, 0.9); /* Nền trong suốt hơn, đồng bộ với navbar */
+  background: rgba(13, 27, 42, 0.9);
   position: relative;
   z-index: 1;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2); /* Bóng đổ nhẹ, đồng bộ với navbar */
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
 }
 
 .service-item {
   width: 400px;
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  border-radius: 8px; /* Bo tròn ít hơn, đồng bộ với navbar */
+  background: rgba(28, 37, 38, 0.9);
+  border-radius: 8px;
   overflow: hidden;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2); /* Bóng đổ nhẹ, đồng bộ với navbar */
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
 }
 
 .service-item:hover {
-  transform: translateY(-5px); /* Giảm hiệu ứng nâng, đồng bộ với navbar */
-  box-shadow: 0 0 20px rgba(0, 204, 255, 0.4); /* Bóng đổ hover, đồng bộ với navbar */
+  transform: translateY(-5px);
+  box-shadow: 0 0 20px rgba(0, 204, 255, 0.4);
 }
 
 .service-details {
@@ -526,24 +615,24 @@ const filteredServices = computed(() => {
 .service-name {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
+  color: #f8f8f8;
   margin: 0;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Bóng chữ nhẹ, đồng bộ với navbar */
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .service-game {
   font-size: 1.1rem;
-  color: #e0e0e0; /* Màu chữ xám nhạt, đồng bộ với navbar */
+  color: #e0e0e0;
 }
 
 .service-creator {
   font-size: 0.95rem;
-  color: #b0b0b0; /* Màu chữ xám nhạt hơn, đồng bộ với navbar */
+  color: #b0b0b0;
 }
 
 .service-description {
   font-size: 0.9rem;
-  color: #b0b0b0; /* Màu chữ xám nhạt, đồng bộ với navbar */
+  color: #b0b0b0;
   line-height: 1.4;
 }
 
@@ -554,37 +643,37 @@ const filteredServices = computed(() => {
 .service-price {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
+  color: #00b3e0;
 }
 
 .hire-btn {
   width: 100%;
   padding: 12px;
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  color: #f0f0f0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  border: 1px solid #00b3e0; /* Viền cyan, đồng bộ với navbar */
-  border-radius: 8px; /* Bo tròn ít hơn, đồng bộ với navbar */
+  background: rgba(28, 37, 38, 0.9);
+  color: #f0f0f0;
+  border: 1px solid #00b3e0;
+  border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Bóng chữ nhẹ, đồng bộ với navbar */
+  transition: all 0.2s ease-in-out;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .hire-btn:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient màu navbar */
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4); /* Bóng đổ hover, đồng bộ với navbar */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff);
+  color: #f8f8f8;
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
 }
 
 /* Banner Section */
 .banner-section {
   padding: 40px 40px;
   text-align: center;
-  background: rgba(13, 27, 42, 0.9); /* Nền trong suốt hơn, đồng bộ với navbar */
+  background: rgba(13, 27, 42, 0.9);
   position: relative;
   z-index: 1;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2); /* Bóng đổ nhẹ, đồng bộ với navbar */
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
 }
 
 .banner-content {
@@ -595,44 +684,69 @@ const filteredServices = computed(() => {
 .banner-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
-  text-shadow: 0 0 10px #00b3e0, 0 0 5px #ff00ff; /* Glow giống navbar */
+  color: #00b3e0;
+  text-shadow: 0 0 10px #00b3e0, 0 0 5px #ff00ff;
 }
 
 .banner-text {
   font-size: 1.2rem;
-  color: #e0e0e0; /* Màu chữ xám nhạt, đồng bộ với navbar */
+  color: #e0e0e0;
   margin: 10px 0 20px;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Bóng chữ nhẹ, đồng bộ với navbar */
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .banner-btn {
   padding: 12px 30px;
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  color: #f0f0f0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  border: 1px solid #00b3e0; /* Viền cyan, đồng bộ với navbar */
-  border-radius: 8px; /* Bo tròn ít hơn, đồng bộ với navbar */
+  background: rgba(28, 37, 38, 0.9);
+  color: #f0f0f0;
+  border: 1px solid #00b3e0;
+  border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease-in-out; /* Đồng bộ transition với navbar */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Bóng chữ nhẹ, đồng bộ với navbar */
+  transition: all 0.2s ease-in-out;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .banner-btn:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient màu navbar */
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4); /* Bóng đổ hover, đồng bộ với navbar */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff);
+  color: #f8f8f8;
+  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .header-title { font-size: 2.5rem; }
-  .header-subtitle { font-size: 1.2rem; }
-  .account-item, .service-item { width: 100%; max-width: 350px; }
-  .section-title { font-size: 1.6rem; }
-  .banner-title { font-size: 1.6rem; }
-  .banner-text { font-size: 1rem; }
-  .particle { width: 3px; height: 3px; animation-duration: 8s; }
+  .header-title-container {
+    flex-direction: column;
+    margin-bottom: 10px;
+  }
+  .pyramid-loader {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+  .header-title { 
+    font-size: 2.5rem; 
+  }
+  .header-subtitle { 
+    font-size: 1.2rem; 
+  }
+  .account-item, .service-item { 
+    width: 100%; 
+    max-width: 350px; 
+  }
+  .section-title { 
+    font-size: 1.6rem; 
+  }
+  .banner-title { 
+    font-size: 1.6rem; 
+  }
+  .banner-text { 
+    font-size: 1rem; 
+  }
+  .particle { 
+    width: 3px; 
+    height: 3px; 
+    animation-duration: 8s; 
+  }
 }
 </style>

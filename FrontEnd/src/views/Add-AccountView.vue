@@ -19,12 +19,13 @@ const formData = ref({
   previewImages: [] as string[],
 });
 
-// Step hiện tại (1: chọn game, 2: nhập thông tin, 3: upload ảnh, 4: xem lại)
+// Step hiện tại
 const currentStep = ref(1);
 
 // Modal thông báo
 const showWarningModal = ref(false);
 const showSuccessModal = ref(false);
+const showGuideModal = ref(false);
 
 // Trạng thái xác nhận radio
 const isConfirmed = ref(false);
@@ -93,6 +94,11 @@ const confirmSubmission = () => {
     formData.value = { selectedGame: '', accountName: '', password: '', price: null, priceMin: null, files: [], previewImages: [] };
   }
 };
+
+// Mở modal hướng dẫn
+const toggleGuideModal = () => {
+  showGuideModal.value = !showGuideModal.value;
+};
 </script>
 
 <template>
@@ -113,7 +119,6 @@ const confirmSubmission = () => {
           <span :class="{ active: currentStep === 4 }">4</span>
         </div>
       </div>
-      <p class="form-subtitle">Bước {{ currentStep }}: {{ currentStep === 1 ? 'Chọn game' : currentStep === 2 ? 'Nhập thông tin' : currentStep === 3 ? 'Tải ảnh' : 'Xem lại' }}</p>
 
       <!-- Bước 1: Chọn game -->
       <div v-if="currentStep === 1" class="step-content game-step">
@@ -200,7 +205,7 @@ const confirmSubmission = () => {
         </div>
       </div>
 
-      <!-- Điều hướng bước (icon lùi/tiến) -->
+      <!-- Điều hướng bước -->
       <div class="step-navigation">
         <button v-if="currentStep > 1" @click="previousStep" class="nav-btn prev-btn">
           <i class="fas fa-arrow-left"></i>
@@ -213,6 +218,11 @@ const confirmSubmission = () => {
         </button>
       </div>
     </div>
+
+    <!-- Nút dấu hỏi -->
+    <button class="help-btn" @click="toggleGuideModal">
+      <i class="fas fa-question"></i>
+    </button>
 
     <!-- Modal cảnh báo -->
     <transition name="fade">
@@ -240,6 +250,38 @@ const confirmSubmission = () => {
           <h3>Thành công!</h3>
           <p>Tài khoản của bạn đã được thêm vào danh sách bán.</p>
           <button @click="showSuccessModal = false" class="modal-close">Đóng</button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Modal hướng dẫn -->
+    <transition name="fade">
+      <div v-if="showGuideModal" class="modal-overlay">
+        <div class="modal-content guide-modal">
+          <h3>Hướng Dẫn Đăng Tài Khoản</h3>
+          <p>Chào mừng bạn đến với thế giới giao dịch tài khoản game! Để mọi thứ diễn ra suôn sẻ và an toàn, hãy làm theo các hướng dẫn dưới đây nhé!</p>
+          
+          <h4>1. Bảo vệ thông tin cá nhân</h4>
+          <p>Trước khi đăng bán, hãy kiểm tra kỹ Gmail liên kết với tài khoản game. Đừng để sót thông tin nhạy cảm như số điện thoại hay dữ liệu cá nhân – bảo vệ sự riêng tư của bạn là điều quan trọng nhất!</p>
+          
+          <h4>2. Sử dụng Gmail rác</h4>
+          <p>Người mua có thể hỏi tên Gmail của tài khoản. Hãy dùng Gmail rác – loại không chứa thông tin quan trọng – để giữ an toàn. Tốt nhất là liên kết tài khoản với Gmail dùng một lần trước khi bán.</p>
+          
+          <h4>3. Cung cấp thông tin cho người mua</h4>
+          <p>Giao dịch xong xuôi? Hãy gửi đầy đủ và chính xác thông tin như tên tài khoản, mật khẩu cho người mua. Uy tín của bạn sẽ được củng cố, và chẳng ai thích tranh cãi sau khi deal xong đâu, đúng không?</p>
+          
+          <h4>4. Hướng dẫn đăng tài khoản</h4>
+          <p>Sẵn sàng bán tài khoản chưa? Đây là cách thực hiện đơn giản:</p>
+          <ul>
+            <li><strong>Bước 1:</strong> Chọn game bạn muốn bán từ danh sách.</li>
+            <li><strong>Bước 2:</strong> Điền thông tin: tên tài khoản, mật khẩu, giá bán, giá tối thiểu.</li>
+            <li><strong>Bước 3:</strong> Thêm hình ảnh tài khoản (nếu có) để thu hút người mua.</li>
+            <li><strong>Bước 4:</strong> Kiểm tra lại và nhấn "Gửi" – thế là xong!</li>
+          </ul>
+          
+          <p>Có thắc mắc gì không? Đừng ngại liên hệ nhé. Chúc bạn đăng bán thành công và kiếm được kha khá từ tài khoản của mình!</p>
+          
+          <button @click="toggleGuideModal" class="modal-close">Đóng</button>
         </div>
       </div>
     </transition>
@@ -658,7 +700,7 @@ const confirmSubmission = () => {
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
 }
 
-/* Điều hướng bước (icon lùi/tiến) */
+/* Điều hướng bước */
 .step-navigation {
   display: flex;
   justify-content: space-between;
@@ -703,6 +745,36 @@ const confirmSubmission = () => {
 .submit-btn:hover {
   background: linear-gradient(135deg, #ff00ff, #00ffff);
   box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+}
+
+/* Nút dấu hỏi */
+.help-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(45deg, #00ffff, #ff00ff);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 1000;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.help-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(0, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); }
 }
 
 /* Modal overlay */
@@ -832,6 +904,59 @@ const confirmSubmission = () => {
   font-size: 1.8rem;
 }
 
+/* Modal guide */
+.guide-modal {
+  background: linear-gradient(135deg, #0d1b2a, #1a0933);
+  color: #e0e0e0;
+  padding: 35px;
+  border-radius: 16px;
+  width: 600px;
+  max-width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  text-align: left;
+  box-shadow: 0 15px 40px rgba(0, 255, 255, 0.2);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  animation: popIn 0.4s ease-in-out;
+  box-sizing: border-box;
+}
+
+.guide-modal h3 {
+  color: #00ffff;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.guide-modal h4 {
+  color: #ff00ff;
+  font-size: 1.4rem;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.guide-modal p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.guide-modal ul {
+  list-style-type: disc;
+  margin-left: 20px;
+  margin-bottom: 20px;
+}
+
+.guide-modal li {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #e0e0e0;
+}
+
+.guide-modal li strong {
+  color: #00ff00;
+}
+
 .modal-close {
   padding: 12px 25px;
   background: linear-gradient(135deg, #00ffff, #ff00ff);
@@ -840,6 +965,7 @@ const confirmSubmission = () => {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-top: 20px;
 }
 
 .modal-close:hover {
@@ -866,10 +992,11 @@ const confirmSubmission = () => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .form-card { padding: 30px; max-width: 90%; }
-  .form-title { font-size: 2rem; }
+  .form-card { padding: 20px; max-width: 95%; }
+  .form-title { font-size: 1.8rem; }
   .form-row { grid-template-columns: 1fr; }
   .game-list { grid-template-columns: 1fr; }
-  .warning-modal, .success-modal { width: 90%; }
+  .warning-modal, .success-modal, .guide-modal { width: 90%; padding: 20px; }
+  .guide-modal { max-height: 70vh; }
 }
 </style>

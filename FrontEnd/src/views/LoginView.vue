@@ -68,7 +68,7 @@ import Cookies from "js-cookie";
 import authApi from "@/api/authenticate.api";
 import { userStore } from "../stores/auth";
 import DOMPurify from "dompurify";
-import LoadingSpinner from "@/components/LoadingView.vue"; // Điều chỉnh đường dẫn nếu cần
+import LoadingSpinner from "@/components/LoadingView.vue";
 
 export default defineComponent({
   name: "Login",
@@ -86,7 +86,7 @@ export default defineComponent({
 
     const handleLogin = async () => {
       if (userName.value && password.value) {
-        loading.value = true; // Hiển thị loading spinner
+        loading.value = true;
         try {
           const sanitizedUserName = DOMPurify.sanitize(userName.value);
           const sanitizedPassword = DOMPurify.sanitize(password.value);
@@ -108,8 +108,8 @@ export default defineComponent({
               level: 0,
               status: false,
               experience: 0,
-              bankname: response.result.data.bankname,
-              banknumber: response.result.data.banknumber,
+              bankName: response.result.data.bankname,
+              bankNumber: response.result.data.banknumber,
             });
             Cookies.set("token", response.result.data.token);
             localStorage.setItem("token", response.result.data.token);
