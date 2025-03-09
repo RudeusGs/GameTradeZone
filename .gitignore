@@ -9,3 +9,5 @@ Backend/GameTradeZone.Service/obj
 Backend/GameTradeZone.Service/bin
 FrontEnd/.vscode
 FrontEnd/node_modules
+Admin/.vscode
+Admin/node_modules

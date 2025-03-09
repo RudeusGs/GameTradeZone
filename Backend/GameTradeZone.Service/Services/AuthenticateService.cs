@@ -135,6 +135,7 @@ using System.Text;
                     BankNumber = model.BankNumber,
                     Level = 0,
                     Experience = 0,
+                    Status = false,
                     CreatedDate = DateTime.Now,
                 };
 
