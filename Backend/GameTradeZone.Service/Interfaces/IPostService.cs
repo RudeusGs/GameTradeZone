@@ -1,4 +1,6 @@
-﻿using GameTradeZone.Service.Models;
+﻿using GameTradeZone.Domain.Entities;
+using GameTradeZone.Service.Models;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,5 +13,6 @@ namespace GameTradeZone.Service.Interfaces
     {
         Task<ApiResult> LikePost(int postId);
         Task<ApiResult> Comment(int postId, string content);
+        Task<List<CommentData>> GetAllCommentsInPost(int postId);
     }
 }

@@ -1,97 +1,87 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import axios from "axios";
 
 // Interface cho danh mục diễn đàn
 interface ForumCategory {
   id: number;
-  title: string;
+  name: string;
   description: string;
-  threads: number;
-  messages: number;
-  icon: string;
+  iconClass: string;
+  postCount: number;
 }
 
-// Interface cho bài viết mới nhất
+// Interface cho bài viết từ API
+interface PostResponse {
+  id: number;
+  caption: string;
+  content: string;
+  createdDate: string;
+  user?: {
+    fullName?: string;
+    userName?: string;
+  };
+}
+
+// Interface cho bài viết đã xử lý
 interface ForumPost {
   id: number;
-  author: string;
+  caption: string;
   content: string;
-  topic: string;
-  time: string;
+  userName: string;
+  createdAt: string;
 }
 
-const categories = ref<ForumCategory[]>([
-  {
-    id: 1,
-    title: "Thông Báo",
-    description: "Cập nhật mới nhất từ GameTradeZone",
-    threads: 170,
-    messages: 17900,
-    icon: "📢",
-  },
-  {
-    id: 2,
-    title: "Hỗ Trợ",
-    description: "Hỏi đáp và trợ giúp từ cộng đồng",
-    threads: 665,
-    messages: 3900,
-    icon: "❓",
-  },
-  {
-    id: 3,
-    title: "Báo Lỗi",
-    description: "Báo cáo lỗi và góp ý cho website",
-    threads: 304,
-    messages: 1300,
-    icon: "🐞",
-  },
-  {
-    id: 4,
-    title: "Góp Ý",
-    description: "Đề xuất cải tiến và tính năng mới",
-    threads: 750,
-    messages: 4400,
-    icon: "💡",
-  },
-]);
+// API URL
+const API_BASE_URL = "https://localhost:7232/api";
 
-const posts = ref<ForumPost[]>([
-  {
-    id: 1,
-    author: "UserA",
-    content: "GameTradeZone vừa cập nhật giao diện mới!",
-    topic: "Thông Báo",
-    time: "20 phút trước",
-  },
-  {
-    id: 2,
-    author: "UserB",
-    content: "Làm sao để mua tài khoản an toàn?",
-    topic: "Hỗ Trợ",
-    time: "40 phút trước",
-  },
-  {
-    id: 3,
-    author: "UserC",
-    content: "Có ai bị lỗi không thể đăng nhập không?",
-    topic: "Báo Lỗi",
-    time: "1 giờ trước",
-  },
-]);
-
+// State lưu dữ liệu từ API
+const categories = ref<ForumCategory[]>([]);
+const posts = ref<ForumPost[]>([]);
 const searchQuery = ref<string>("");
 
-// Lọc bài viết theo tìm kiếm
-const filteredPosts = computed(() => {
-  let result = posts.value;
-  if (searchQuery.value) {
-    result = result.filter(
-      (post) =>
-        post.content.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        post.author.toLowerCase().includes(searchQuery.value.toLowerCase())
-    );
+// 🟢 Gọi API lấy danh mục diễn đàn
+const fetchCategories = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/forumscategory/getall`);
+    categories.value = response.data.result;
+  } catch (error) {
+    console.error("Lỗi khi lấy danh mục:", error);
   }
-  return result;
+};
+
+// 🟢 Gọi API lấy bài viết mới nhất
+const fetchPosts = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/posts/latest`);
+    console.log("Dữ liệu bài viết API:", response.data);
+
+    posts.value = response.data.result.map((post: PostResponse) => ({
+      id: post.id,
+      caption: post.caption,
+      content: post.content,
+      userName: post.user?.fullName || post.user?.userName || "Ẩn danh", // Lấy fullName hoặc userName nếu có
+      createdAt: new Date(post.createdDate).toLocaleString(), // Định dạng ngày tháng
+    }));
+  } catch (error) {
+    console.error("Lỗi khi lấy bài viết:", error);
+  }
+};
+
+// 🔄 Gọi API khi component mount
+onMounted(() => {
+  fetchCategories();
+  fetchPosts();
+});
+
+// 🔎 Lọc bài viết theo tìm kiếm
+const filteredPosts = computed(() => {
+  return posts.value.filter(
+    (post) =>
+      post.caption.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      post.content.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      post.userName.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
 });
 </script>
 
@@ -108,7 +98,7 @@ const filteredPosts = computed(() => {
       </ul>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Nội dung chính -->
     <div class="forum-main">
       <header class="forum-header">
         <h1 class="forum-title">Diễn Đàn GameTradeZone</h1>
@@ -124,20 +114,17 @@ const filteredPosts = computed(() => {
             :key="category.id"
             class="category-card"
           >
-            <span class="category-icon">{{ category.icon }}</span>
+            <span class="category-icon">{{ category.iconClass || "❓" }}</span>
             <div class="category-info">
-              <h3 class="category-title">{{ category.title }}</h3>
+              <h3 class="category-title">{{ category.name }}</h3>
               <p class="category-description">{{ category.description }}</p>
-              <p class="category-meta">
-                Chủ đề: {{ category.threads }} | Bài viết:
-                {{ category.messages }}
-              </p>
+              <p class="category-meta">Bài viết: {{ category.postCount }}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Search -->
+      <!-- Ô tìm kiếm -->
       <div class="forum-search">
         <input
           v-model="searchQuery"
@@ -145,20 +132,24 @@ const filteredPosts = computed(() => {
           placeholder="Tìm bài viết..."
           class="search-input"
         />
-        <i class="fas fa-search search-icon"></i>
       </div>
 
-      <!-- Bài viết mới nhất -->
+      <!-- 🟢 Danh sách bài viết -->
       <section class="forum-posts">
         <h2 class="section-title">Bài viết mới nhất</h2>
         <div class="posts-list">
-          <div v-for="post in filteredPosts" :key="post.id" class="post-item">
-            <p class="post-content">{{ post.content }}</p>
+          <router-link
+            v-for="post in filteredPosts"
+            :key="post.id"
+            :to="`/post/${post.id}`"
+            class="post-item"
+          >
+            <p class="post-content">{{ post.caption }}</p>
             <p class="post-meta">
-              Đăng bởi <span class="post-author">{{ post.author }}</span> -
-              {{ post.time }}
+              Đăng bởi <span class="post-author">{{ post.userName }}</span> -
+              {{ post.createdAt }}
             </p>
-          </div>
+          </router-link>
         </div>
       </section>
     </div>
@@ -233,9 +224,9 @@ const filteredPosts = computed(() => {
 }
 
 .category-card {
-  background: rgba(0, 255, 255, 0.1);
+  background: #12162d;
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   width: 300px;
   transition: all 0.3s ease;
 }
@@ -247,12 +238,6 @@ const filteredPosts = computed(() => {
 
 .category-icon {
   font-size: 2rem;
-  margin-right: 10px;
-}
-
-.category-title {
-  font-size: 1.3rem;
-  font-weight: bold;
 }
 
 /* Bài viết */
@@ -264,8 +249,12 @@ const filteredPosts = computed(() => {
 
 .post-item {
   padding: 15px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 8px;
+  background: #12162d;
+  border-radius: 10px;
+  transition: all 0.3s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
 }
 
 .post-item:hover {
@@ -278,7 +267,7 @@ const filteredPosts = computed(() => {
   color: #00ffff;
 }
 
-/* Search */
+/* Ô tìm kiếm */
 .forum-search {
   margin: 20px 0;
   display: flex;
@@ -292,10 +281,5 @@ const filteredPosts = computed(() => {
   border: none;
   background: #222;
   color: #f0f0f0;
-}
-
-.search-icon {
-  margin-left: 10px;
-  color: #00ffff;
 }
 </style>

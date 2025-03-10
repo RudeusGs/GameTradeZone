@@ -89,5 +89,12 @@ namespace GameTradeZone.Service.Services
             await _context.SaveChangesAsync();
             return true;
         }
+        public async Task<PostInfo> GetPostById(int postId)
+        {
+            var post = await _context.PostInfos
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+            return post ?? throw new KeyNotFoundException($"Post with ID {postId} not found.");
+        }
     }
 }

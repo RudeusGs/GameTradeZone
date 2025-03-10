@@ -9,6 +9,7 @@ import RechargeView from "@/views/RechargeView.vue";
 import HPurchasedView from "@/views/HPurchasedView.vue";
 import AddAccountView from "@/views/Add-AccountView.vue";
 import ForumsView from "@/views/ForumsView.vue";
+import PostDetailsView from "@/views/PostDetailsView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -61,6 +62,11 @@ const router = createRouter({
       path: "/forums",
       name: "forums",
       component: ForumsView,
+    },
+    {
+      path: "/post/:id",
+      name: "post-details",
+      component: PostDetailsView,
     },
   ],
 });

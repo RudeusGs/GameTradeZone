@@ -14,5 +14,6 @@ namespace GameTradeZone.Service.Interfaces
         Task<PostInfo> CreatePost(string caption,int categoryId,string content, IFormFile? image);
         Task<List<PostInfo>> GetAllPosts();
         Task<bool> DeletePost(int postId, int userId);
+        Task<PostInfo> GetPostById(int postId);
     }
 }

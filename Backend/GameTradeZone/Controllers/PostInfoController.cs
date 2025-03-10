@@ -31,6 +31,20 @@ namespace GameTradeZone.Controllers
             }
         }
 
+        [HttpGet("get/{id}")]
+        public async Task<IActionResult> GetPost(int id)
+        {
+            try
+            {
+                var post = await _postService.GetPostById(id);
+                return Response(post);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
         [HttpGet("latest")]
         public async Task<IActionResult> GetAllPosts()
         {
