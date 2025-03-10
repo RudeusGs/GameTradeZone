@@ -1,3 +1,4 @@
+  //api/authenticate.api.ts
   import baseApi from './base.api';
   export default {
       login: async (model: LoginModel) : Promise<any|undefined> => {
@@ -11,14 +12,9 @@
       logout:()=>{
           baseApi.postAuthenticate("Authenticate/Logout",null);
       },
-      getRoleById: async (id: number): Promise<any> => {
-        const response = await baseApi.get(`Authenticate/roles?userId=${id}`);
-        if (response.status === 200) {
-          return response.data;
-        } else {
-          throw new Error(response.data?.message || 'Tài khoản hoặc mật khẩu không chính xác.');
-        }
-      },
+      getRoleById: async (id: number) => {
+        return await baseApi.get(`Authenticate/roles?userId=${id}`);
+      }, 
   };
   export interface LoginModel{
       userName: string,

@@ -22,7 +22,7 @@ export default {
     });
   },
 
-  post: async ( endpoint: string, body: any): Promise<AxiosResponse> => {
+  post: async (endpoint: string, body: any, p0: { params: { id: number; }; }): Promise<AxiosResponse> => {
     const token =  getToken();
     return await apiClient.post(`${endpoint}`, body, {
       headers: { Authorization: `Bearer ${token}` },
