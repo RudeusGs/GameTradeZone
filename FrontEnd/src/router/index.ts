@@ -10,6 +10,9 @@ import HPurchasedView from "@/views/HPurchasedView.vue";
 import AddAccountView from "@/views/Add-AccountView.vue";
 import ForumsView from "@/views/ForumsView.vue";
 import PostDetailsView from "@/views/PostDetailsView.vue";
+import AddServiceView from "@/views/Add-ServiceView.vue";
+import ListAuctionView from "@/views/ListAuctionView.vue";
+import DetailAuctionView from "@/views/DetailAuctionView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -67,6 +70,21 @@ const router = createRouter({
       path: "/post/:id",
       name: "post-details",
       component: PostDetailsView,
+    },
+    {
+      path: "/add-service",
+      name: "add-service",
+      component: AddServiceView,
+    },
+    {
+      path: "/list-auction",
+      name: "list-auction",
+      component: ListAuctionView,
+    },
+    {
+      path: "/detail-auction",
+      name: "detail-auction",
+      component: DetailAuctionView,
     },
   ],
 });

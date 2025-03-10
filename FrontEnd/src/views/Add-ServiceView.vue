@@ -1,31 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-// Danh sách game mẫu với hình ảnh
+// Danh sách game mẫu (cho GameInforID)
 const gameOptions = ref([
   { id: 1, name: 'Valorant', image: 'https://via.placeholder.com/150?text=Valorant' },
   { id: 2, name: 'Genshin Impact', image: 'https://via.placeholder.com/150?text=Genshin+Impact' },
   { id: 3, name: 'League of Legends', image: 'https://via.placeholder.com/150?text=LoL' },
 ]);
 
-// Dữ liệu form
+// Dữ liệu form dịch vụ
 const formData = ref({
-  selectedGame: '',
-  accountName: '',
-  password: '',
-  price: null,
-  priceMin: null,
-  files: [] as File[],
-  previewImages: [] as string[],
+  selectedGameId: null as number | null,
+  serviceName: '',
+  createrId: '', // Tên người dùng
+  description: '',
+  servicePrice: null as number | null,
+  serviceTime: null as string | null, // Chuỗi dạng "HH:MM:SS" cho TimeSpan
+  file: null as File | null,
+  previewImage: '' as string,
 });
 
-// Step hiện tại
+// Step hiện tại (1: chọn game, 2: nhập thông tin, 3: upload ảnh, 4: xem lại)
 const currentStep = ref(1);
 
 // Modal thông báo
 const showWarningModal = ref(false);
 const showSuccessModal = ref(false);
-const showGuideModal = ref(false);
 
 // Trạng thái xác nhận radio
 const isConfirmed = ref(false);
@@ -34,8 +34,8 @@ const isConfirmed = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 // Chọn game và chuyển bước
-const selectGame = (game: string) => {
-  formData.value.selectedGame = game;
+const selectGame = (gameId: number) => {
+  formData.value.selectedGameId = gameId;
   currentStep.value = 2;
 };
 
@@ -53,16 +53,14 @@ const nextStep = () => {
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const files = target.files;
-  if (files) {
-    const newFiles = Array.from(files);
-    formData.value.files = [...formData.value.files, ...newFiles];
-    newFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) formData.value.previewImages.push(e.target.result as string);
-      };
-      reader.readAsDataURL(file);
-    });
+  if (files && files.length > 0) {
+    const file = files[0];
+    formData.value.file = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) formData.value.previewImage = e.target.result as string;
+    };
+    reader.readAsDataURL(file);
     target.value = '';
   }
 };
@@ -73,9 +71,9 @@ const triggerFileInput = () => {
 };
 
 // Xóa ảnh preview
-const removeImage = (index: number) => {
-  formData.value.files.splice(index, 1);
-  formData.value.previewImages.splice(index, 1);
+const removeImage = () => {
+  formData.value.file = null;
+  formData.value.previewImage = '';
 };
 
 // Submit form
@@ -86,32 +84,43 @@ const submitForm = () => {
 // Xác nhận trong modal cảnh báo
 const confirmSubmission = () => {
   if (isConfirmed.value) {
-    console.log('Form Data:', formData.value);
+    console.log('Service Data:', formData.value);
     showWarningModal.value = false;
     showSuccessModal.value = true;
     isConfirmed.value = false;
     currentStep.value = 1;
-    formData.value = { selectedGame: '', accountName: '', password: '', price: null, priceMin: null, files: [], previewImages: [] };
+    formData.value = {
+      selectedGameId: null,
+      serviceName: '',
+      createrId: '',
+      description: '',
+      servicePrice: null,
+      serviceTime: null,
+      file: null,
+      previewImage: '',
+    };
   }
 };
 
-// Mở modal hướng dẫn
-const toggleGuideModal = () => {
-  showGuideModal.value = !showGuideModal.value;
+// Format TimeSpan cho hiển thị
+const formatTimeSpan = (time: string | null) => {
+  if (!time) return 'Chưa xác định';
+  const [hours, minutes, seconds] = time.split(':').map(Number);
+  return `${hours}h ${minutes}m ${seconds}s`;
 };
 </script>
 
 <template>
-  <div class="add-account-container">
+  <div class="add-service-container">
     <!-- Bubble Background -->
     <div class="bubble-background">
       <div v-for="i in 50" :key="i" class="bubble"></div>
     </div>
 
-    <!-- Form thêm tài khoản -->
+    <!-- Form thêm dịch vụ -->
     <div class="form-card">
       <div class="form-header">
-        <h2 class="form-title">Thêm tài khoản game</h2>
+        <h2 class="form-title">Thêm dịch vụ game</h2>
         <div class="step-indicator">
           <span :class="{ active: currentStep === 1 }">1</span>
           <span :class="{ active: currentStep === 2 }">2</span>
@@ -119,11 +128,12 @@ const toggleGuideModal = () => {
           <span :class="{ active: currentStep === 4 }">4</span>
         </div>
       </div>
+      <p class="form-subtitle">Bước {{ currentStep }}: {{ currentStep === 1 ? 'Chọn game' : currentStep === 2 ? 'Nhập thông tin' : currentStep === 3 ? 'Tải ảnh' : 'Xem lại' }}</p>
 
       <!-- Bước 1: Chọn game -->
       <div v-if="currentStep === 1" class="step-content game-step">
         <div class="game-list">
-          <div v-for="game in gameOptions" :key="game.id" class="game-item" @click="selectGame(game.name)">
+          <div v-for="game in gameOptions" :key="game.id" class="game-item" @click="selectGame(game.id)">
             <img :src="game.image" alt="Game Image" class="game-image" />
             <p>{{ game.name }}</p>
           </div>
@@ -133,21 +143,25 @@ const toggleGuideModal = () => {
       <!-- Bước 2: Nhập thông tin -->
       <div v-if="currentStep === 2" class="step-content">
         <div class="form-group">
-          <label>Tên tài khoản</label>
-          <input v-model="formData.accountName" type="text" class="form-input" placeholder="Tên tài khoản" required />
+          <label>Tên dịch vụ</label>
+          <input v-model="formData.serviceName" type="text" class="form-input" placeholder="Tên dịch vụ" required />
         </div>
         <div class="form-group">
-          <label>Mật khẩu</label>
-          <input v-model="formData.password" type="password" class="form-input" placeholder="Mật khẩu" required />
+          <label>Tên người tạo</label>
+          <input v-model="formData.createrId" type="text" class="form-input" placeholder="Tên người dùng" required />
+        </div>
+        <div class="form-group">
+          <label>Mô tả</label>
+          <textarea v-model="formData.description" class="form-input" placeholder="Mô tả dịch vụ" rows="3" required></textarea>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Giá bán (VND)</label>
-            <input v-model.number="formData.price" type="number" class="form-input" placeholder="Giá bán" min="0" step="1000" required />
+            <label>Giá dịch vụ (VND)</label>
+            <input v-model.number="formData.servicePrice" type="number" class="form-input" placeholder="Giá dịch vụ" min="0" step="1000" required />
           </div>
           <div class="form-group">
-            <label>Giá tối thiểu (VND)</label>
-            <input v-model.number="formData.priceMin" type="number" class="form-input" placeholder="Giá tối thiểu" min="0" step="1000" required />
+            <label>Thời gian ước tính (HH:MM:SS)</label>
+            <input v-model="formData.serviceTime" type="text" class="form-input" placeholder="VD: 01:30:00" pattern="^[0-2][0-9]:[0-5][0-9]:[0-5][0-9]$" required />
           </div>
         </div>
       </div>
@@ -155,18 +169,18 @@ const toggleGuideModal = () => {
       <!-- Bước 3: Upload ảnh -->
       <div v-if="currentStep === 3" class="step-content">
         <div class="form-group">
-          <label>Hình ảnh tài khoản</label>
+          <label>Hình ảnh dịch vụ</label>
           <div class="upload-area" @click="triggerFileInput">
             <i class="fas fa-cloud-upload-alt upload-icon"></i>
             <p>Tải ảnh lên (nhấp hoặc kéo thả)</p>
-            <input ref="fileInputRef" type="file" multiple accept="image/*" @change="handleFileChange" class="file-input" />
+            <input ref="fileInputRef" type="file" accept="image/*" @change="handleFileChange" class="file-input" />
           </div>
         </div>
-        <div class="preview-container" v-if="formData.previewImages.length > 0">
+        <div class="preview-container" v-if="formData.previewImage">
           <div class="preview-images">
-            <div v-for="(image, index) in formData.previewImages" :key="index" class="preview-item">
-              <img :src="image" alt="Preview" class="preview-image" />
-              <button class="remove-btn" @click="removeImage(index)">×</button>
+            <div class="preview-item">
+              <img :src="formData.previewImage" alt="Preview" class="preview-image" />
+              <button class="remove-btn" @click="removeImage">×</button>
             </div>
           </div>
         </div>
@@ -177,28 +191,28 @@ const toggleGuideModal = () => {
         <div class="review-card">
           <div class="review-group">
             <span class="review-label">Game:</span>
-            <span class="review-value">{{ formData.selectedGame }}</span>
+            <span class="review-value">{{ gameOptions.find(g => g.id === formData.selectedGameId)?.name || 'Chưa chọn' }}</span>
           </div>
           <div class="review-group">
-            <span class="review-label">Tên tài khoản:</span>
-            <span class="review-value">{{ formData.accountName }}</span>
+            <span class="review-label">Tên dịch vụ:</span>
+            <span class="review-value">{{ formData.serviceName }}</span>
           </div>
           <div class="review-group">
-            <span class="review-label">Mật khẩu:</span>
-            <span class="review-value">{{ formData.password }}</span>
+            <span class="review-label">Mô tả:</span>
+            <span class="review-value">{{ formData.description }}</span>
           </div>
           <div class="review-group">
-            <span class="review-label">Giá bán:</span>
-            <span class="review-value">{{ formData.price }} VND</span>
+            <span class="review-label">Giá dịch vụ:</span>
+            <span class="review-value">{{ formData.servicePrice }} VND</span>
           </div>
           <div class="review-group">
-            <span class="review-label">Giá tối thiểu:</span>
-            <span class="review-value">{{ formData.priceMin }} VND</span>
+            <span class="review-label">Thời gian ước tính:</span>
+            <span class="review-value">{{ formatTimeSpan(formData.serviceTime) }}</span>
           </div>
           <div class="review-group">
             <span class="review-label">Hình ảnh:</span>
-            <div class="review-images" v-if="formData.previewImages.length > 0">
-              <img v-for="(image, index) in formData.previewImages" :key="index" :src="image" alt="Preview" class="review-image" />
+            <div class="review-images" v-if="formData.previewImage">
+              <img :src="formData.previewImage" alt="Preview" class="review-image" />
             </div>
             <span v-else class="review-value">Chưa có ảnh</span>
           </div>
@@ -218,11 +232,6 @@ const toggleGuideModal = () => {
         </button>
       </div>
     </div>
-
-    <!-- Nút dấu hỏi -->
-    <button class="help-btn" @click="toggleGuideModal">
-      <i class="fas fa-question"></i>
-    </button>
 
     <!-- Modal cảnh báo -->
     <transition name="fade">
@@ -248,40 +257,8 @@ const toggleGuideModal = () => {
         <div class="modal-content success-modal">
           <i class="fas fa-check-circle success-icon"></i>
           <h3>Thành công!</h3>
-          <p>Tài khoản của bạn đã được thêm vào danh sách bán.</p>
+          <p>Dịch vụ của bạn đã được thêm vào hệ thống.</p>
           <button @click="showSuccessModal = false" class="modal-close">Đóng</button>
-        </div>
-      </div>
-    </transition>
-
-    <!-- Modal hướng dẫn -->
-    <transition name="fade">
-      <div v-if="showGuideModal" class="modal-overlay">
-        <div class="modal-content guide-modal">
-          <h3>Hướng Dẫn Đăng Tài Khoản</h3>
-          <p>Chào mừng bạn đến với thế giới giao dịch tài khoản game! Để mọi thứ diễn ra suôn sẻ và an toàn, hãy làm theo các hướng dẫn dưới đây nhé!</p>
-          
-          <h4>1. Bảo vệ thông tin cá nhân</h4>
-          <p>Trước khi đăng bán, hãy kiểm tra kỹ Gmail liên kết với tài khoản game. Đừng để sót thông tin nhạy cảm như số điện thoại hay dữ liệu cá nhân – bảo vệ sự riêng tư của bạn là điều quan trọng nhất!</p>
-          
-          <h4>2. Sử dụng Gmail rác</h4>
-          <p>Người mua có thể hỏi tên Gmail của tài khoản. Hãy dùng Gmail rác – loại không chứa thông tin quan trọng – để giữ an toàn. Tốt nhất là liên kết tài khoản với Gmail dùng một lần trước khi bán.</p>
-          
-          <h4>3. Cung cấp thông tin cho người mua</h4>
-          <p>Giao dịch xong xuôi? Hãy gửi đầy đủ và chính xác thông tin như tên tài khoản, mật khẩu cho người mua. Uy tín của bạn sẽ được củng cố, và chẳng ai thích tranh cãi sau khi deal xong đâu, đúng không?</p>
-          
-          <h4>4. Hướng dẫn đăng tài khoản</h4>
-          <p>Sẵn sàng bán tài khoản chưa? Đây là cách thực hiện đơn giản:</p>
-          <ul>
-            <li><strong>Bước 1:</strong> Chọn game bạn muốn bán từ danh sách.</li>
-            <li><strong>Bước 2:</strong> Điền thông tin: tên tài khoản, mật khẩu, giá bán, giá tối thiểu.</li>
-            <li><strong>Bước 3:</strong> Thêm hình ảnh tài khoản (nếu có) để thu hút người mua.</li>
-            <li><strong>Bước 4:</strong> Kiểm tra lại và nhấn "Gửi" – thế là xong!</li>
-          </ul>
-          
-          <p>Có thắc mắc gì không? Đừng ngại liên hệ nhé. Chúc bạn đăng bán thành công và kiếm được kha khá từ tài khoản của mình!</p>
-          
-          <button @click="toggleGuideModal" class="modal-close">Đóng</button>
         </div>
       </div>
     </transition>
@@ -290,7 +267,7 @@ const toggleGuideModal = () => {
 
 <style scoped>
 /* Tổng thể */
-.add-account-container {
+.add-service-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -700,7 +677,7 @@ const toggleGuideModal = () => {
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
 }
 
-/* Điều hướng bước */
+/* Điều hướng bước (icon lùi/tiến) */
 .step-navigation {
   display: flex;
   justify-content: space-between;
@@ -745,36 +722,6 @@ const toggleGuideModal = () => {
 .submit-btn:hover {
   background: linear-gradient(135deg, #ff00ff, #00ffff);
   box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
-}
-
-/* Nút dấu hỏi */
-.help-btn {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(45deg, #00ffff, #ff00ff);
-  border: none;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
-  z-index: 1000;
-  animation: pulse 2s infinite;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-  transition: all 0.3s ease;
-}
-
-.help-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7); }
-  70% { box-shadow: 0 0 0 15px rgba(0, 255, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); }
 }
 
 /* Modal overlay */
@@ -904,59 +851,6 @@ const toggleGuideModal = () => {
   font-size: 1.8rem;
 }
 
-/* Modal guide */
-.guide-modal {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
-  padding: 35px;
-  border-radius: 16px;
-  width: 600px;
-  max-width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  text-align: left;
-  box-shadow: 0 15px 40px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  animation: popIn 0.4s ease-in-out;
-  box-sizing: border-box;
-}
-
-.guide-modal h3 {
-  color: #00ffff;
-  font-size: 1.8rem;
-  margin-bottom: 20px;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-}
-
-.guide-modal h4 {
-  color: #ff00ff;
-  font-size: 1.4rem;
-  margin-top: 20px;
-  margin-bottom: 10px;
-}
-
-.guide-modal p {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin-bottom: 15px;
-}
-
-.guide-modal ul {
-  list-style-type: disc;
-  margin-left: 20px;
-  margin-bottom: 20px;
-}
-
-.guide-modal li {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: #e0e0e0;
-}
-
-.guide-modal li strong {
-  color: #00ff00;
-}
-
 .modal-close {
   padding: 12px 25px;
   background: linear-gradient(135deg, #00ffff, #ff00ff);
@@ -965,7 +859,6 @@ const toggleGuideModal = () => {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 20px;
 }
 
 .modal-close:hover {
@@ -992,11 +885,10 @@ const toggleGuideModal = () => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .form-card { padding: 20px; max-width: 95%; }
-  .form-title { font-size: 1.8rem; }
+  .form-card { padding: 30px; max-width: 90%; }
+  .form-title { font-size: 2rem; }
   .form-row { grid-template-columns: 1fr; }
   .game-list { grid-template-columns: 1fr; }
-  .warning-modal, .success-modal, .guide-modal { width: 90%; padding: 20px; }
-  .guide-modal { max-height: 70vh; }
+  .warning-modal, .success-modal { width: 90%; }
 }
 </style>

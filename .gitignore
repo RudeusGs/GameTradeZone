@@ -9,7 +9,5 @@ Backend/GameTradeZone.Service/obj
 Backend/GameTradeZone.Service/bin
 FrontEnd/.vscode
 FrontEnd/node_modules
-Backend/GameTradeZone.Infrastructure/Migrations/20250309062641_ForumCategory.cs
-Backend/GameTradeZone.Infrastructure/Migrations/20250309072144_UpdateForumCategory.Designer.cs
-Backend/GameTradeZone.Infrastructure/Migrations/20250309072144_UpdateForumCategory.cs
-Backend/GameTradeZone.Infrastructure/Migrations/20250309062641_ForumCategory.Designer.cs
+Admin/.vscode
+Admin/node_modules

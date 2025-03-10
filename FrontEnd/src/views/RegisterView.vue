@@ -3,64 +3,87 @@
     <div class="registration-card">
       <div class="card-header">
         <h2 class="reg-title">Đăng Ký GTZ</h2>
-        <p class="reg-subtitle">Tham gia thị trường tài khoản game ngay!</p>
+        <p class="reg-subtitle">Tham gia ngay để trao đổi tài khoản game!</p>
       </div>
 
       <form @submit.prevent="registerUser" class="reg-form">
-        <div class="input-group">
-          <i class="fas fa-user input-icon"></i>
-          <input
-            type="text"
-            id="accountName"
-            v-model="accountName"
-            placeholder="Tên đăng nhập"
-            required
-          />
-        </div>
+        <div class="form-group">
+          <div class="input-group">
+            <i class="fas fa-user input-icon"></i>
+            <input
+              type="text"
+              id="accountName"
+              v-model="accountName"
+              placeholder="Tên đăng nhập"
+              required
+            />
+          </div>
 
-        <div class="input-group">
-          <i class="fas fa-envelope input-icon"></i>
-          <input
-            type="email"
-            id="email"
-            v-model="email"
-            placeholder="Email"
-            required
-          />
-        </div>
+          <div class="input-group">
+            <i class="fas fa-envelope input-icon"></i>
+            <input
+              type="email"
+              id="email"
+              v-model="email"
+              placeholder="Email"
+              required
+            />
+          </div>
 
-        <div class="input-group">
-          <i class="fas fa-id-card input-icon"></i>
-          <input
-            type="text"
-            id="fullName"
-            v-model="fullName"
-            placeholder="Họ và tên"
-            required
-          />
-        </div>
+          <div class="input-group">
+            <i class="fas fa-id-card input-icon"></i>
+            <input
+              type="text"
+              id="fullName"
+              v-model="fullName"
+              placeholder="Họ và tên"
+              required
+            />
+          </div>
 
-        <div class="input-group">
-          <i class="fas fa-lock input-icon"></i>
-          <input
-            type="password"
-            id="password"
-            v-model="password"
-            placeholder="Mật khẩu"
-            required
-          />
-          <p v-if="passwordWarning" class="warning-text">{{ passwordWarning }}</p>
-        </div>
+          <div class="input-group">
+            <i class="fas fa-lock input-icon"></i>
+            <input
+              type="password"
+              id="password"
+              v-model="password"
+              placeholder="Mật khẩu"
+              required
+            />
+            <p v-if="passwordWarning" class="warning-text">{{ passwordWarning }}</p>
+          </div>
 
-        <div class="input-group">
-          <i class="fas fa-lock input-icon"></i>
-          <input
-            type="password"
-            id="confirmPassword"
-            v-model="confirmPassword"
-            placeholder="Xác nhận mật khẩu"
-            required
-          />
+          <div class="input-group">
+            <i class="fas fa-lock input-icon"></i>
+            <input
+              type="password"
+              id="confirmPassword"
+              v-model="confirmPassword"
+              placeholder="Xác nhận mật khẩu"
+              required
+            />
+          </div>
+
+          <div class="input-group bank-select-group">
+            <i class="fas fa-university input-icon"></i>
+            <select v-model="bankName" class="bank-select" required>
+              <option value="" disabled selected>Chọn ngân hàng</option>
+              <option v-for="bank in banks" :key="bank.id" :value="bank.name">
+                {{ bank.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <i class="fas fa-credit-card input-icon"></i>
+            <input
+              type="text"
+              id="bankNumber"
+              v-model="bankNumber"
+              placeholder="Số tài khoản ngân hàng"
+              required
+            />
+          </div>
         </div>
 
         <button type="submit" class="submit-btn">Đăng Ký</button>
@@ -74,8 +97,16 @@
       <transition name="fade">
         <p v-if="errorMessage" class="error-notification">{{ errorMessage }}</p>
       </transition>
+
+      <!-- Modal thông báo đăng ký thành công -->
       <transition name="fade">
-        <p v-if="successMessage" class="success-notification">{{ successMessage }}</p>
+        <div v-if="showSuccessModal" class="modal-overlay">
+          <div class="modal-content">
+            <i class="fas fa-check-circle modal-icon"></i>
+            <p>{{ successMessage }}</p>
+            <button @click="closeModalAndRedirect" class="modal-close-btn">Đóng</button>
+          </div>
+        </div>
       </transition>
     </div>
   </div>
@@ -94,9 +125,22 @@ export default {
       fullName: "",
       password: "",
       confirmPassword: "",
+      bankName: "",
+      bankNumber: "",
       errorMessage: "",
       successMessage: "",
       passwordWarning: "",
+      showSuccessModal: false,
+      banks: [
+        { id: 1, name: "Vietcombank" },
+        { id: 2, name: "Techcombank" },
+        { id: 3, name: "MB Bank" },
+        { id: 4, name: "Agribank" },
+        { id: 5, name: "TPBank" },
+        { id: 6, name: "Sacombank" },
+        { id: 7, name: "BIDV" },
+        { id: 8, name: "VPBank" },
+      ],
     };
   },
   methods: {
@@ -104,9 +148,10 @@ export default {
       this.errorMessage = "";
       this.successMessage = "";
       this.passwordWarning = "";
+      this.showSuccessModal = false;
 
       if (!this.isPasswordValid(this.password)) {
-        this.passwordWarning = "Mật khẩu phải có chữ in hoa, số và ký tự đặc biệt.";
+        this.passwordWarning = "Mật khẩu phải bao gồm ký tự in hoa, số và ký tự đặc biệt";
         return;
       }
 
@@ -115,9 +160,11 @@ export default {
       const sanitizedFullName = DOMPurify.sanitize(this.fullName);
       const sanitizedPassword = DOMPurify.sanitize(this.password);
       const sanitizedConfirmPassword = DOMPurify.sanitize(this.confirmPassword);
+      const sanitizedBankName = DOMPurify.sanitize(this.bankName);
+      const sanitizedBankNumber = DOMPurify.sanitize(this.bankNumber);
 
       if (sanitizedPassword !== sanitizedConfirmPassword) {
-        this.errorMessage = "Mật khẩu không khớp.";
+        this.errorMessage = "Mật khẩu không khớp";
         return;
       }
 
@@ -126,16 +173,20 @@ export default {
           sanitizedAccountName,
           sanitizedPassword,
           sanitizedFullName,
-          sanitizedEmail
+          sanitizedEmail,
+          sanitizedBankName,
+          sanitizedBankNumber
         );
+
         this.successMessage = "Đăng ký thành công!";
+        this.showSuccessModal = true;
         this.clearForm();
       } catch (error) {
-        if (error.response) {
-          this.errorMessage = error.response.data.message || "Đăng ký thất bại. Vui lòng thử lại.";
-        } else {
-          this.errorMessage = "Có lỗi xảy ra. Vui lòng thử lại.";
-        }
+        const errorMsg = error?.response?.data?.result?.message ||
+                        error?.response?.data?.message ||
+                        error.message ||
+                        "Có lỗi xảy ra. Vui lòng thử lại.";
+        this.errorMessage = errorMsg;
       }
     },
 
@@ -150,19 +201,25 @@ export default {
       this.fullName = "";
       this.password = "";
       this.confirmPassword = "";
-    }
-  }
+      this.bankName = "";
+      this.bankNumber = "";
+    },
+
+    closeModalAndRedirect() {
+      this.showSuccessModal = false;
+      this.$router.push("/login");
+    },
+  },
 };
 </script>
 
 <style scoped>
-/* Tổng thể */
 .registration-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #1e1e2f 0%, #2a2a40 100%);
+  background: linear-gradient(135deg, #0a0a1f 0%, #1c1c3a 100%);
   position: relative;
   overflow: hidden;
 }
@@ -170,61 +227,59 @@ export default {
 .registration-container::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(0, 221, 235, 0.1), transparent);
-  animation: pulseGlow 10s infinite;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(0, 255, 255, 0.15), transparent 70%);
+  animation: glowShift 8s infinite ease-in-out;
   z-index: 0;
 }
 
-@keyframes pulseGlow {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 0.8; }
+@keyframes glowShift {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+  50% { transform: translate(20px, -20px) scale(1.1); opacity: 0.9; }
 }
 
-/* Registration Card */
 .registration-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(15px);
-  border-radius: 16px;
-  padding: 25px;
+  background: rgba(20, 20, 40, 0.9);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  padding: 30px;
   width: 100%;
-  max-width: 360px;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(0, 221, 235, 0.2);
+  max-width: 400px; /* Giảm chiều rộng để phù hợp với bố cục dọc */
+  box-shadow: 0 10px 40px rgba(0, 255, 255, 0.1);
   position: relative;
   z-index: 1;
-  overflow: hidden;
 }
 
-/* Card Header */
 .card-header {
   text-align: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .reg-title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #00ddeb;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #00ffff;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  text-shadow: 0 0 8px rgba(0, 221, 235, 0.5);
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 .reg-subtitle {
-  font-size: 0.85rem;
-  color: #b0b0b0;
-  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  margin-top: 8px;
 }
 
-/* Form */
 .reg-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 25px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Giãn cách giữa các trường nhập liệu */
 }
 
 .input-group {
@@ -233,100 +288,157 @@ export default {
 
 .input-icon {
   position: absolute;
-  left: 15px; /* Tăng từ 12px để có khoảng cách */
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #00ddeb;
-  font-size: 1rem;
+  color: #00ffff;
+  font-size: 1.1rem;
 }
 
-input {
+input,
+.bank-select {
   width: 100%;
-  padding: 10px 15px 10px 40px; /* Tăng padding-left từ 30px lên 40px để chữ cách icon */
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(0, 221, 235, 0.3);
+  padding: 12px 12px 12px 40px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 255, 255, 0.4);
   color: #ffffff;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   outline: none;
   transition: all 0.3s ease;
+  border-radius: 0;
 }
 
-input:focus {
-  border-color: #00ddeb;
-  box-shadow: 0 0 12px rgba(0, 221, 235, 0.5);
+input:focus,
+.bank-select:focus {
+  border-color: #00ffff;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.bank-select-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.bank-select {
+  flex-grow: 1;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.bank-select option {
+  background: #1c1c3a;
+  color: #ffffff;
 }
 
 .warning-text {
   color: #ffcc00;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   margin-top: 5px;
   text-align: left;
 }
 
-/* Submit Button */
 .submit-btn {
   width: 100%;
-  padding: 10px;
-  background: #00ddeb;
-  color: #1e1e2f;
+  padding: 12px;
+  background: linear-gradient(135deg, #00ffff, #00b7b7);
+  color: #ffffff;
   border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.4s ease;
-  box-shadow: 0 4px 12px rgba(0, 221, 235, 0.4);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
 }
 
 .submit-btn:hover {
-  background: #33e6f2;
+  background: linear-gradient(135deg, #00b7b7, #00ffff);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 221, 235, 0.6);
+  box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
 }
 
-/* Terms */
 .terms {
-  font-size: 0.8rem;
-  color: #b0b0b0;
-  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  margin-top: 15px;
   text-align: center;
 }
 
 .terms a {
-  color: #00ddeb;
+  color: #00ffff;
   text-decoration: none;
   transition: all 0.3s ease;
 }
 
 .terms a:hover {
-  color: #33e6f2;
-  text-shadow: 0 0 4px rgba(0, 221, 235, 0.5);
+  color: #66ffff;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 
-/* Notifications */
 .error-notification {
   background: rgba(255, 75, 75, 0.9);
   color: #ffffff;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  box-shadow: 0 4px 12px rgba(255, 75, 75, 0.4);
-  margin-top: 10px;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 15px rgba(255, 75, 75, 0.3);
+  margin-top: 15px;
   text-align: center;
 }
 
-.success-notification {
-  background: rgba(75, 255, 75, 0.9);
-  color: #1e1e2f;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  box-shadow: 0 4px 12px rgba(75, 255, 75, 0.4);
-  margin-top: 10px;
-  text-align: center;
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
 }
 
-/* Transition cho thông báo */
+.modal-content {
+  background: rgba(20, 20, 40, 0.9);
+  padding: 15px 25px;
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  color: #ffffff;
+  width: 100%;
+  max-width: 300px;
+}
+
+.modal-icon {
+  font-size: 2.5rem;
+  color: #00ff00;
+  margin-bottom: 8px;
+}
+
+.modal-content p {
+  font-size: 1rem;
+  margin: 0 0 10px 0;
+}
+
+.modal-close-btn {
+  padding: 6px 15px;
+  background: linear-gradient(135deg, #00ffff, #00b7b7);
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.modal-close-btn:hover {
+  background: linear-gradient(135deg, #00b7b7, #00ffff);
+  box-shadow: 0 4px 15px rgba(0, 255, 255, 0.5);
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: all 0.5s ease;
@@ -338,24 +450,25 @@ input:focus {
   transform: translateY(10px);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .registration-card {
     padding: 20px;
-    max-width: 300px;
+    max-width: 350px; /* Giảm thêm trên mobile */
   }
   .reg-title {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
   }
   .reg-subtitle {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
   }
   .submit-btn {
-    padding: 8px;
+    padding: 10px;
   }
-  .error-notification,
-  .success-notification {
-    font-size: 0.7rem;
+  .error-notification {
+    font-size: 0.8rem;
+  }
+  .modal-content {
+    max-width: 250px;
   }
 }
 </style>

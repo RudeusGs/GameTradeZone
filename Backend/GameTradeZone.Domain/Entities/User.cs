@@ -11,6 +11,8 @@ namespace GameTradeZone.Domain.Entities
         public int Level { get; set; } = 0;
         public bool Status { get; set; }
         public string? Avatar { get; set; }
+        public string BankName { get; set; }
+        public string BankNumber { get; set; }
         public virtual DateTime? CreatedDate { get; set; }
         public virtual DateTime? UpdatedDate { get; set; }
         public virtual DateTime? DeleteDate { get; set; }
