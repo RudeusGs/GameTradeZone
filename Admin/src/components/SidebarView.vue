@@ -85,7 +85,7 @@ const logout = () => {
           :class="{ active: $route.path === '/admin/roles' }"
         >
           <i class="material-icons">security</i>
-          <span class="menu-text" v-if="!isCollapsed">Vai trò</span>
+          <span class="menu-text" v-if="!isCollapsed">Bài đăng</span>
         </router-link>
       </li>
       <li>
@@ -95,7 +95,7 @@ const logout = () => {
           :class="{ active: $route.path === '/admin/products' }"
         >
           <i class="material-icons">store</i>
-          <span class="menu-text" v-if="!isCollapsed">Sản phẩm</span>
+          <span class="menu-text" v-if="!isCollapsed">Dịch vụ</span>
         </router-link>
       </li>
       <!-- Đấu giá -->
