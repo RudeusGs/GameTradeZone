@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { RouterView } from 'vue-router'
 import NavbarView from './components/NavbarView.vue'
 
@@ -7,7 +6,6 @@ import NavbarView from './components/NavbarView.vue'
 
 <template>
   <NavbarView/>
-
 
   <div class="cosmo-content">
     <RouterView />

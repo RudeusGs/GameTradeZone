@@ -12,14 +12,15 @@ export interface UserInfoModel {
   balance: number;
   coin: number;
   level: number;
-  status: boolean;
+  status: number;
   experience?: number | null;
   bankName: string; 
   bankNumber: string; 
   avatar?: string | null;
   createdDate?: string | null;
-}   
-  
+  roles?: string[];
+}
+
  export  interface LoginResponseModel{
     userId:number,
     username:string,
