@@ -22,6 +22,7 @@ namespace GameTradeZone.Domain.Entities
         public string Content { get; set; }
      
         public string? ImageUrl { get; set; }
+        public int CategoryId { get; set; }
 
         public int LikesCount { get; set; } = 0;
 

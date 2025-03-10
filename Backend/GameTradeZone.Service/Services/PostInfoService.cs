@@ -35,7 +35,7 @@ namespace GameTradeZone.Service.Services
             return userId;
         }
 
-        public async Task<PostInfo> CreatePost(string caption, string content, IFormFile? image)
+        public async Task<PostInfo> CreatePost(string caption, int categoryId, string content, IFormFile? image)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -50,12 +50,18 @@ namespace GameTradeZone.Service.Services
             {
                 UserId = userId.Value,
                 Caption = caption,
+                CategoryId = categoryId,
                 Content = content,
                 ImageUrl = imageUrl,
                 CreatedDate = DateTime.UtcNow
             };
 
             await _context.PostInfos.AddAsync(post);
+            var category = await _context.ForumsCategories.FindAsync(categoryId);
+            if (category != null)
+            {
+                category.PostCount += 1;
+            }
             await _context.SaveChangesAsync();
             return post;
         }
@@ -75,8 +81,20 @@ namespace GameTradeZone.Service.Services
             }
 
             _context.PostInfos.Remove(post);
+            var category = await _context.ForumsCategories.FindAsync(post.CategoryId);
+            if (category != null)
+            {
+                category.PostCount -= 1;
+            }
             await _context.SaveChangesAsync();
             return true;
+        }
+        public async Task<PostInfo> GetPostById(int postId)
+        {
+            var post = await _context.PostInfos
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+            return post ?? throw new KeyNotFoundException($"Post with ID {postId} not found.");
         }
     }
 }

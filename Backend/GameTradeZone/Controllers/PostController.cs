@@ -44,4 +44,17 @@ public class PostInfoController : BaseController
             return Response(e.Message, 500);
         }
     }
+    [HttpGet("comments/{postId}")]
+    public async Task<IActionResult> GetAllCommentsInPost(int postId)
+    {
+        try
+        {
+            var comments = await _postService.GetAllCommentsInPost(postId);
+            return Response(comments);
+        }
+        catch (Exception e)
+        {
+            return Response(e.Message, 500);
+        }
+    }
 }

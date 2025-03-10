@@ -5,8 +5,6 @@
       <div v-for="i in 15" :key="i" class="particle"></div>
       <!-- Giảm số lượng particle để nhẹ hơn -->
     </div>
-
-    <!-- Main Content -->
     <section class="recharge-content">
       <h1 class="recharge-title">Nạp Tiền GameTradeZone</h1>
       <p class="recharge-subtitle">Chọn phương thức nạp để tiếp tục!</p>
@@ -171,27 +169,19 @@
 import { ref } from "vue";
 import { userStore } from "@/stores/auth";
 
-const activeTab = ref<string>("bank"); // Tab mặc định là nạp qua ngân hàng
-const bankAmount = ref<number>(0); // Số tiền nạp qua ngân hàng
-const cardProvider = ref<string>("viettel"); // Nhà mạng thẻ cào
-const cardCode = ref<string>(""); // Mã thẻ cào
-const cardSerial = ref<string>(""); // Số serial thẻ cào
+const activeTab = ref<string>("bank");
+const bankAmount = ref<number>(0);
+const cardProvider = ref<string>("viettel");
+const cardCode = ref<string>("");
+const cardSerial = ref<string>("");
 const store = userStore();
+
 const userId =
   store.user?.id || JSON.parse(localStorage.getItem("user") || "{}").id;
 const qrCodeUrl = ref<string>("");
-// Hàm xác nhận nạp qua ngân hàng
-// const confirmBankRecharge = () => {
-//   if (bankAmount.value >= 10000) {
-//     alert(`Nạp tiền thành công! Số tiền: ${bankAmount.value} VNĐ qua ngân hàng.`);
-//     bankAmount.value = 0; // Reset sau khi nạp
-//   } else {
-//     alert('Vui lòng nhập số tiền ít nhất 10,000 VNĐ!');
-//   }
-// };
 
 const generateQRCode = () => {
-  const qrData = `https://qr.sepay.vn/img?acc=6505103869&bank=BIDV&amount=${bankAmount.value}&des=USERID%20${userId}`;
+  const qrData = `https://qr.sepay.vn/img?acc=96247XAAD6&bank=BIDV&amount=${bankAmount.value}&des=USERID%20${userId}`;
   qrCodeUrl.value = qrData;
 };
 
@@ -220,6 +210,31 @@ const calculateCardAmount = () => {
   return amounts[cardProvider.value] || 0;
 };
 </script>
+
+<style scoped>
+/* Thêm kiểu dáng cho thông báo giao dịch */
+.transaction-notification {
+  background-color: #4caf50; /* Màu nền thông báo thành công */
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #00b3e0;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #008c8c;
+}
+</style>
 
 <style scoped>
 /* Tổng thể */

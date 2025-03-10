@@ -1,16 +1,30 @@
 <template>
-  <div class="cosmo-topbar d-flex justify-content-between align-items-center p-3 position-fixed w-100">
-    <div class="d-flex align-items-center">   
+  <div
+    class="cosmo-topbar d-flex justify-content-between align-items-center p-3 position-fixed w-100"
+  >
+    <div class="d-flex align-items-center">
       <span class="cosmo-logo menu-toggle" @click="toggleSlidePanel">
         <a href="/" @click.prevent>GTZ</a>
-        <i :class="['fas', isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down', 'ms-1', 'cosmo-arrow-icon']"></i>
+        <i
+          :class="[
+            'fas',
+            isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down',
+            'ms-1',
+            'cosmo-arrow-icon',
+          ]"
+        ></i>
       </span>
       <a href="/" class="cosmo-home">
-        <img style="width: 40px; margin-left: 10px" src="../assets/logo_web.png"/>
+        <img
+          style="width: 40px; margin-left: 10px"
+          src="../assets/logo_web.png"
+        />
       </a>
       <transition name="slide">
         <div v-if="isSlidePanelOpen" class="slide-panel">
-          <div class="slide-content d-flex justify-content-center align-items-center">
+          <div
+            class="slide-content d-flex justify-content-center align-items-center"
+          >
             <div class="slide-grid">
               <div class="grid-column">
                 <h4 class="column-title">TRÒ CHƠI</h4>
@@ -42,7 +56,7 @@
               <div class="grid-column">
                 <h4 class="column-title">DIỄN ĐÀN</h4>
                 <ul class="column-list">
-                  <li>Kinh Doanh</li>
+                  <li @click="$router.push('/forums')">Diễn đàn</li>
                   <li>LOL Esports</li>
                   <li>Valorant Esports</li>
                   <li>Hỗ Trợ Riot</li>
@@ -65,7 +79,10 @@
           <i class="fas fa-plus me-1"></i> Thêm
         </button>
         <transition name="cosmo-fade">
-          <div v-if="isAddMenuOpen" class="cosmo-add-menu position-absolute shadow rounded">
+          <div
+            v-if="isAddMenuOpen"
+            class="cosmo-add-menu position-absolute shadow rounded"
+          >
             <p class="mb-1" @click="handleAddAccountClick">
               <i class="fas fa-user-plus me-2"></i>Tài khoản
             </p>
@@ -75,15 +92,28 @@
           </div>
         </transition>
       </div>
-      <i class="fas fa-calendar-alt fa-lg cosmo-icon text-light mx-2" @mouseover="bounceIcon($event)" @mouseout="resetIcon($event)"></i>
+      <i
+        class="fas fa-calendar-alt fa-lg cosmo-icon text-light mx-2"
+        @mouseover="bounceIcon($event)"
+        @mouseout="resetIcon($event)"
+      ></i>
       <div class="position-relative">
-        <i class="fas fa-bell fa-lg cosmo-icon text-light mx-2 menu-toggle" @click="toggleNotifications">
-          <span v-if="notifications" class="cosmo-badge position-absolute top-0 start-100 translate-middle p-1">
+        <i
+          class="fas fa-bell fa-lg cosmo-icon text-light mx-2 menu-toggle"
+          @click="toggleNotifications"
+        >
+          <span
+            v-if="notifications"
+            class="cosmo-badge position-absolute top-0 start-100 translate-middle p-1"
+          >
             {{ notifications }}
           </span>
         </i>
         <transition name="cosmo-fade">
-          <div v-if="isNotificationOpen" class="cosmo-notification-dropdown position-absolute shadow rounded">
+          <div
+            v-if="isNotificationOpen"
+            class="cosmo-notification-dropdown position-absolute shadow rounded"
+          >
             <p>No new notifications</p>
           </div>
         </transition>
@@ -92,10 +122,19 @@
       <div v-if="!isLoggedIn" class="position-relative">
         <span class="menu-toggle" @click="toggleAccountMenu">
           <i class="fas fa-user fa-lg cosmo-icon text-light mx-2"></i>
-          <i :class="['fas', isAccountMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'cosmo-arrow-icon']"></i>
+          <i
+            :class="[
+              'fas',
+              isAccountMenuOpen ? 'fa-caret-up' : 'fa-caret-down',
+              'cosmo-arrow-icon',
+            ]"
+          ></i>
         </span>
         <transition name="cosmo-fade">
-          <div v-if="isAccountMenuOpen" class="cosmo-account-menu position-absolute shadow rounded">
+          <div
+            v-if="isAccountMenuOpen"
+            class="cosmo-account-menu position-absolute shadow rounded"
+          >
             <p class="mb-1" @click="goToLogin">
               <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
             </p>
@@ -108,12 +147,26 @@
       <!-- Người dùng đã đăng nhập -->
       <div v-else class="position-relative">
         <span class="menu-toggle" @click="toggleUserMenu">
-          <span class="cosmo-user-name text-light" :title="fullName">{{ fullName }}</span>
-          <i :class="['fas', isUserMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'cosmo-arrow-icon']"></i>
+          <span class="cosmo-user-name text-light" :title="fullName">{{
+            fullName
+          }}</span>
+          <i
+            :class="[
+              'fas',
+              isUserMenuOpen ? 'fa-caret-up' : 'fa-caret-down',
+              'cosmo-arrow-icon',
+            ]"
+          ></i>
         </span>
         <transition name="cosmo-fade">
-          <div v-if="isUserMenuOpen" class="cosmo-user-menu position-absolute shadow rounded">
-            <hr class="dropdown-divider" style="border-color: rgba(0, 255, 255, 0.3);" />
+          <div
+            v-if="isUserMenuOpen"
+            class="cosmo-user-menu position-absolute shadow rounded"
+          >
+            <hr
+              class="dropdown-divider"
+              style="border-color: rgba(0, 255, 255, 0.3)"
+            />
             <p class="mb-1" @click="goToProfile">
               <i class="fas fa-user me-2"></i>Thông tin
             </p>
@@ -141,8 +194,12 @@
             <p class="modal-message">{{ modalMessage }}</p>
           </div>
           <div class="modal-footer">
-            <button class="modal-btn login-btn" @click="modalAction">{{ modalActionText }}</button>
-            <button class="modal-btn cancel-btn" @click="closeModal">Hủy</button>
+            <button class="modal-btn login-btn" @click="modalAction">
+              {{ modalActionText }}
+            </button>
+            <button class="modal-btn cancel-btn" @click="closeModal">
+              Hủy
+            </button>
           </div>
         </div>
       </div>
@@ -151,13 +208,13 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import authenticateApi from '@/api/authenticate.api';
-import { userStore } from '@/stores/auth.ts';
+import { ref, onMounted, computed } from "vue";
+import { useRouter } from "vue-router";
+import authenticateApi from "@/api/authenticate.api";
+import { userStore } from "@/stores/auth.ts";
 
 export default {
-  name: 'CosmoTopbar',
+  name: "CosmoTopbar",
   setup() {
     const router = useRouter();
     const store = userStore();
@@ -168,9 +225,9 @@ export default {
     const isAddMenuOpen = ref(false);
     const isAccountMenuOpen = ref(false);
     const showModal = ref(false);
-    const modalTitle = ref('Thông báo');
-    const modalMessage = ref('');
-    const modalActionText = ref('Đăng nhập');
+    const modalTitle = ref("Thông báo");
+    const modalMessage = ref("");
+    const modalActionText = ref("Đăng nhập");
     const modalAction = ref(() => {});
 
     const isLoggedIn = computed(() => !!store.user);
@@ -178,7 +235,7 @@ export default {
 
     onMounted(() => {
       store.init();
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     });
 
     const toggleAddMenu = () => {
@@ -203,22 +260,22 @@ export default {
     };
 
     const goToLogin = () => {
-      router.push('/login');
+      router.push("/login");
       closeAllMenus();
     };
 
     const goToRegister = () => {
-      router.push('/register');
+      router.push("/register");
       closeAllMenus();
     };
 
     const goToProfile = () => {
-      router.push('/profile');
+      router.push("/profile");
       closeAllMenus();
     };
 
     const goToSettings = () => {
-      router.push('/purchased');
+      router.push("/purchased");
       closeAllMenus();
     };
 
@@ -227,7 +284,7 @@ export default {
         await authenticateApi.logout();
         store.logout();
         closeAllMenus();
-        router.push('/login');
+        router.push("/login");
       } catch (error) {
         console.error("Logout failed:", error);
       }
@@ -236,36 +293,36 @@ export default {
     const handleRechargeClick = () => {
       if (!isLoggedIn.value) {
         showModal.value = true;
-        modalTitle.value = 'Thông báo';
-        modalMessage.value = 'Vui lòng đăng nhập để tiếp tục nạp tiền.';
-        modalActionText.value = 'Đăng nhập';
+        modalTitle.value = "Thông báo";
+        modalMessage.value = "Vui lòng đăng nhập để tiếp tục nạp tiền.";
+        modalActionText.value = "Đăng nhập";
         modalAction.value = () => {
           closeModal();
-          router.push('/login');
+          router.push("/login");
         };
       } else {
-        router.push('/recharge');
+        router.push("/recharge");
       }
     };
 
     const handleAddAccountClick = () => {
-      if (!isLoggedIn.value) router.push('/login');
-      else router.push('/add-account');
+      if (!isLoggedIn.value) router.push("/login");
+      else router.push("/add-account");
       closeAllMenus();
     };
 
     const handleAddServiceClick = () => {
-      if (!isLoggedIn.value) router.push('/login');
-      else router.push('/add-service');
+      if (!isLoggedIn.value) router.push("/login");
+      else router.push("/add-service");
       closeAllMenus();
     };
 
     const bounceIcon = (event) => {
-      event.target.classList.add('animate-bounce');
+      event.target.classList.add("animate-bounce");
     };
 
     const resetIcon = (event) => {
-      event.target.classList.remove('animate-bounce');
+      event.target.classList.remove("animate-bounce");
     };
 
     const closeAllMenus = () => {
@@ -277,14 +334,15 @@ export default {
     };
 
     const handleClickOutside = (event) => {
-      if (event.target.closest('.menu-toggle')) return;
+      if (event.target.closest(".menu-toggle")) return;
       if (
-        event.target.closest('.cosmo-user-menu') ||
-        event.target.closest('.cosmo-add-menu') ||
-        event.target.closest('.cosmo-notification-dropdown') ||
-        event.target.closest('.slide-panel') ||
-        event.target.closest('.cosmo-account-menu')
-      ) return;
+        event.target.closest(".cosmo-user-menu") ||
+        event.target.closest(".cosmo-add-menu") ||
+        event.target.closest(".cosmo-notification-dropdown") ||
+        event.target.closest(".slide-panel") ||
+        event.target.closest(".cosmo-account-menu")
+      )
+        return;
       closeAllMenus();
     };
 
@@ -336,7 +394,7 @@ export default {
     };
   },
   beforeUnmount() {
-    document.removeEventListener('click', this.handleClickOutside);
+    document.removeEventListener("click", this.handleClickOutside);
   },
 };
 </script>
@@ -346,7 +404,7 @@ export default {
   height: 60px;
   background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
   z-index: 1050;
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
   top: 0;
   border-bottom: 1px solid rgba(0, 255, 255, 0.1);
@@ -561,9 +619,19 @@ a {
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
-  60% { transform: translateY(-5px); }
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
 }
 
 .animate-bounce {
@@ -649,7 +717,7 @@ a {
 }
 
 .modal-content::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -2px;
   left: -2px;
@@ -674,7 +742,7 @@ a {
   font-weight: bold;
   color: #00ffff;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5), 0 0 3px rgba(255, 0, 122, 0.3);
-  font-family: 'Arial', sans-serif; /* Dùng font cơ bản hơn */
+  font-family: "Arial", sans-serif; /* Dùng font cơ bản hơn */
 }
 
 .close-btn {
@@ -727,7 +795,7 @@ a {
 }
 
 .modal-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -771,13 +839,21 @@ a {
 }
 
 @keyframes neonPulse {
-  0% { opacity: 0.2; }
-  100% { opacity: 0.4; }
+  0% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0.4;
+  }
 }
 
 @keyframes overlayFadeIn {
-  from { opacity: 0; }
-  to { opacity: 0.8; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.8;
+  }
 }
 
 @media (max-width: 768px) {

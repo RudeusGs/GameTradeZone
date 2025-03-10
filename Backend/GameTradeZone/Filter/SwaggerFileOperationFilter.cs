@@ -21,6 +21,7 @@ public class SwaggerFileOperationFilter : IOperationFilter
                             {
                                 ["image"] = new OpenApiSchema { Type = "string", Format = "binary" },
                                 ["caption"] = new OpenApiSchema { Type = "string" },
+                                ["categoryId"] = new OpenApiSchema { Type = "integer" },
                                 ["content"] = new OpenApiSchema { Type = "string" }
                             }
                         }

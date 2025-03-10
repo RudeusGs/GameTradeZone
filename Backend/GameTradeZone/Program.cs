@@ -34,6 +34,7 @@ namespace GameTradeZone
             builder.Services.AddScoped<CloudinaryService>();
             builder.Services.AddScoped<IPostInfoService, PostInfoService>();
             builder.Services.AddScoped<IPostService, PostService>();
+            builder.Services.AddScoped<IForumsCategoryService, ForumsService>();
             builder.Services.AddHttpContextAccessor();  
 
             // Configure Swagger/OpenAPI
