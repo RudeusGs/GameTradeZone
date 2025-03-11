@@ -108,11 +108,16 @@ namespace GameTradeZone.Service.Services
                 {
                     return new ApiResult { Message = "Người dùng không tồn tại!" };
                 }
-
+                string? oldImageUrl = user.Avatar;
                 string? imageUrl = null;
                 if (image != null)
                 {
-                    imageUrl = await _cloudinaryService.UploadImageAsync(image);
+                    if (!string.IsNullOrEmpty(oldImageUrl))
+                    {
+                        await _cloudinaryService.DeleteImageAsync(oldImageUrl);
+                    }
+
+                    imageUrl = await _cloudinaryService.UploadImageAvatarAsync(image);
                     if (string.IsNullOrEmpty(imageUrl))
                     {
                         return new ApiResult { Message = "Failed to upload image to Cloudinary." };
