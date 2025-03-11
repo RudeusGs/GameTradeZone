@@ -3,6 +3,7 @@ using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,14 +12,17 @@ namespace GameTradeZone.Service.Services
     public class WebsiteAccountService : ServiceBase, IWebsiteAccountService
     {
         private readonly UserManager<User> _userManager;
+        private readonly CloudinaryService _cloudinaryService;
 
         public WebsiteAccountService(
             DataContext dataContext,
             IUserService userService,
+            CloudinaryService cloudinaryService,
             UserManager<User> userManager)
             : base(dataContext, userService)
         {
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _cloudinaryService = cloudinaryService;
         }
 
         public async Task<ApiResult> BlockAccount(int id)
@@ -28,7 +32,7 @@ namespace GameTradeZone.Service.Services
                 var user = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == id);
                 if (user == null)
                 {
-                    return new ApiResult {  Message = "Người dùng không tồn tại"};
+                    return new ApiResult { Message = "Người dùng không tồn tại" };
                 }
 
                 user.Status = true;
@@ -87,6 +91,29 @@ namespace GameTradeZone.Service.Services
                 user.UpdatedDate = DateTime.UtcNow;
                 await _dataContext.SaveChangesAsync();
 
+                return new ApiResult();
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult { Message = $"Error: {ex.Message} " };
+            }
+        } 
+    public async Task<ApiResult> UpdateUserAvatar(int id, IFormFile? image)
+        {
+            try
+            {
+                var user = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == id);
+                if (user == null)
+                {
+                    return new ApiResult { Message = "Người dùng không tồn tại!" };
+                }
+                string imageUrl = null;
+                if (image != null)
+                {
+                    imageUrl = await _cloudinaryService.UploadImageAsync(image);
+                }
+                _dataContext.Users.Update(user);
+                await _dataContext.SaveChangesAsync();
                 return new ApiResult();
             }
             catch (Exception ex)

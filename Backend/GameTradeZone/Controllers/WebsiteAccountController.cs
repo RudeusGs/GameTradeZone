@@ -63,5 +63,18 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [HttpPost("Update-User-Avatar")]
+        public async Task<IActionResult> UpdateUserAvatar([FromQuery] int id, [FromForm] IFormFile image)
+        {
+            try
+            {
+                var result = await _websiteAccountService.UpdateUserAvatar(id, image);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }
