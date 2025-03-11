@@ -1,6 +1,7 @@
 ﻿using GameTradeZone.Service.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using GameTradeZone.Service.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GameTradeZone.Controllers
 {
@@ -63,12 +64,13 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [Authorize]
         [HttpPost("Update-User-Avatar")]
-        public async Task<IActionResult> UpdateUserAvatar([FromQuery] int id, [FromForm] IFormFile image)
+        public async Task<IActionResult> UpdateUserAvatar([FromForm] IFormFile image)
         {
             try
             {
-                var result = await _websiteAccountService.UpdateUserAvatar(id, image);
+                var result = await _websiteAccountService.UpdateUserAvatar(image);
                 return Response(result);
             }
             catch (Exception e)

@@ -97,9 +97,10 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = $"Error: {ex.Message} " };
             }
-        } 
-    public async Task<ApiResult> UpdateUserAvatar(int id, IFormFile? image)
+        }
+        public async Task<ApiResult> UpdateUserAvatar(IFormFile? image)
         {
+            int id = _userService.UserId;
             try
             {
                 var user = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == id);
@@ -107,18 +108,25 @@ namespace GameTradeZone.Service.Services
                 {
                     return new ApiResult { Message = "Người dùng không tồn tại!" };
                 }
-                string imageUrl = null;
+
+                string? imageUrl = null;
                 if (image != null)
                 {
                     imageUrl = await _cloudinaryService.UploadImageAsync(image);
+                    if (string.IsNullOrEmpty(imageUrl))
+                    {
+                        return new ApiResult { Message = "Failed to upload image to Cloudinary." };
+                    }
                 }
+
+                user.Avatar = imageUrl;
                 _dataContext.Users.Update(user);
                 await _dataContext.SaveChangesAsync();
                 return new ApiResult();
             }
             catch (Exception ex)
             {
-                return new ApiResult { Message = $"Error: {ex.Message} " };
+                return new ApiResult { Message = $"Error: {ex.Message}" };
             }
         }
     }
