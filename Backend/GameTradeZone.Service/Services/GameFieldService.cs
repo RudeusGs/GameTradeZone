@@ -100,7 +100,6 @@ namespace GameTradeZone.Service.Services
             var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {
-                gameField.GameInforID = model.GameInforID ?? gameField.GameInforID;
                 gameField.FieldName = model.FieldName ?? gameField.FieldName;
                 gameField.UpdatedDate = DateTime.Now;
 

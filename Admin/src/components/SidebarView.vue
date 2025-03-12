@@ -113,7 +113,7 @@ const logout = () => {
       <li class="dropdown" v-if="!isCollapsed">
         <div class="menu-link" @click="toggleDropdown('gameAccount')">
           <i class="material-icons">games</i>
-          <span class="menu-text">Tài khoản game</span>
+          <span class="menu-text">Game</span>
           <i class="material-icons dropdown-icon">
             {{ dropdownStates.gameAccount ? 'expand_less' : 'expand_more' }}
           </i>
@@ -124,13 +124,13 @@ const logout = () => {
               to="/admin/game-accounts"
               :class="{ active: $route.path === '/admin/game-accounts' }"
             >
-              Tài khoản
+              Tài khoản người chơi
             </router-link>
           </li>
           <li>
             <router-link
-              to="/admin/games"
-              :class="{ active: $route.path === '/admin/games' }"
+              to="/game-infor"
+              :class="{ active: $route.path === '/game-infor' }"
             >
               Trò chơi
             </router-link>
@@ -178,6 +178,14 @@ const logout = () => {
               :class="{ active: $route.path === '/admin/transactions/withdraw' }"
             >
               Rút tiền
+            </router-link>
+          </li>
+          <li>
+            <router-link
+              to="/admin/transactions/withdraw"
+              :class="{ active: $route.path === '/admin/transactions/withdraw' }"
+            >
+              Giao dịch tài khoản
             </router-link>
           </li>
         </ul>
@@ -398,7 +406,7 @@ const logout = () => {
 /* Dropdown Menu */
 .dropdown .menu-link {
   cursor: pointer;
-  justify-content: space-between;
+  justify-content: start;
 }
 
 .dropdown-icon {
