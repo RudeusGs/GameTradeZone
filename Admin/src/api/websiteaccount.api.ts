@@ -10,8 +10,8 @@ export default {
     return await baseApi.get('WebsiteAccount/Get-All');
   },
 
-  getById: async (id: number): Promise<AxiosResponse<ApiResult<UserInfoModel>>> => {
-    return await baseApi.get('WebsiteAccount/Get-By-Id', { params: { id } });
+  getById: async (userId: number) => {
+    return await baseApi.get(`WebsiteAccount/Get-By-Id?id=${userId}`);
   },
 
   blockAccount: async (id: number): Promise<AxiosResponse<ApiResult>> => {
