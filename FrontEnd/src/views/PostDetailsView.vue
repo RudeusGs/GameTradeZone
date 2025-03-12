@@ -31,7 +31,7 @@ interface Post {
 interface Comment {
   id: number;
   postId: number;
-  user?: User; // Có thể null, nên phải check
+  user?: User;
   content: string;
   createdDate: string;
 }
@@ -74,7 +74,7 @@ const fetchComments = async () => {
 const likePost = async () => {
   try {
     await axios.post(`${API_BASE_URL}/PostInfo/like/${postId.value}`);
-    if (post.value) post.value.likesCount += 1; // Tăng số lượng like ngay trên giao diện
+    post.value!.likesCount += 1; // Tăng số lượng like ngay trên giao diện
   } catch (error) {
     console.error("❌ Lỗi khi like bài viết:", error);
   }
@@ -88,7 +88,7 @@ const submitComment = async () => {
       postId: postId.value,
       content: newComment.value,
     });
-    newComment.value = "";
+    newComment.value = ""; // Xóa nội dung sau khi gửi
     fetchComments(); // Cập nhật lại danh sách bình luận
   } catch (error) {
     console.error("❌ Lỗi khi gửi bình luận:", error);
@@ -105,16 +105,21 @@ onMounted(() => {
 <template>
   <div class="post-detail-container">
     <div v-if="post" class="post-content">
-      <h1 class="post-title">{{ post.caption }}</h1>
-      <p class="post-meta">
-        🖊 Đăng bởi
-        <strong>{{
-          post.user?.fullName || post.user?.userName || "Ẩn danh"
-        }}</strong>
-        - 🕒 {{ new Date(post.createdDate).toLocaleString() }}
-      </p>
-      <p class="post-text">{{ post.content }}</p>
+      <!-- 🖼️ Hiển thị avatar của người đăng bài -->
+      <div class="post-user">
+        <img v-if="post.user?.avatar" :src="post.user.avatar" class="avatar" />
+        <span class="post-meta">
+          🖊 Đăng bởi
+          <strong>{{
+            post.user?.fullName || post.user?.userName || "Ẩn danh"
+          }}</strong>
+          - 🕒 {{ new Date(post.createdDate).toLocaleString() }}
+        </span>
+      </div>
 
+      <!-- 📄 Nội dung bài viết -->
+      <h1 class="post-title">{{ post.caption }}</h1>
+      <p class="post-text">{{ post.content }}</p>
       <div class="post-image-container" v-if="post.imageUrl">
         <img :src="post.imageUrl" alt="Hình ảnh bài viết" class="post-image" />
       </div>
@@ -124,24 +129,30 @@ onMounted(() => {
         ❤️ Thích ({{ post.likesCount }})
       </button>
 
-      <!-- 🟢 Danh sách bình luận -->
+      <!-- 💬 Danh sách bình luận -->
       <h2 class="comment-header">💬 Bình luận</h2>
       <div v-if="comments.length === 0" class="no-comments">
         Chưa có bình luận nào.
       </div>
+
       <div v-for="comment in comments" :key="comment.id" class="comment">
-        <p>
-          <strong
-            >{{
+        <div class="comment-user">
+          <img
+            v-if="comment.user?.avatar"
+            :src="comment.user.avatar"
+            class="avatar"
+          />
+          <span
+            ><strong>{{
               comment.user?.fullName || comment.user?.userName || "Ẩn danh"
-            }}:</strong
+            }}</strong></span
           >
-          {{ comment.content }}
-        </p>
+        </div>
+        <p>{{ comment.content }}</p>
         <small>🕒 {{ new Date(comment.createdDate).toLocaleString() }}</small>
       </div>
 
-      <!-- ✍️ Nhập bình luận mới -->
+      <!-- ✍️ Nhập bình luận -->
       <div class="comment-box">
         <textarea
           v-model="newComment"
@@ -168,62 +179,33 @@ onMounted(() => {
   text-align: center;
 }
 
-/* 📝 Tiêu đề bài viết */
-.post-title {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #00ffff;
+/* 🖼️ Avatar */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+  border: 2px solid #00ffff;
 }
 
-/* 🕒 Thông tin bài viết */
-.post-meta {
-  font-size: 14px;
-  color: #aaa;
-  margin-bottom: 15px;
-}
-
-/* 📄 Nội dung bài viết */
-.post-text {
-  font-size: 1.2rem;
-  margin-bottom: 20px;
-}
-
-/* 🖼️ Ảnh bài viết */
-.post-image-container {
+/* 📝 Người đăng bài */
+.post-user {
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
-.post-image {
-  max-width: 100%;
-  border-radius: 10px;
-  margin-top: 10px;
-  max-height: 400px;
-}
-
-/* ❤️ Nút like */
-.like-button {
-  background: #ff4d4d;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  margin-top: 10px;
-  cursor: pointer;
-  border-radius: 5px;
-  font-size: 1rem;
-  transition: 0.3s;
-}
-
-.like-button:hover {
-  background: #cc0000;
+/* 💬 Người bình luận */
+.comment-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* 💬 Bình luận */
-.comment-header {
-  margin-top: 20px;
-  font-size: 1.5rem;
-}
-
 .comment {
   padding: 10px;
   margin-top: 10px;
@@ -232,18 +214,9 @@ onMounted(() => {
   text-align: left;
 }
 
-/* 📝 Nếu không có bình luận */
-.no-comments {
-  font-style: italic;
-  color: #aaa;
-}
-
 /* ✍️ Nhập bình luận */
 .comment-box {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
 textarea {
@@ -252,12 +225,34 @@ textarea {
   padding: 10px;
   border-radius: 5px;
   border: none;
-  font-size: 1rem;
-  background: #333;
+  background: #1a1a1a;
   color: white;
 }
 
-/* 🔘 Nút gửi bình luận */
+/* 🎯 Nút */
+button {
+  background: #ff5555;
+  color: white;
+  border: none;
+  padding: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background: #ff3333;
+}
+
+/* ❤️ Nút like */
+.like-button {
+  background: #ff4444;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 5px;
+}
+
 .submit-button {
   background: #00ffff;
   color: black;
@@ -265,17 +260,9 @@ textarea {
   padding: 10px;
   cursor: pointer;
   border-radius: 5px;
-  font-size: 1rem;
 }
 
 .submit-button:hover {
   background: #009999;
-}
-
-/* 🔄 Loading */
-.loading-text {
-  text-align: center;
-  font-size: 18px;
-  color: #ccc;
 }
 </style>

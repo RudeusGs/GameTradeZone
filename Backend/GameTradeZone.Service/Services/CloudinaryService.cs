@@ -51,5 +51,38 @@ namespace GameTradeZone.Service.Services
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);
             return uploadResult.SecureUrl.AbsoluteUri;
         }
+        public async Task<string> UploadImageAvatarAsync(IFormFile file)
+        {
+            var userId = GetCurrentUserId();
+            if (file == null || file.Length == 0)
+                return null;
+
+            using var stream = file.OpenReadStream();
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = $"users/avatar/{userId}",
+                PublicId = $"{Guid.NewGuid()}",
+                Transformation = new Transformation().Width(500).Height(500).Crop("limit")
+            };
+
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+            return uploadResult.SecureUrl.AbsoluteUri;
+        }
+        public async Task DeleteImageAsync(string imageUrl)
+        {
+            var publicId = GetPublicIdFromUrl(imageUrl);
+            var deletionParams = new DeletionParams(publicId);
+            await _cloudinary.DestroyAsync(deletionParams);
+        }
+
+        private static string GetPublicIdFromUrl(string url)
+        {
+            var uri = new Uri(url);
+            var segments = uri.Segments;
+            var publicId = segments[segments.Length - 1];
+            return publicId.Split('.')[0]; 
+        }
     }
 }
+
