@@ -1,159 +1,76 @@
 <template>
-  <div class="recharge-container">
+  <div class="recharge-container" v-if="user">
     <!-- Particle Background -->
     <div class="particle-background">
       <div v-for="i in 15" :key="i" class="particle"></div>
-      <!-- Giảm số lượng particle để nhẹ hơn -->
     </div>
     <section class="recharge-content">
       <h1 class="recharge-title">Nạp Tiền GameTradeZone</h1>
-      <p class="recharge-subtitle">Chọn phương thức nạp để tiếp tục!</p>
+      <p class="recharge-subtitle">
+        Xin chào {{ fullname }}, nhập số tiền bạn muốn nạp và bấm xác nhận để
+        tiếp tục.
+      </p>
 
-      <!-- Tabs cho hai phương thức nạp tiền -->
-      <div class="recharge-tabs">
+      <!-- Nhập số tiền -->
+      <div v-if="!showPaymentDetails" class="amount-section">
+        <label for="rechargeAmount" class="amount-label">Số tiền (VNĐ):</label>
+        <input
+          v-model="rechargeAmount"
+          type="number"
+          id="rechargeAmount"
+          class="amount-input"
+          placeholder="Nhập số tiền"
+          min="10000"
+          required
+          :disabled="!isAuthenticated"
+        />
+        <div class="preset-amounts">
+          <button
+            v-for="amount in presetAmounts"
+            :key="amount"
+            @click="rechargeAmount = amount"
+            class="preset-btn"
+            :disabled="!isAuthenticated"
+          >
+            {{ amount.toLocaleString() }} VNĐ
+          </button>
+        </div>
         <button
-          :class="{ active: activeTab === 'bank' }"
-          @click="activeTab = 'bank'"
-          class="tab-button"
+          @click="confirmRecharge"
+          class="confirm-btn"
+          :disabled="!isValidAmount || !isAuthenticated"
         >
-          <i class="fas fa-qrcode"></i> Ngân Hàng (QR)
+          <i class="fas fa-check"></i> Xác Nhận
         </button>
-        <button
-          :class="{ active: activeTab === 'card' }"
-          @click="activeTab = 'card'"
-          class="tab-button"
-        >
-          <i class="fas fa-sim-card"></i> Thẻ Cào
-        </button>
+        <p v-if="!isAuthenticated" class="auth-warning">
+          Vui lòng đăng nhập để nạp tiền!
+        </p>
       </div>
 
-      <!-- Nội dung phương thức nạp -->
-      <transition name="slide">
-        <div v-if="activeTab === 'bank'" class="recharge-method bank-method">
-          <div class="method-header">
-            <h2 class="method-title">Nạp Qua QR Ngân Hàng</h2>
-            <p class="method-description">
-              Quét mã QR để nạp. Nhập số tiền và hoàn tất trong 5 phút.
-            </p>
-          </div>
-
-          <div class="method-body">
-            <div class="qr-section">
-              <div class="qr-wrapper">
-                <img :src="qrCodeUrl" alt="Mã QR Ngân Hàng" class="qr-image" />
-                <p class="qr-instruction">Quét mã QR</p>
-              </div>
-              <div class="amount-section">
-                <label for="bankAmount" class="amount-label"
-                  >Số tiền (VNĐ):</label
-                >
-                <input
-                  v-model="bankAmount"
-                  type="number"
-                  id="bankAmount"
-                  class="amount-input"
-                  placeholder="Nhập số tiền"
-                  min="10000"
-                  required
-                />
-              </div>
-            </div>
-
-            <button
-              @click="generateQRCode"
-              class="confirm-btn"
-              :disabled="!bankAmount || bankAmount < 10000"
-            >
-              <i class="fas fa-check"></i> Tạo QR Code
-            </button>
-          </div>
-
-          <p class="note-text">
-            Giao dịch mất 1-5 phút. Hỗ trợ:
-            <a href="mailto:support@gametradezone.com" class="note-link"
-              >support@gametradezone.com</a
-            >
-          </p>
+      <!-- Hiển thị mã QR và thông tin ngân hàng -->
+      <div v-else class="payment-details">
+        <h2 class="method-title">Thông Tin Thanh Toán</h2>
+        <div class="qr-section">
+          <img :src="qrCodeUrl" alt="Mã QR Thanh Toán" class="qr-image" />
+          <p class="qr-instruction">Quét mã QR để chuyển khoản</p>
         </div>
-
-        <div v-else class="recharge-method card-method">
-          <div class="method-header">
-            <h2 class="method-title">Nạp Qua Thẻ Cào</h2>
-            <p class="method-description">
-              Nhập thông tin thẻ cào. Đảm bảo mã chính xác.
-            </p>
-          </div>
-
-          <div class="method-body">
-            <div class="card-section">
-              <div class="card-field">
-                <label for="cardProvider" class="card-label">Nhà mạng:</label>
-                <select
-                  v-model="cardProvider"
-                  id="cardProvider"
-                  class="card-select"
-                >
-                  <option value="viettel">Viettel</option>
-                  <option value="mobifone">Mobifone</option>
-                  <option value="vinaphone">Vinaphone</option>
-                </select>
-              </div>
-              <div class="card-field">
-                <label for="cardCode" class="card-label">Mã thẻ:</label>
-                <input
-                  v-model="cardCode"
-                  type="text"
-                  id="cardCode"
-                  class="card-input"
-                  placeholder="12-14 số"
-                  maxlength="14"
-                  pattern="[0-9]*"
-                  required
-                />
-              </div>
-              <div class="card-field">
-                <label for="cardSerial" class="card-label">Serial:</label>
-                <input
-                  v-model="cardSerial"
-                  type="text"
-                  id="cardSerial"
-                  class="card-input"
-                  placeholder="14 số"
-                  maxlength="14"
-                  pattern="[0-9]*"
-                  required
-                />
-              </div>
-              <p class="card-amount">
-                Số tiền:
-                <span class="amount-value"
-                  >{{ calculateCardAmount() }} VNĐ</span
-                >
-              </p>
-            </div>
-
-            <button
-              @click=""
-              class="confirm-btn"
-              :disabled="
-                !cardCode ||
-                !cardSerial ||
-                cardCode.length < 12 ||
-                cardSerial.length < 14
-              "
-            >
-              <i class="fas fa-check"></i> Nạp Ngay
-            </button>
-          </div>
-
-          <p class="note-text">
-            Kiểm tra thẻ trong 1-3 phút. Hỗ trợ:
-            <a href="mailto:support@gametradezone.com" class="note-link"
-              >support@gametradezone.com</a
-            >
-          </p>
+        <div class="bank-details">
+          <p><strong>Số Tài Khoản: </strong> {{ bankAccount.number }}</p>
+          <p><strong>Tên Chủ Tài Khoản: </strong> {{ bankAccount.holder }}</p>
+          <p><strong>Số tiền chuyển khoản: </strong>{{ rechargeAmount }}</p>
+          <p><strong>Nội Dung Chuyển Khoán: </strong> USERID {{ userId }}</p>
         </div>
-      </transition>
+        <p class="note-text">
+          Vui lòng chuyển khoản theo thông tin trên. Giao dịch sẽ được xử lý
+          trong 1-5 phút. Nếu gặp vấn đề, liên hệ:
+          <a href="mailto:support@gametradezone.com" class="note-link"
+            >support@gametradezone.com</a
+          >
+        </p>
+        <button @click="goBack" class="back-btn">
+          <i class="fas fa-arrow-left"></i> Quay Lại
+        </button>
+      </div>
     </section>
 
     <!-- Footer -->
@@ -163,684 +80,361 @@
       </p>
     </footer>
   </div>
+  <div v-else class="login-prompt">
+    <h2>Bạn cần đăng nhập để sử dụng tính năng này!</h2>
+    <button @click="redirectToLogin" class="login-btn">Đăng nhập</button>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { userStore } from "@/stores/auth";
+import * as signalR from "@microsoft/signalr";
+import type { UserInfoModel } from "@/models/user-model"; // Adjust the import path as needed
 
-const activeTab = ref<string>("bank");
-const bankAmount = ref<number>(0);
-const cardProvider = ref<string>("viettel");
-const cardCode = ref<string>("");
-const cardSerial = ref<string>("");
 const store = userStore();
-
-const userId =
-  store.user?.id || JSON.parse(localStorage.getItem("user") || "{}").id;
+const user = computed(() => store.user as UserInfoModel | null);
+const fullname = computed(() => store.fullname);
+const userId = computed(() => user.value?.id || 0);
+const rechargeAmount = ref<number>(0);
+const showPaymentDetails = ref<boolean>(false);
 const qrCodeUrl = ref<string>("");
+const bankAccount = {
+  number: "123456789",
+  holder: "GameTradeZone Corp",
+};
+const presetAmounts = [10000, 20000, 50000, 100000, 200000];
+
+// SignalR connection
+let connection: signalR.HubConnection | null = null;
+
+const isAuthenticated = computed(() => !!user.value);
+const isValidAmount = computed(
+  () => rechargeAmount.value >= 10000 && isAuthenticated.value
+);
 
 const generateQRCode = () => {
-  const qrData = `https://qr.sepay.vn/img?acc=96247XAAD6&bank=BIDV&amount=${bankAmount.value}&des=USERID%20${userId}`;
+  const qrData = `https://qr.sepay.vn/img?acc=96247XAAD6&bank=BIDV&amount=${rechargeAmount.value}&des=USERID%20${userId.value}`;
   qrCodeUrl.value = qrData;
 };
 
-// Hàm xác nhận nạp qua thẻ cào
-const confirmCardRecharge = () => {
-  if (cardCode.value.length >= 12 && cardSerial.value.length === 14) {
-    alert(
-      `Nạp tiền thành công qua thẻ ${
-        cardProvider.value
-      }! Số tiền: ${calculateCardAmount()} VNĐ.`
-    );
-    cardCode.value = "";
-    cardSerial.value = "";
-  } else {
-    alert("Vui lòng nhập đúng mã thẻ (12-14 số) và số serial (14 số)!");
+const confirmRecharge = () => {
+  if (isValidAmount.value) {
+    generateQRCode();
+    showPaymentDetails.value = true;
   }
 };
 
-// Hàm tính số tiền nạp qua thẻ cào (giả định giá trị cố định)
-const calculateCardAmount = () => {
-  const amounts: { [key: string]: number } = {
-    viettel: 50000,
-    mobifone: 100000,
-    vinaphone: 200000,
-  };
-  return amounts[cardProvider.value] || 0;
+const goBack = () => {
+  showPaymentDetails.value = false;
+  rechargeAmount.value = 0;
 };
+
+const redirectToLogin = () => {
+  // Replace with your login route
+  window.location.href = "/login";
+};
+
+const initializeSignalR = async () => {
+  if (!isAuthenticated.value) return;
+
+  connection = new signalR.HubConnectionBuilder()
+    .withUrl(
+      "hhttps://d2a0-2402-800-63af-bfoe-7981-11d7-6552-5e2c.ngrok-free.app/transactionHub",
+      {
+        // Replace with your deployed SignalR hub URL
+        accessTokenFactory: () => "", // Removed token assumption since UserInfoModel doesn't have it
+      }
+    )
+    .withAutomaticReconnect()
+    .build();
+
+  connection.on("ReceiveTransactionStatus", (message: string) => {
+    alert(message); // Show the success message
+  });
+
+  connection.on("PaymentCompleted", () => {
+    showPaymentDetails.value = false; // Redirect back to the amount selection screen
+    rechargeAmount.value = 0;
+    alert("Thanh toán thành công!");
+  });
+
+  try {
+    await connection.start();
+    console.log("SignalR Connected for UserId: ", userId.value);
+  } catch (err) {
+    console.error("SignalR Connection Error:", err);
+  }
+};
+
+onMounted(() => {
+  store.init(); // Initialize user from localStorage
+  if (isAuthenticated.value) {
+    initializeSignalR();
+  }
+});
+
+onUnmounted(() => {
+  if (connection) {
+    connection.stop();
+    connection = null;
+  }
+});
 </script>
 
 <style scoped>
-/* Thêm kiểu dáng cho thông báo giao dịch */
-.transaction-notification {
-  background-color: #4caf50; /* Màu nền thông báo thành công */
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-button {
-  padding: 10px 20px;
-  background-color: #00b3e0;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #008c8c;
-}
-</style>
-
-<style scoped>
-/* Tổng thể */
+/* Existing styles remain unchanged */
 .recharge-container {
   min-height: 100vh;
-  background: linear-gradient(
-    135deg,
-    #1a0933 0%,
-    #0d1b2a 100%
-  ); /* Đồng bộ gradient với navbar */
-  font-family: "Arial", sans-serif; /* Đồng bộ font với navbar */
-  color: #f0f0f0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  position: relative;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: #f0f0f0;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   overflow: hidden;
+  position: relative;
 }
 
-/* Particle Background */
 .particle-background {
   position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(
-    135deg,
-    #1a0933 0%,
-    #0d1b2a 100%
-  ); /* Giữ gradient nhưng đồng bộ */
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .particle {
   position: absolute;
-  width: 4px; /* Giảm kích thước particle */
-  height: 4px;
-  background: rgba(0, 179, 224, 0.5); /* Màu cyan, đồng bộ với navbar */
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  animation: float 10s infinite ease-in-out;
-}
-
-.particle:nth-child(odd) {
-  background: rgba(255, 0, 255, 0.5); /* Màu magenta, đồng bộ với navbar */
-}
-
-.particle:nth-child(1) {
-  left: 10%;
-  top: 20%;
-  animation-duration: 12s;
-}
-.particle:nth-child(2) {
-  left: 20%;
-  top: 80%;
-  animation-duration: 15s;
-}
-.particle:nth-child(3) {
-  left: 30%;
-  top: 50%;
-  animation-duration: 8s;
-}
-.particle:nth-child(4) {
-  left: 40%;
-  top: 10%;
-  animation-duration: 10s;
-}
-.particle:nth-child(5) {
-  left: 50%;
-  top: 70%;
-  animation-duration: 13s;
-}
-.particle:nth-child(6) {
-  left: 60%;
-  top: 30%;
-  animation-duration: 9s;
-}
-.particle:nth-child(7) {
-  left: 70%;
-  top: 90%;
-  animation-duration: 11s;
-}
-.particle:nth-child(8) {
-  left: 80%;
-  top: 40%;
-  animation-duration: 14s;
-}
-.particle:nth-child(9) {
-  left: 90%;
-  top: 60%;
-  animation-duration: 7s;
-}
-.particle:nth-child(10) {
-  left: 15%;
-  top: 25%;
-  animation-duration: 16s;
-}
-.particle:nth-child(11) {
-  left: 25%;
-  top: 85%;
-  animation-duration: 12s;
-}
-.particle:nth-child(12) {
-  left: 35%;
-  top: 45%;
-  animation-duration: 10s;
-}
-.particle:nth-child(13) {
-  left: 45%;
-  top: 15%;
-  animation-duration: 8s;
-}
-.particle:nth-child(14) {
-  left: 55%;
-  top: 75%;
-  animation-duration: 13s;
-}
-.particle:nth-child(15) {
-  left: 65%;
-  top: 35%;
-  animation-duration: 9s;
+  animation: float 15s infinite;
 }
 
 @keyframes float {
   0% {
-    transform: translateY(0) scale(1);
-    opacity: 0.8;
+    transform: translateY(100vh);
   }
-  50% {
-    transform: translateY(-100vh) scale(1.3);
-    opacity: 0.3;
-  } /* Giảm scale để nhẹ nhàng hơn */
   100% {
-    transform: translateY(0) scale(1);
-    opacity: 0.8;
+    transform: translateY(-10vh);
   }
 }
 
-/* Main Content */
 .recharge-content {
-  max-width: 700px; /* Giảm kích thước container để vừa khung màn hình */
-  margin: 0 auto;
-  padding: 40px 20px; /* Giảm padding để nhỏ gọn hơn */
-  position: relative;
+  padding: 40px 20px;
+  text-align: center;
   z-index: 1;
 }
 
-/* Titles */
 .recharge-title {
-  font-size: 2.8rem; /* Giảm kích thước tiêu đề */
-  font-weight: 800;
-  color: #f8f8f8; /* Màu chữ kem nhạt, đồng bộ với navbar */
-  text-align: center;
-  margin-bottom: 15px; /* Giảm khoảng cách */
-  text-shadow: 0 0 15px #00b3e0, 0 0 5px #ff00ff; /* Giữ glow nhưng nhỏ gọn hơn */
-  transition: all 0.3s ease-in-out; /* Giảm thời gian transition */
-}
-
-.recharge-title:hover {
-  transform: scale(1.05); /* Giữ hiệu ứng nhưng nhỏ hơn */
-  text-shadow: 0 0 20px #00b3e0, 0 0 7px #ff00ff;
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  color: #00b3e0;
 }
 
 .recharge-subtitle {
-  font-size: 1.2rem; /* Giảm kích thước phụ đề */
-  color: #e0e0e0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  text-align: center;
-  margin-bottom: 25px; /* Giảm khoảng cách */
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3); /* Giảm bóng chữ */
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #ccc;
 }
 
-/* Tabs */
-.recharge-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 15px; /* Giảm khoảng cách giữa các tab */
-  margin-bottom: 25px; /* Giảm khoảng cách với nội dung bên dưới */
-  flex-wrap: wrap;
-}
-
-.tab-button {
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  color: #f0f0f0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  padding: 10px 20px; /* Giảm padding để nhỏ gọn hơn */
-  border: 1px solid #00b3e0; /* Viền cyan, đồng bộ với navbar */
-  border-radius: 8px; /* Giảm bo tròn để đơn giản hơn */
-  cursor: pointer;
-  font-weight: 600; /* Giảm độ đậm để nhẹ nhàng hơn */
-  font-size: 1rem; /* Giảm kích thước chữ */
-  transition: all 0.2s ease-in-out; /* Giảm thời gian transition */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Giảm bóng chữ */
-  box-shadow: 0 3px 10px rgba(0, 204, 255, 0.2); /* Giảm bóng đổ */
-  display: flex;
-  align-items: center;
-  gap: 8px; /* Giảm khoảng cách giữa icon và text */
-}
-
-.tab-button.active,
-.tab-button:hover {
-  background: linear-gradient(
-    45deg,
-    #00b3e0,
-    #ff00ff
-  ); /* Gradient màu navbar */
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.4); /* Giảm bóng đổ hover */
-  transform: translateY(-2px); /* Giữ hiệu ứng nâng nhưng nhỏ hơn */
-  border-color: #ff00ff; /* Viền magenta khi active/hover */
-}
-
-.tab-button i {
-  font-size: 1rem; /* Giảm kích thước icon */
-  transition: transform 0.2s ease-in-out; /* Giảm thời gian transition */
-}
-
-.tab-button:hover i {
-  transform: rotate(360deg); /* Giữ hiệu ứng xoay nhưng nhẹ nhàng hơn */
-}
-
-/* Transition */
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.3s ease-in-out; /* Giảm thời gian transition */
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateY(-10px); /* Giảm khoảng trượt để nhỏ gọn hơn */
-  opacity: 0;
-}
-
-/* Phương thức nạp */
-.recharge-method {
-  background: rgba(28, 37, 38, 0.95); /* Giữ nền trong suốt */
-  border: 1px solid #00b3e0; /* Viền cyan, đồng bộ với navbar */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
-  padding: 25px; /* Giảm padding để nhỏ gọn hơn */
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.2); /* Giảm bóng đổ */
-  transition: all 0.2s ease-in-out; /* Giữ transition */
-  margin-bottom: 15px; /* Giảm khoảng cách dưới */
-}
-
-.recharge-method:hover {
-  transform: translateY(-3px); /* Giảm hiệu ứng nâng */
-  box-shadow: 0 8px 20px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ hover */
-}
-
-.bank-method {
-  border-color: #00b3e0;
-}
-.card-method {
-  border-color: #ff00ff;
-} /* Phân biệt hai phương thức bằng màu magenta */
-
-/* Method Header */
-.method-header {
-  margin-bottom: 20px; /* Giảm khoảng cách */
-}
-
-.method-title {
-  font-size: 1.8rem; /* Giảm kích thước tiêu đề */
-  font-weight: 700;
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
-  margin-bottom: 10px; /* Giảm khoảng cách */
-  text-shadow: 0 0 10px #00b3e0, 0 0 4px #ff00ff; /* Giảm glow */
-  transition: all 0.2s ease-in-out; /* Giảm thời gian transition */
-}
-
-.method-title:hover {
-  transform: scale(1.05); /* Giữ hiệu ứng zoom nhưng nhỏ hơn */
-  text-shadow: 0 0 15px #00b3e0, 0 0 6px #ff00ff;
-}
-
-.method-description {
-  font-size: 1rem; /* Giảm kích thước để nhỏ gọn hơn */
-  color: #e0e0e0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  margin-bottom: 15px; /* Giảm khoảng cách */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3); /* Giảm bóng chữ */
-  line-height: 1.5; /* Giảm khoảng cách dòng */
-}
-
-/* Method Body */
-.method-body {
-  display: flex;
-  flex-direction: column;
-  gap: 15px; /* Giảm khoảng cách giữa các phần */
-}
-
-/* QR Section */
-.qr-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px; /* Giảm khoảng cách */
-  background: rgba(28, 37, 38, 0.7); /* Giảm độ trong suốt cho nhẹ nhàng hơn */
-  padding: 15px; /* Giảm padding */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
-  box-shadow: 0 3px 10px rgba(0, 204, 255, 0.1); /* Giảm bóng đổ */
-  transition: all 0.2s ease-in-out; /* Giữ transition */
-}
-
-.qr-section:hover {
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ hover */
-}
-
-.qr-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px; /* Giảm khoảng cách */
-}
-
-.qr-image {
-  width: 150px; /* Giảm kích thước QR */
-  height: 150px;
-  border: 1px solid #00b3e0; /* Giữ viền nhưng đơn giản hơn */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
-  box-shadow: 0 0 8px rgba(0, 204, 255, 0.1); /* Giảm bóng đổ */
-  transition: all 0.2s ease-in-out; /* Giữ transition */
-}
-
-.qr-image:hover {
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ hover */
-}
-
-.qr-instruction {
-  font-size: 0.9rem; /* Giảm kích thước để nhỏ gọn hơn */
-  color: #e0e0e0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2); /* Giảm bóng chữ */
-}
-
-/* Amount Section */
-.amount-section {
-  display: flex;
-  flex-direction: column;
-  gap: 5px; /* Giảm khoảng cách */
-  width: 100%;
-  max-width: 200px; /* Giảm chiều rộng input */
+.amount-section,
+.payment-details {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .amount-label {
-  font-size: 1rem; /* Giảm kích thước label */
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
-  text-shadow: 0 0 3px #00b3e0; /* Giảm glow */
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
 }
 
 .amount-input {
   width: 100%;
-  padding: 8px; /* Giảm padding */
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  border: 1px solid #00b3e0; /* Giữ viền nhưng đơn giản hơn */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #00b3e0;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.3);
   color: #f0f0f0;
-  font-size: 1rem; /* Giảm kích thước chữ */
-  box-shadow: 0 0 5px rgba(0, 204, 255, 0.1); /* Giảm bóng đổ */
-  transition: all 0.2s ease-in-out; /* Giữ transition */
 }
 
-.amount-input:focus {
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ focus */
-  outline: none;
-  border-color: #ff00ff; /* Màu focus magenta, đồng bộ với navbar */
+.preset-amounts {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.amount-input:disabled {
-  background: rgba(28, 37, 38, 0.5);
-  color: #808080;
+.preset-btn {
+  padding: 8px 15px;
+  background: rgba(0, 179, 224, 0.7);
+  border: 1px solid #00b3e0;
+  border-radius: 8px;
+  color: #f0f0f0;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.preset-btn:hover {
+  background: rgba(0, 179, 224, 0.9);
+  box-shadow: 0 0 8px rgba(0, 204, 255, 0.3);
+}
+
+.preset-btn:disabled,
+.confirm-btn:disabled,
+.back-btn:disabled {
+  background: #666;
+  border-color: #666;
   cursor: not-allowed;
 }
 
-/* Card Section */
-.card-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px; /* Giảm khoảng cách */
-  background: rgba(28, 37, 38, 0.7); /* Giảm độ trong suốt cho nhẹ nhàng hơn */
-  padding: 15px; /* Giảm padding */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
-  box-shadow: 0 3px 10px rgba(0, 204, 255, 0.1); /* Giảm bóng đổ */
-  transition: all 0.2s ease-in-out; /* Giữ transition */
-}
-
-.card-section:hover {
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ hover */
-}
-
-.card-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px; /* Giảm khoảng cách */
-}
-
-.card-label {
-  font-size: 1rem; /* Giảm kích thước label */
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
-  text-shadow: 0 0 3px #00b3e0; /* Giảm glow */
-}
-
-.card-select {
-  width: 100%;
-  padding: 8px; /* Giảm padding */
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  border: 1px solid #00b3e0; /* Giữ viền nhưng đơn giản hơn */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
+.confirm-btn,
+.back-btn {
+  padding: 10px 20px;
+  background: rgba(0, 179, 224, 0.7);
+  border: 1px solid #00b3e0;
+  border-radius: 8px;
   color: #f0f0f0;
-  font-size: 1rem; /* Giảm kích thước chữ */
-  box-shadow: 0 0 5px rgba(0, 204, 255, 0.1); /* Giảm bóng đổ */
-  transition: all 0.2s ease-in-out; /* Giữ transition */
-}
-
-.card-select:focus {
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ focus */
-  outline: none;
-  border-color: #ff00ff; /* Màu focus magenta, đồng bộ với navbar */
-}
-
-.card-input {
-  width: 100%;
-  padding: 8px; /* Giảm padding */
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  border: 1px solid #00b3e0; /* Giữ viền nhưng đơn giản hơn */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
-  color: #f0f0f0;
-  font-size: 1rem; /* Giảm kích thước chữ */
-  box-shadow: 0 0 5px rgba(0, 204, 255, 0.1); /* Giảm bóng đổ */
-  transition: all 0.2s ease-in-out; /* Giữ transition */
-}
-
-.card-input:focus {
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ focus */
-  outline: none;
-  border-color: #ff00ff; /* Màu focus magenta, đồng bộ với navbar */
-}
-
-.card-amount {
-  font-size: 1rem; /* Giảm kích thước */
-  color: #e0e0e0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2); /* Giảm bóng chữ */
-  text-align: center; /* Giữ căn giữa */
-}
-
-.amount-value {
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
-  font-weight: 600; /* Giảm độ đậm */
-}
-
-/* Confirm Button */
-.confirm-btn {
-  width: 100%;
-  padding: 10px; /* Giảm padding */
-  background: rgba(28, 37, 38, 0.9); /* Nền trong suốt, đồng bộ với navbar */
-  color: #f0f0f0; /* Màu chữ xám nhạt, đồng bộ với navbar */
-  border: 1px solid #00b3e0; /* Giữ viền nhưng đơn giản hơn */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
-  font-size: 1.1rem; /* Giảm kích thước chữ */
-  font-weight: 600; /* Giữ độ đậm */
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease-in-out; /* Giữ transition */
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2); /* Giảm bóng chữ */
-  box-shadow: 0 3px 10px rgba(0, 204, 255, 0.1); /* Giảm bóng đổ */
-  display: flex;
+  margin-top: 15px;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px; /* Giảm khoảng cách giữa icon và text */
+  gap: 5px;
 }
 
-.confirm-btn:disabled {
-  background: rgba(28, 37, 38, 0.5);
-  color: #808080;
-  border-color: #808080;
-  cursor: not-allowed;
-  box-shadow: none;
+.confirm-btn:hover,
+.back-btn:hover {
+  background: rgba(0, 179, 224, 0.9);
+  box-shadow: 0 0 8px rgba(0, 204, 255, 0.3);
 }
 
-.confirm-btn:hover:not(:disabled) {
-  background: linear-gradient(
-    45deg,
-    #00b3e0,
-    #ff00ff
-  ); /* Gradient màu navbar */
-  color: #f8f8f8; /* Màu chữ sáng, đồng bộ với navbar */
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ hover */
-  transform: translateY(-2px); /* Giữ hiệu ứng nâng */
+.back-btn {
+  background: rgba(255, 0, 255, 0.7);
+  border: 1px solid #ff00ff;
 }
 
-.confirm-btn i {
-  font-size: 1rem; /* Giảm kích thước icon */
-  transition: transform 0.2s ease-in-out; /* Giữ transition */
+.back-btn:hover {
+  background: rgba(255, 0, 255, 0.9);
+  box-shadow: 0 0 8px rgba(255, 0, 255, 0.3);
 }
 
-.confirm-btn:hover:not(:disabled) i {
-  transform: rotate(360deg); /* Giữ hiệu ứng xoay */
+.payment-details {
+  margin-top: 20px;
 }
 
-/* Note Text */
+.qr-section {
+  margin-bottom: 20px;
+}
+
+.qr-image {
+  max-width: 200px;
+  border: 1px solid #00b3e0;
+  border-radius: 5px;
+}
+
+.qr-instruction {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.bank-details {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.bank-details p {
+  margin: 5px 0;
+}
+
 .note-text {
-  font-size: 0.9rem; /* Giảm kích thước */
-  color: #b0b0b0; /* Màu chữ xám nhạt hơn, đồng bộ với navbar */
-  margin-top: 10px; /* Giảm khoảng cách với nút xác nhận */
-  text-align: center;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2); /* Giảm bóng chữ */
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 20px;
 }
 
 .note-link {
-  color: #00b3e0; /* Màu cyan, đồng bộ với navbar */
-  text-decoration: underline;
-  transition: all 0.2s ease-in-out; /* Giữ transition */
+  color: #00b3e0;
+  text-decoration: none;
 }
 
 .note-link:hover {
-  color: #ff00ff; /* Màu magenta, đồng bộ với navbar */
-  text-shadow: 0 0 6px #ff00ff; /* Giảm glow khi hover */
+  text-decoration: underline;
 }
 
-/* Footer */
 .recharge-footer {
-  margin-top: 20px; /* Giảm khoảng cách */
+  padding: 20px;
   text-align: center;
-  padding: 15px; /* Giảm padding */
-  background: rgba(
-    13,
-    27,
-    42,
-    0.9
-  ); /* Nền trong suốt hơn, đồng bộ với navbar */
-  border-radius: 8px; /* Giữ bo tròn đơn giản */
-  box-shadow: 0 3px 10px rgba(0, 204, 255, 0.1); /* Giảm bóng đổ */
-  transition: all 0.2s ease-in-out; /* Giữ transition */
-}
-
-.recharge-footer:hover {
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.3); /* Giảm bóng đổ hover */
+  background: rgba(0, 0, 0, 0.5);
+  color: #ccc;
+  z-index: 1;
 }
 
 .footer-text {
-  font-size: 1rem; /* Giữ kích thước */
-  color: #b0b0b0; /* Màu chữ xám nhạt hơn, đồng bộ với navbar */
-  margin: 5px 0;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2); /* Giảm bóng chữ */
+  margin: 0;
+  font-size: 0.9rem;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .recharge-content {
-    padding: 20px 15px; /* Giảm padding thêm trên mobile */
-  }
+.login-prompt {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: #f0f0f0;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
 
-  .recharge-title {
-    font-size: 2rem; /* Giảm kích thước tiêu đề trên mobile */
-  }
+.login-btn {
+  padding: 10px 20px;
+  background: rgba(0, 179, 224, 0.7);
+  border: 1px solid #00b3e0;
+  border-radius: 8px;
+  color: #f0f0f0;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
 
-  .recharge-subtitle {
-    font-size: 1rem; /* Giảm kích thước phụ đề */
-  }
+.login-btn:hover {
+  background: rgba(0, 179, 224, 0.9);
+  box-shadow: 0 0 8px rgba(0, 204, 255, 0.3);
+}
 
-  .recharge-tabs {
-    flex-direction: column;
-    gap: 10px; /* Giảm khoảng cách */
-  }
+.auth-warning {
+  color: #ff4444;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
 
-  .tab-button {
-    width: 100%;
-    padding: 8px 15px; /* Giảm padding thêm */
-    font-size: 0.9rem; /* Giảm kích thước chữ */
-  }
-
-  .recharge-method {
-    padding: 15px; /* Giảm padding thêm */
-  }
-
-  .method-title {
-    font-size: 1.4rem; /* Giảm kích thước tiêu đề */
-  }
-
-  .method-description {
-    font-size: 0.9rem; /* Giảm kích thước */
-  }
-
-  .qr-image {
-    width: 120px; /* Giảm kích thước QR thêm */
-    height: 120px;
-  }
-
-  .amount-section,
-  .card-field {
-    max-width: 100%;
-  }
-
-  .amount-input,
-  .card-select,
-  .card-input {
-    padding: 8px; /* Giữ padding */
-    font-size: 0.9rem; /* Giảm kích thước chữ */
-  }
-
-  .confirm-btn {
-    padding: 8px; /* Giảm padding */
-    font-size: 1rem; /* Giảm kích thước chữ */
-  }
-
-  .note-text {
-    font-size: 0.8rem; /* Giảm kích thước */
-  }
-
-  .footer-text {
-    font-size: 0.9rem; /* Giảm kích thước */
-  }
-
-  .particle {
-    width: 2px; /* Giảm kích thước particle thêm */
-    height: 2px;
-    animation-duration: 6s; /* Giảm thời gian animation */
-  }
+/* Particle animation sizes and positions */
+.particle:nth-child(1) {
+  width: 10px;
+  height: 10px;
+  left: 10%;
+  animation-delay: 0s;
+}
+.particle:nth-child(2) {
+  width: 15px;
+  height: 15px;
+  left: 20%;
+  animation-delay: 2s;
+}
+.particle:nth-child(3) {
+  width: 12px;
+  height: 12px;
+  left: 30%;
+  animation-delay: 4s;
 }
 </style>

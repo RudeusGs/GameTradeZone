@@ -100,41 +100,44 @@ const filteredPosts = computed(() => {
 
     <!-- Nội dung chính -->
     <div class="forum-main">
-      <header class="forum-header">
-        <h1 class="forum-title">Diễn Đàn GameTradeZone</h1>
-        <p class="forum-subtitle">Thảo luận, hỗ trợ và trao đổi tài khoản</p>
-      </header>
-
-      <!-- Danh mục diễn đàn -->
-      <section class="forum-categories">
-        <h2 class="section-title">Danh mục</h2>
-        <div class="categories-grid">
-          <div
-            v-for="category in categories"
-            :key="category.id"
-            class="category-card"
-          >
-            <span class="category-icon">{{ category.iconClass || "❓" }}</span>
-            <div class="category-info">
-              <h3 class="category-title">{{ category.name }}</h3>
-              <p class="category-description">{{ category.description }}</p>
-              <p class="category-meta">Bài viết: {{ category.postCount }}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Ô tìm kiếm -->
+      <!-- Thanh tìm kiếm -->
       <div class="forum-search">
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Tìm bài viết..."
+          placeholder="Tìm kiếm..."
           class="search-input"
         />
       </div>
 
-      <!-- 🟢 Danh sách bài viết -->
+      <!-- Tiêu đề -->
+      <header class="forum-header">
+        <h1 class="forum-title">Diễn Đàn GameTradeZone</h1>
+      </header>
+
+      <!-- Danh mục diễn đàn -->
+      <section class="forum-categories">
+        <div
+          v-for="category in categories"
+          :key="category.id"
+          class="category-card"
+        >
+          <div class="category-header">
+            <i
+              :class="`fa-solid ${category.iconClass || 'fa-question-circle'}`"
+              class="category-icon"
+            ></i>
+            <h3 class="category-title">{{ category.name }}</h3>
+            <!-- <span class="category-meta">New</span> -->
+          </div>
+          <div class="category-info">
+            <p class="category-description">{{ category.description }}</p>
+            <p class="post-meta">Bài viết: {{ category.postCount }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Danh sách bài viết -->
       <section class="forum-posts">
         <h2 class="section-title">Bài viết mới nhất</h2>
         <div class="posts-list">
@@ -146,13 +149,19 @@ const filteredPosts = computed(() => {
           >
             <p class="post-content">{{ post.caption }}</p>
             <p class="post-meta">
-              Đăng bởi <span class="post-author">{{ post.userName }}</span> -
+              Đăng bởi <span class="post-author">{{ post.userName }}</span> •
               {{ post.createdAt }}
             </p>
           </router-link>
         </div>
       </section>
     </div>
+
+    <!-- Member Stats (Phần bên phải) -->
+    <aside class="member-stats">
+      <h2 class="stats-title">THỐNG KÊ</h2>
+      <ul class="stats-list"></ul>
+    </aside>
   </div>
 </template>
 
@@ -168,9 +177,10 @@ const filteredPosts = computed(() => {
 
 /* Sidebar */
 .sidebar {
-  width: 250px;
+  width: 200px;
   background: #0d1b2a;
   padding: 20px;
+  border-right: 1px solid #333;
 }
 
 .sidebar-title {
@@ -202,55 +212,110 @@ const filteredPosts = computed(() => {
 /* Nội dung chính */
 .forum-main {
   flex: 1;
-  padding: 30px;
+  padding: 20px;
+  background: #12162d;
+}
+
+/* Thanh tìm kiếm */
+.forum-search {
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  background: #222;
+  color: #f0f0f0;
+  font-size: 1rem;
+}
+
+/* Tiêu đề */
+.forum-header {
+  background: #ff4500; /* Màu cam giống MangaDex */
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
 }
 
 .forum-title {
-  font-size: 2.5rem;
-  color: #00ffff;
-  text-shadow: 0 0 15px #00ffff;
-}
-
-.forum-subtitle {
-  font-size: 1.2rem;
-  color: #e0e0e0;
+  font-size: 1.8rem;
+  color: #fff;
+  margin: 0;
 }
 
 /* Danh mục diễn đàn */
-.categories-grid {
+.forum-categories {
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .category-card {
-  background: #12162d;
-  padding: 20px;
-  border-radius: 10px;
-  width: 300px;
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   transition: all 0.3s ease;
 }
 
-.category-card:hover {
-  background: #00ffff;
-  color: #1a0933;
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .category-icon {
   font-size: 2rem;
+  color: #ff4500;
+}
+
+.category-title {
+  font-size: 1.2rem;
+  color: #e0e0e0;
+  margin: 0;
+  flex: 1;
+}
+
+.category-meta {
+  background: #ff0000;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+
+.category-description {
+  font-size: 0.9rem;
+  color: #b0b0b0;
+  margin: 0;
+}
+
+.post-meta {
+  font-size: 0.8rem;
+  color: #888;
 }
 
 /* Bài viết */
+.section-title {
+  font-size: 1.2rem;
+  color: #00ffff;
+  margin: 20px 0 10px;
+}
+
 .posts-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
 }
 
 .post-item {
-  padding: 15px;
-  background: #12162d;
-  border-radius: 10px;
+  padding: 10px;
+  background: #1a1a1a;
+  border-radius: 5px;
   transition: all 0.3s;
   cursor: pointer;
   text-decoration: none;
@@ -262,24 +327,54 @@ const filteredPosts = computed(() => {
   color: #1a0933;
 }
 
+.post-content {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.post-meta {
+  font-size: 0.8rem;
+  color: #888;
+}
+
 .post-author {
   font-weight: bold;
   color: #00ffff;
 }
 
-/* Ô tìm kiếm */
-.forum-search {
-  margin: 20px 0;
-  display: flex;
-  align-items: center;
+/* Member Stats */
+.member-stats {
+  width: 250px;
+  padding: 20px;
+  background: #0d1b2a;
+  border-left: 1px solid #333;
 }
 
-.search-input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  background: #222;
-  color: #f0f0f0;
+.stats-title {
+  font-size: 1.2rem;
+  color: #ff4500;
+  margin: 20px 0 10px;
+}
+
+.stats-list {
+  list-style: none;
+  padding: 0;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.stats-list li {
+  padding: 5px 0;
+}
+
+.online-members {
+  font-size: 0.9rem;
+  color: #00ffff;
+}
+
+.stats-total {
+  font-size: 0.9rem;
+  color: #888;
+  margin-top: 10px;
 }
 </style>
