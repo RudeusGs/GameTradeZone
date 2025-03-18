@@ -40,6 +40,16 @@
               </div>
             </div>
             <div class="detail-item">
+              <i class="fas fa-university detail-icon"></i>
+              <span class="detail-label">Ngân hàng</span>
+              <span class="detail-value">{{ user.bankName || 'Chưa cập nhật' }}</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-credit-card detail-icon"></i>
+              <span class="detail-label">Số tài khoản</span>
+              <span class="detail-value">{{ user.bankNumber || 'Chưa cập nhật' }}</span>
+            </div>
+            <div class="detail-item">
               <i class="fas fa-calendar-alt detail-icon"></i>
               <span class="detail-label">Ngày tham gia</span>
               <span class="detail-value">{{ formatDate(user.createdDate) }}</span>
@@ -481,7 +491,10 @@ onMounted(() => {
 .fade-leave-active {
   transition: all 0.3s ease;
 }
-
+.detail-item.bank-info {
+  background: rgba(0, 221, 235, 0.1);
+  border-left: 3px solid #00ddeb;
+}
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

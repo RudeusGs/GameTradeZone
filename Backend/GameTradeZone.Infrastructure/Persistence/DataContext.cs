@@ -30,6 +30,7 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<TransactionInfor> TransactionInfors { get; set; }
         public DbSet<CommentData> CommentDatas { get; set; }
         public DbSet<ForumsCategory> ForumsCategories { get; set; }
+        public DbSet<GameAccountField> GameAccountFields { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
