@@ -221,6 +221,37 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.ToTable("ForumsCategories");
                 });
 
+            modelBuilder.Entity("GameTradeZone.Domain.Entities.GameAccountField", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeleteDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FieldValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GameAccountId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GameFieldId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GameAccountFields");
+                });
+
             modelBuilder.Entity("GameTradeZone.Domain.Entities.GameField", b =>
                 {
                     b.Property<int>("Id")
@@ -788,6 +819,14 @@ namespace GameTradeZone.Infrastructure.Migrations
 
                     b.Property<decimal?>("Balance")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BankNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("Coin")
                         .HasColumnType("int");

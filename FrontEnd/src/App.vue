@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import NavbarView from './components/NavbarView.vue'
-
 </script>
 
 <template>
@@ -13,6 +12,47 @@ import NavbarView from './components/NavbarView.vue'
 </template>
 
 <style scoped>
+/* Tùy chỉnh thanh cuộn */
+.cosmo-content {
+  margin-top: 60px;
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+  min-height: calc(100vh - 60px);
+  overflow-y: auto; /* Đảm bảo nội dung có thể cuộn */
+}
+
+/* Tùy chỉnh thanh cuộn (Webkit - Chrome, Safari, Edge) */
+.cosmo-content::-webkit-scrollbar {
+  width: 12px; /* Độ rộng thanh cuộn */
+  background: transparent; /* Nền trong suốt */
+}
+
+.cosmo-content::-webkit-scrollbar-track {
+  background: rgba(10, 10, 10, 0.8); /* Nền track tối với độ mờ */
+  border-radius: 10px; /* Bo góc */
+}
+
+.cosmo-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #00ffff, #ff00ff); /* Gradient neon */
+  border-radius: 10px; /* Bo góc thumb */
+  border: 2px solid rgba(0, 0, 0, 0.5); /* Viền tối để tạo hiệu ứng nổi */
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.5); /* Hiệu ứng glow neon */
+}
+
+.cosmo-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #ff00ff, #00ffff); /* Thay đổi gradient khi hover */
+  box-shadow: 0 0 12px rgba(255, 0, 255, 0.7); /* Tăng glow khi hover */
+}
+
+/* Tùy chỉnh thanh cuộn cho Firefox */
+@supports (scrollbar-color: #00ffff #0a0a0a) {
+  .cosmo-content {
+    scrollbar-color: #00ffff #0a0a0a; /* Màu thumb và track */
+    scrollbar-width: thin; /* Thanh cuộn mỏng */
+  }
+}
+
+/* Đảm bảo body cũng có scrollbar đẹp nếu cần */
 body {
   background-color: #121212;
   font-family: 'Arial', sans-serif;
@@ -22,17 +62,28 @@ body {
   overflow-x: hidden;
 }
 
-.cosmo-content {
-  margin-top: 60px;
-  margin-left: 0;
-  transition: margin-left 0.3s ease;
-  min-height: calc(100vh - 60px);
+body::-webkit-scrollbar {
+  width: 12px;
 }
 
-.cosmo-content.with-sidebar {
-  margin-left: 280px;
+body::-webkit-scrollbar-track {
+  background: rgba(10, 10, 10, 0.8);
+  border-radius: 10px;
 }
 
+body::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #00ffff, #ff00ff);
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #ff00ff, #00ffff);
+  box-shadow: 0 0 12px rgba(255, 0, 255, 0.7);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .cosmo-sidebar {
     width: 220px;
@@ -50,6 +101,11 @@ body {
   }
   .cosmo-content.with-sidebar {
     margin-left: 220px;
+  }
+
+  /* Đảm bảo scrollbar responsive */
+  .cosmo-content::-webkit-scrollbar {
+    width: 8px; /* Thu nhỏ thanh cuộn trên màn hình nhỏ */
   }
 }
 </style>

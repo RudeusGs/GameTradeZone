@@ -48,7 +48,7 @@ namespace GameTradeZone.Controllers
 
         [Authorize]
         [HttpPost("Add")]
-        public async Task<IActionResult> Add(AddAccountGameModel model)
+        public async Task<IActionResult> Add([FromForm]AddAccountGameModel model)
         {
             try
             {
