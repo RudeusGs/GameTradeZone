@@ -20,10 +20,13 @@ namespace GameTradeZone.Service.Services
     {
         private readonly IFtpDirectoryService _ftpDirectoryService;
         private readonly FileUploadService _fileUploadService;
-        public AuctionService(DataContext dataContext, IFtpDirectoryService ftpDirectoryService, FileUploadService fileUploadService, IUserService userService) : base(dataContext, userService)
+        private readonly CloudinaryService _cloudinaryService;
+        public AuctionService(DataContext dataContext, IFtpDirectoryService ftpDirectoryService, FileUploadService fileUploadService, IUserService userService, CloudinaryService cloudinaryService) : base(dataContext, userService)
         {
             _ftpDirectoryService = ftpDirectoryService;
             _fileUploadService = fileUploadService;
+            _cloudinaryService = cloudinaryService;
+
         }
 
         public async Task<ApiResult> AddAuction(AddAuctionModel model)
@@ -74,16 +77,15 @@ namespace GameTradeZone.Service.Services
 
                 if (model.PrizeImage != null && model.PrizeImage.Any())
                 {
-                    var fileUploadService = new FileUploadService(_ftpDirectoryService);
-                    var uploadedImages = await fileUploadService.UploadFiles("AuctionPrizes", newAuctionPrize.Id, model.PrizeImage);
-
+                    var uploadedImages = await _cloudinaryService.UploadMutilImage(model.PrizeImage);
                     if (uploadedImages.Any())
                     {
                         newAuctionPrize.Image = string.Join(";", uploadedImages);
-                        await _dataContext.SaveChangesAsync();  
+                        _dataContext.AuctionPrizes.Update(newAuctionPrize);
+                        await _dataContext.SaveChangesAsync();
                     }
                 }
-                //await _dataContext.SaveChangesAsync();
+
                 await tran.CommitAsync();
                 return new ApiResult(new
                 {
