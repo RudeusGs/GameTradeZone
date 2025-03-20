@@ -12,7 +12,7 @@ export interface UserInfoModel {
   balance: number;
   coin: number;
   level: number;
-  status: number;
+  status: boolean;
   experience?: number | null;
   bankName: string; 
   bankNumber: string; 

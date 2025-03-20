@@ -12,7 +12,7 @@
     </div>
 
     <!-- Thông báo lỗi / thành công -->
-    <div v-if="errorMessage" class="error-message">
+    <div v-if="errorMessage" :class="['message', { 'error': isError, 'success': !isError }]">
       {{ errorMessage }}
     </div>
 
@@ -26,11 +26,8 @@
           <tr>
             <th>#</th>
             <th>Họ tên</th>
-            <th>Số dư</th>
-            <th>Coin</th>
-            <th>Kinh nghiệm</th>
-            <th>Level</th>
-            <th>Vai trò</th>
+            <th>Email</th>
+            <th>Trạng thái</th>
             <th>Hành động</th>
           </tr>
         </thead>
@@ -38,14 +35,16 @@
           <tr v-for="(user, index) in paginatedUsers" :key="user.id || user.fullName">
             <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
             <td>{{ user.fullName || "Chưa cập nhật" }}</td>
-            <td>{{ formatCurrency(user.balance ?? 0) }}</td>
-            <td>{{ user.coin }}</td>
-            <td>{{ user.experience ?? "Chưa có" }}</td>
-            <td>{{ user.level }}</td>
-            <td>{{ user.roles?.join(", ") || "Chưa có" }}</td>
+            <td>{{ user.email }}</td>
             <td>
-              <button v-if="user.id" @click="getUserById(user.id)" class="action-btn">Xem chi tiết</button>
-              <button v-if="user.id" @click="blockAccount(user.id)" class="action-btn danger">Khóa</button>
+              <span :class="['status-dot', user.status ? 'blocked' : 'normal']"></span>
+              {{ user.status ? "Đã khóa" : "Bình thường" }}
+            </td>
+            <td>
+              <button v-if="user.id" @click="openUserDetailModal(user.id)" class="action-btn">Xem chi tiết</button>
+              <button v-if="user.id" @click="toggleBlockAccount(user.id, user.status)" class="action-btn" :class="{ danger: !user.status }">
+                {{ user.status ? "Mở khóa" : "Khóa" }}
+              </button>
               <button v-if="user.id" @click="openRoleModal(user)" class="action-btn">Cập nhật vai trò</button>
             </td>
           </tr>
@@ -60,36 +59,38 @@
       </div>
     </div>
 
-    <!-- Thông tin chi tiết người dùng -->
-    <div v-if="selectedUser" class="user-detail">
-      <h2>Thông tin chi tiết</h2>
-      <p><strong>Họ tên:</strong> {{ selectedUser.fullName || "Chưa cập nhật" }}</p>
-      <p><strong>Số dư:</strong> {{ formatCurrency(selectedUser.balance ?? 0) }}</p>
-      <p><strong>Coin:</strong> {{ selectedUser.coin }}</p>
-      <p><strong>Kinh nghiệm:</strong> {{ selectedUser.experience ?? "Chưa có" }}</p>
-      <p><strong>Level:</strong> {{ selectedUser.level }}</p>
-      <p><strong>Vai trò:</strong> {{ selectedUser.roles?.join(", ") || "Chưa có" }}</p>
-      <p><strong>Ngân hàng:</strong> {{ selectedUser.bankName || "Chưa có" }}</p>
-      <p><strong>Số tài khoản:</strong> {{ selectedUser.bankNumber || "Chưa có" }}</p>
-      <p>
-        <strong>Trạng thái:</strong>
-        {{ selectedUser.status === 1 ? "Đã khóa" : "Bình thường" }}
-      </p>
-      <button @click="selectedUser = null" class="close-btn">Đóng</button>
+    <!-- Modal thông tin chi tiết người dùng -->
+    <div v-if="showUserDetailModal" class="modal" @click.self="closeUserDetailModal">
+      <div class="modal-content">
+        <button class="modal-close" @click="closeUserDetailModal">&times;</button>
+        <h2>Thông tin chi tiết người dùng</h2>
+        <div class="user-info">
+          <p><strong>Họ tên:</strong> <span>{{ selectedUser?.fullName || "Chưa cập nhật" }}</span></p>
+          <p><strong>Email:</strong> <span>{{ selectedUser?.email }}</span></p>
+          <p><strong>Trạng thái:</strong> <span>{{ selectedUser?.status ? "Đã khóa" : "Bình thường" }}</span></p>
+          <p><strong>Kinh nghiệm:</strong> <span>{{ selectedUser?.experience ?? "Chưa có" }}</span></p>
+          <p><strong>Level:</strong> <span>{{ selectedUser?.level }}</span></p>
+          <p><strong>Vai trò:</strong> <span>{{ selectedUser?.roles?.join(", ") || "Chưa có" }}</span></p>
+          <p><strong>Ngân hàng:</strong> <span>{{ selectedUser?.bankName || "Chưa có" }}</span></p>
+          <p><strong>Số tài khoản:</strong> <span>{{ selectedUser?.bankNumber || "Chưa có" }}</span></p>
+        </div>
+        <button @click="closeUserDetailModal" class="close-btn">Đóng</button>
+      </div>
     </div>
 
     <!-- Modal cập nhật vai trò -->
-    <div v-if="showRoleModal" class="modal">
+    <div v-if="showRoleModal" class="modal" @click.self="showRoleModal = false">
       <div class="modal-content">
+        <button class="modal-close" @click="showRoleModal = false">&times;</button>
         <h2>Cập nhật vai trò cho {{ selectedUser?.fullName || "Người dùng" }}</h2>
         <div class="role-selection">
-          <label>
+          <label class="role-option">
             <input type="radio" v-model="selectedRole" value="Admin" />
-            Admin
+            <span>Admin</span>
           </label>
-          <label>
+          <label class="role-option">
             <input type="radio" v-model="selectedRole" value="User" />
-            User
+            <span>User</span>
           </label>
         </div>
         <div class="modal-actions">
@@ -104,16 +105,18 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted, computed } from "vue";
 import websiteAccountApi from "@/api/websiteaccount.api";
+import authenticateApi from "@/api/authenticate.api";
 import type { AxiosResponse } from "axios";
 import type { UserInfoModel } from "@/models/user-model";
 import type { ApiResult } from "@/models/api-result.model";
 
-// Mở rộng kiểu UserInfoModel để bao gồm các trường ngân hàng, trạng thái và vai trò
 interface ExtendedUserInfoModel extends UserInfoModel {
   roles?: string[];
   bankName: string;
   bankNumber: string;
-  status: number;
+  status: boolean;
+  experience?: number | null;
+  level: number;
 }
 
 export default defineComponent({
@@ -133,17 +136,14 @@ export default defineComponent({
     const selectedUser = ref<ExtendedUserInfoModel | null>(null);
     const loading = ref(false);
     const errorMessage = ref<string | null>(null);
-
-    // Tìm kiếm và phân trang
+    const isError = ref(true);
+    const showUserDetailModal = ref(false);
+    const showRoleModal = ref(false);
+    const selectedRole = ref<string>("");
     const searchQuery = ref("");
     const currentPage = ref(1);
     const pageSize = ref(10);
 
-    // Phân quyền
-    const showRoleModal = ref(false);
-    const selectedRole = ref<string>("");
-
-    // Tính toán phân trang
     const filteredUsers = computed(() => {
       if (!searchQuery.value) return users.value;
       return users.value.filter((user) =>
@@ -161,7 +161,6 @@ export default defineComponent({
       return filteredUsers.value.slice(start, end);
     });
 
-    // Lấy danh sách tất cả người dùng
     const getAllUsers = async () => {
       loading.value = true;
       try {
@@ -173,79 +172,88 @@ export default defineComponent({
             roles: user.roles || ["User"],
             bankName: user.bankName || "",
             bankNumber: user.bankNumber || "",
-            // Nếu status của backend trả về kiểu number, thì dùng trực tiếp; nếu không, chuyển đổi từ boolean
-            status: typeof user.status === "number" ? user.status : (user.status ? 1 : 0),
+            status: typeof user.status === "number" ? user.status === 1 : user.status || false,
+            experience: user.experience || null,
+            level: user.level || 0,
           }));
         } else {
-          errorMessage.value =
-            response.data.result.message || "Không thể lấy danh sách người dùng.";
+          errorMessage.value = response.data.result.message || "Không thể lấy danh sách người dùng.";
+          isError.value = true;
           setTimeout(() => (errorMessage.value = null), 3000);
         }
       } catch (error: any) {
         errorMessage.value = "Đã xảy ra lỗi khi lấy danh sách người dùng.";
+        isError.value = true;
         setTimeout(() => (errorMessage.value = null), 3000);
       } finally {
         loading.value = false;
       }
     };
 
-    // Lấy chi tiết user theo ID
-    const getUserById = async (id: number) => {
+    const openUserDetailModal = async (id: number) => {
       try {
         const response = await websiteAccountApi.getById(id);
-console.log("RESPONSE:", response);
-
-          console.log(response)
         if (response.data.result.isSuccess && response.data.result.data) {
+          const userData = response.data.result.data;
+          const roleResponse = await authenticateApi.getRoleById(id);
+          const roles = Array.isArray(roleResponse?.data?.result)
+            ? roleResponse.data.result
+            : [roleResponse?.data?.result || "User"];
           selectedUser.value = {
-            ...response.data.result.data,
-            roles: response.data.result.data.roles || ["User"],
-            bankName: response.data.result.data.bankName || "",
-            bankNumber: response.data.result.data.bankNumber || "",
-            status: typeof response.data.result.data.status === "number" ? response.data.result.data.status : (response.data.result.data.status ? 1 : 0),
+            ...userData,
+            roles: roles,
+            status: typeof userData.status === "number" ? userData.status === 1 : userData.status || false,
           };
+          showUserDetailModal.value = true;
         } else {
-          errorMessage.value =
-            response.data.result.message || "Không thể lấy thông tin người dùng.";
+          errorMessage.value = `Không thể lấy thông tin người dùng. Lý do: ${response.data.result.message || "Dữ liệu không tồn tại"}`;
+          isError.value = true;
           setTimeout(() => (errorMessage.value = null), 3000);
         }
       } catch (error: any) {
-        errorMessage.value = "Đã xảy ra lỗi khi lấy thông tin người dùng.";
+        errorMessage.value = `Đã xảy ra lỗi khi lấy thông tin người dùng: ${error.message || "Lỗi không xác định"}`;
+        isError.value = true;
         setTimeout(() => (errorMessage.value = null), 3000);
       }
     };
 
-    // Chức năng khóa tài khoản
-    const blockAccount = async (id: number) => {
-      if (!confirm("Bạn có chắc chắn muốn khóa tài khoản này?")) return;
+    const closeUserDetailModal = () => {
+      showUserDetailModal.value = false;
+      selectedUser.value = null;
+    };
+
+    const toggleBlockAccount = async (id: number, currentStatus: boolean) => {
+      const action = currentStatus ? "mở khóa" : "khóa";
+      if (!confirm(`Bạn có chắc chắn muốn ${action} tài khoản này?`)) return;
       try {
         const response: AxiosResponse<ApiResult> = await websiteAccountApi.blockAccount(id);
         if (response.data.result.isSuccess) {
-          errorMessage.value = "Khóa tài khoản thành công.";
+          errorMessage.value = `${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công.`;
+          isError.value = false;
           setTimeout(() => (errorMessage.value = null), 3000);
           await getAllUsers();
         } else {
-          errorMessage.value =
-            response.data.result.message || "Không thể khóa tài khoản.";
+          errorMessage.value = `Không thể ${action} tài khoản.`;
+          isError.value = true;
           setTimeout(() => (errorMessage.value = null), 3000);
         }
       } catch (error: any) {
-        errorMessage.value = "Đã xảy ra lỗi khi khóa tài khoản.";
+        errorMessage.value = `Đã xảy ra lỗi khi ${action} tài khoản.`;
+        isError.value = true;
         setTimeout(() => (errorMessage.value = null), 3000);
       }
     };
 
-    // Mở modal cập nhật vai trò
     const openRoleModal = (user: ExtendedUserInfoModel) => {
       selectedUser.value = user;
       selectedRole.value = user.roles?.includes("Admin") ? "Admin" : "User";
       showRoleModal.value = true;
     };
 
-    // Cập nhật vai trò
     const updateRoles = async () => {
       if (!selectedUser.value || !selectedRole.value) {
         errorMessage.value = "Vui lòng chọn một vai trò.";
+        isError.value = true;
         setTimeout(() => (errorMessage.value = null), 3000);
         return;
       }
@@ -256,38 +264,30 @@ console.log("RESPONSE:", response);
         );
         if (response.data.result.isSuccess) {
           errorMessage.value = "Cập nhật vai trò thành công.";
+          isError.value = false;
           setTimeout(() => (errorMessage.value = null), 3000);
           showRoleModal.value = false;
           await getAllUsers();
         } else {
-          errorMessage.value =
-            response.data.result.message || "Không thể cập nhật vai trò.";
+          errorMessage.value = response.data.result.message || "Không thể cập nhật vai trò.";
+          isError.value = true;
           setTimeout(() => (errorMessage.value = null), 3000);
         }
       } catch (error: any) {
         errorMessage.value = "Đã xảy ra lỗi khi cập nhật vai trò.";
+        isError.value = true;
         setTimeout(() => (errorMessage.value = null), 3000);
       }
     };
 
-    // Chuyển trang
     const changePage = (page: number) => {
       if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
       }
     };
 
-    // Tìm kiếm với phân trang
     const fetchUsersWithPagination = () => {
       currentPage.value = 1;
-    };
-
-    // Format tiền tệ
-    const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-      }).format(value);
     };
 
     onMounted(() => {
@@ -299,6 +299,8 @@ console.log("RESPONSE:", response);
       selectedUser,
       loading,
       errorMessage,
+      isError,
+      showUserDetailModal,
       showRoleModal,
       selectedRole,
       searchQuery,
@@ -306,20 +308,18 @@ console.log("RESPONSE:", response);
       pageSize,
       paginatedUsers,
       totalPages,
-      getUserById,
-      blockAccount,
+      openUserDetailModal,
+      closeUserDetailModal,
+      toggleBlockAccount,
       openRoleModal,
       updateRoles,
       changePage,
       fetchUsersWithPagination,
-      formatCurrency,
     };
   },
 });
 </script>
-
 <style scoped>
-/* Reset mặc định */
 * {
   margin: 0;
   padding: 0;
@@ -345,14 +345,17 @@ console.log("RESPONSE:", response);
   gap: 10px;
   margin-bottom: 20px;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .search-input {
-  padding: 10px;
+  padding: 10px 10px 10px 35px;
   width: 300px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 14px;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 10px center;
+  background-size: 20px;
   transition: border-color 0.3s ease;
 }
 
@@ -378,15 +381,23 @@ console.log("RESPONSE:", response);
   background: #2563eb;
 }
 
-/* Thông báo lỗi */
-.error-message {
-  color: #dc2626;
+/* Thông báo lỗi/thành công */
+.message {
   text-align: center;
   margin-bottom: 20px;
   font-size: 14px;
-  background: #fee2e2;
   padding: 10px;
   border-radius: 6px;
+}
+
+.message.error {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+.message.success {
+  color: #059669;
+  background: #d1fae5;
 }
 
 /* Trạng thái loading */
@@ -400,7 +411,8 @@ console.log("RESPONSE:", response);
 /* Bảng danh sách người dùng */
 .user-list table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: #fff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
@@ -409,10 +421,10 @@ console.log("RESPONSE:", response);
 
 .user-list th,
 .user-list td {
-  padding: 12px 16px;
+  padding: 16px 20px;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
-  font-size: 14px;
+  font-size: 15px;
   color: #374151;
 }
 
@@ -428,16 +440,34 @@ console.log("RESPONSE:", response);
   background: #f9fafb;
 }
 
+/* Nút chấm tròn trạng thái */
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.status-dot.normal {
+  background-color: #10b981;
+}
+
+.status-dot.blocked {
+  background-color: #ef4444;
+}
+
 /* Nút hành động */
 .action-btn {
-  padding: 6px 12px;
-  margin-right: 5px;
+  padding: 8px 16px;
+  margin-right: 8px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   background: #3b82f6;
   color: #fff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   transition: background 0.3s ease;
 }
@@ -447,11 +477,11 @@ console.log("RESPONSE:", response);
 }
 
 .action-btn.danger {
-  background: #dc2626;
+  background: #ef4444;
 }
 
 .action-btn.danger:hover {
-  background: #b91c1c;
+  background: #dc2626;
 }
 
 .action-btn.cancel {
@@ -472,7 +502,7 @@ console.log("RESPONSE:", response);
 }
 
 .pagination button {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: none;
   border-radius: 4px;
   background: #e5e7eb;
@@ -482,59 +512,22 @@ console.log("RESPONSE:", response);
   transition: background 0.3s ease;
 }
 
+.pagination button:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
 .pagination button:disabled {
   background: #f3f4f6;
   cursor: not-allowed;
 }
 
-.pagination button:hover:not(:disabled) {
-  background: #d1d5db;
-}
-
 .pagination span {
   font-size: 14px;
   color: #374151;
+  font-weight: 500;
 }
 
-/* Chi tiết người dùng */
-.user-detail {
-  margin-top: 30px;
-  padding: 20px;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-}
-
-.user-detail h2 {
-  margin-bottom: 20px;
-  color: #1f2937;
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.user-detail p {
-  margin: 10px 0;
-  font-size: 14px;
-  color: #374151;
-}
-
-.close-btn {
-  padding: 8px 16px;
-  margin-top: 10px;
-  background: #6b7280;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s ease;
-}
-
-.close-btn:hover {
-  background: #4b5563;
-}
-
-/* Modal cập nhật vai trò */
+/* Modal chung */
 .modal {
   position: fixed;
   top: 0;
@@ -546,53 +539,179 @@ console.log("RESPONSE:", response);
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
   background: #fff;
-  padding: 24px;
-  border-radius: 8px;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-content h2 {
   margin-bottom: 20px;
   color: #1f2937;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
 }
 
-/* Radio button cho vai trò */
+/* Nút đóng modal */
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+  color: #374151;
+}
+
+/* Thông tin chi tiết người dùng trong modal */
+.user-info p {
+  margin: 12px 0;
+  font-size: 15px;
+  color: #374151;
+  display: flex;
+  justify-content: space-between;
+}
+
+.user-info p strong {
+  color: #1f2937;
+  font-weight: 600;
+  flex: 1;
+}
+
+.user-info p span {
+  flex: 2;
+  text-align: left;
+}
+
+/* Nút đóng modal */
+.close-btn {
+  padding: 10px 20px;
+  margin-top: 20px;
+  background: #6b7280;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+  width: 100%;
+}
+
+.close-btn:hover {
+  background: #4b5563;
+}
+
+/* Modal cập nhật vai trò */
 .role-selection {
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  gap: 15px;
   margin-bottom: 20px;
 }
 
-.role-selection label {
+.role-option {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 10px;
+  font-size: 15px;
   color: #374151;
+}
+
+.role-option input[type="radio"] {
+  accent-color: #3b82f6;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
 }
 
-.role-selection input[type="radio"] {
-  accent-color: #3b82f6;
+.role-option span {
+  font-weight: 500;
 }
 
-/* Nút trong modal */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
 
-.modal-actions .action-btn {
-  padding: 8px 16px;
-  font-size: 14px;
+/* Responsive */
+@media (max-width: 768px) {
+  .website-account-page {
+    padding: 20px;
+  }
+
+  .search-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .user-list table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-content {
+    max-width: 90%;
+    padding: 20px;
+  }
+
+  .modal-content h2 {
+    font-size: 18px;
+  }
+
+  .user-info p {
+    font-size: 14px;
+  }
+
+  .action-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
 }
 </style>

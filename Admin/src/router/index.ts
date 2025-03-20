@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue'; // Trang admin hoặc home
 import LoginView from '@/views/LoginView.vue';
 import AdminWebsiteAccount from '@/views/AdminWebsiteAccount.vue';
+import GameInforView from '@/views/GameInforView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,6 +26,11 @@ const router = createRouter({
       path: '/website-account',
       name: 'website-account',
       component: AdminWebsiteAccount,
+    },
+    {
+      path: '/game-infor',
+      name: 'game-infor',
+      component: GameInforView,
     },
   ],
 });

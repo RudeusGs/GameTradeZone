@@ -13,7 +13,7 @@ namespace GameTradeZone.Domain.Entities
         public decimal Price { get; set; }
         public string? Status { get; set; }
         public string? Image { get; set; }
-        public string? CustomerFeedback { get; set; } // nếu Status = "Đã bán" thì hiển thị cái này
+        public string? CustomerFeedback { get; set; }
         public bool? IsDelete { get; set; }
     }
 }
