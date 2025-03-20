@@ -31,6 +31,9 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<CommentData> CommentDatas { get; set; }
         public DbSet<ForumsCategory> ForumsCategories { get; set; }
         public DbSet<GameAccountField> GameAccountFields { get; set; }
+        public DbSet<Auction> Auctions { get; set; }
+        public DbSet<AuctionDetail> AuctionDetails { get; set; }
+        public DbSet<AuctionPrize> AuctionPrizes { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
