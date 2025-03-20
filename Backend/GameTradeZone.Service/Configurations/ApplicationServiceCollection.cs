@@ -39,6 +39,7 @@ namespace GameTradeZone.Service.Configurations
             services.AddScoped<IAccountGameService, AccountGameService>();
             services.AddScoped<IWebsiteAccountService, WebsiteAccountService>();
             services.AddScoped<IGameAccountFieldService, GameAccountFieldService>();
+            services.AddScoped<IAuctionService, AuctionService>();
             #endregion
             return services;
         }

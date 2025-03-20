@@ -51,6 +51,33 @@ namespace GameTradeZone.Service.Services
             var uploadResult = await _cloudinary.UploadAsync(uploadParams);
             return uploadResult.SecureUrl.AbsoluteUri;
         }
+
+        public async Task<List<string>> UploadMutilImage(List<IFormFile> files)
+        {
+            var userId = GetCurrentUserId();
+            var imageUrls = new List<string>();
+
+            foreach (var file in files)
+            {
+                if (file == null || file.Length == 0)
+                    continue;
+
+                using var stream = file.OpenReadStream();
+                var uploadParams = new ImageUploadParams
+                {
+                    File = new FileDescription(file.FileName, stream),
+                    Folder = $"auction/users/images/{userId}",
+                    PublicId = $"{Guid.NewGuid()}",
+                    Transformation = new Transformation().Width(500).Height(500).Crop("limit")
+                };
+
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+                imageUrls.Add(uploadResult.SecureUrl.AbsoluteUri);
+            }
+
+            return imageUrls;
+        }
+
         public async Task<string> UploadImageAvatarAsync(IFormFile file)
         {
             var userId = GetCurrentUserId();
