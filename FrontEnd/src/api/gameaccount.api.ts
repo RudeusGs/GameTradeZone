@@ -54,9 +54,9 @@ export default {
   },
 
   // Lấy thông tin người dùng (yêu cầu token)
-  getInforUser: async (): Promise<AxiosResponse<ApiResult<any>>> => {
-    return await baseApi.get('AccountGame/Get-Infor-User');
-  },
+  getInforUser: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
+    return await baseApi.get(`AccountGame/Get-Infor-User?id=${id}`);
+},
 
   // Thêm trường cho tài khoản game (yêu cầu token, gửi JSON)
   addFieldForGame: async (model: GameAccountField): Promise<AxiosResponse<ApiResult<any>>> => {

@@ -188,9 +188,10 @@ namespace GameTradeZone.Service.Services
             return new(accountGame);
         }
 
-        public async Task<ApiResult> GetInforUser()
+        public async Task<ApiResult> GetInforUser(int id)
         {
-            var accountGame = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == _userService.UserId);
+            var a = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.Id  == id);
+            var accountGame = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == a.UserID);
             return new(accountGame);
         }
 
