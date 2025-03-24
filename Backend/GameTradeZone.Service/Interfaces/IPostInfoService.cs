@@ -15,5 +15,6 @@ namespace GameTradeZone.Service.Interfaces
         Task<List<PostInfo>> GetAllPosts();
         Task<bool> DeletePost(int postId, int userId);
         Task<PostInfo> GetPostById(int postId);
+        Task<List<PostInfo>> GetAllPostByCategoryId(int categoryId);
     }
 }

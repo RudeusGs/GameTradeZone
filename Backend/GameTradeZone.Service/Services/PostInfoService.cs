@@ -96,5 +96,13 @@ namespace GameTradeZone.Service.Services
                 .FirstOrDefaultAsync(p => p.Id == postId);
             return post ?? throw new KeyNotFoundException($"Post with ID {postId} not found.");
         }
+
+        public async Task<List<PostInfo>> GetAllPostByCategoryId(int categoryId)
+        {
+            return await _context.PostInfos
+                .Include(p => p.User)
+                .Where(p => p.CategoryId == categoryId)
+                .ToListAsync();
+        }
     }
 }

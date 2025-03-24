@@ -84,5 +84,18 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [HttpGet("by-category/{categoryId}")]
+        public async Task<IActionResult> GetAllPostByCategoryId(int categoryId)
+        {
+            try
+            {
+                var posts = await _postService.GetAllPostByCategoryId(categoryId);
+                return Response(posts);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }
