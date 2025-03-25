@@ -108,11 +108,11 @@ namespace GameTradeZone.Controllers
 
         [Authorize]
         [HttpGet("Get-Infor-User")]
-        public async Task<IActionResult> GetInforUser()
+        public async Task<IActionResult> GetInforUser(int id)
         {
             try
             {
-                var result = await _accountGameService.GetInforUser();
+                var result = await _accountGameService.GetInforUser(id);
                 return Response(result);
             }
             catch (Exception e)
