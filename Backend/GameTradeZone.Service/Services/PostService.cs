@@ -101,7 +101,7 @@ namespace GameTradeZone.Service.Services
                 Content = content,
                 CreatedDate = DateTime.UtcNow
             };
-
+            post.CommentsCount += 1;
             _context.CommentDatas.Add(newComment);
             await _context.SaveChangesAsync();
 

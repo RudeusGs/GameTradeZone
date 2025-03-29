@@ -13,6 +13,7 @@ import PostDetailsView from "@/views/PostDetailsView.vue";
 import AddServiceView from "@/views/Add-ServiceView.vue";
 import ListAuctionView from "@/views/ListAuctionView.vue";
 import DetailAuctionView from "@/views/DetailAuctionView.vue";
+import AddPostView from "@/views/Add-PostView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -85,6 +86,11 @@ const router = createRouter({
       path: "/detail-auction",
       name: "detail-auction",
       component: DetailAuctionView,
+    },
+    {
+      path: "/add-post",
+      name: "add-post",
+      component: AddPostView,
     },
   ],
 });

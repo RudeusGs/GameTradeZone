@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import gameApi from '@/api/gameinfor.api';
-import gameAccountApi from '@/api/gameaccount.api';
-import gamefieldApi from '@/api/gamefield.api';
+import { ref, onMounted, computed } from "vue";
+import gameApi from "@/api/gameinfor.api";
+import gameAccountApi from "@/api/gameaccount.api";
+import gamefieldApi from "@/api/gamefield.api";
 
 // Interface cho GameInfor từ API
 interface Game {
@@ -34,10 +34,10 @@ interface Service {
   description: string;
 }
 
-const selectedGame = ref<string>('All');
-const searchQuery = ref<string>('');
+const selectedGame = ref<string>("All");
+const searchQuery = ref<string>("");
 const isLoading = ref<boolean>(false);
-const errorMessage = ref<string>('');
+const errorMessage = ref<string>("");
 
 const games = ref<Game[]>([]);
 const accounts = ref<Account[]>([]);
@@ -45,10 +45,13 @@ const services = ref<Service[]>([]);
 
 // Hàm lấy URL hình ảnh đầy đủ
 const getFullImageUrl = (imageString: string | null | undefined): string => {
-  if (!imageString || imageString.trim() === '') return 'https://via.placeholder.com/400x250';
-  const baseUrl = 'https://localhost:7232/';
-  const images = imageString.split(';').filter(img => img.trim() !== '');
-  return images.length > 0 ? `${baseUrl}${images[0]}` : 'https://via.placeholder.com/400x250';
+  if (!imageString || imageString.trim() === "")
+    return "https://via.placeholder.com/400x250";
+  const baseUrl = "https://localhost:7232/";
+  const images = imageString.split(";").filter((img) => img.trim() !== "");
+  return images.length > 0
+    ? `${baseUrl}${images[0]}`
+    : "https://via.placeholder.com/400x250";
 };
 
 // Lấy danh sách game từ API
@@ -63,10 +66,10 @@ const fetchGames = async () => {
         image: getFullImageUrl(game.image),
       }));
     } else {
-      errorMessage.value = 'Không thể lấy danh sách game';
+      errorMessage.value = "Không thể lấy danh sách game";
     }
   } catch (error) {
-    errorMessage.value = 'Lỗi khi gọi API game';
+    errorMessage.value = "Lỗi khi gọi API game";
     console.error(error);
   } finally {
     isLoading.value = false;
@@ -79,80 +82,111 @@ const fetchAccounts = async () => {
     isLoading.value = true;
     const response = await gameAccountApi.getAll();
     if (response.data?.result?.isSuccess && response.data.result.data) {
-      const accountPromises = response.data.result.data.map(async (account: any) => {
-        let sellerName = 'Unknown';
-        let gameName = 'Unknown';
+      const accountPromises = response.data.result.data.map(
+        async (account: any) => {
+          let sellerName = "Unknown";
+          let gameName = "Unknown";
 
-        // Lấy thông tin người bán
-        try {
-          const userResponse = await gameAccountApi.getInforUser(account.id);
-          if (userResponse.data?.result?.isSuccess && userResponse.data.result.data) {
-            sellerName = userResponse.data.result.data.userName || 'Unknown';
+          // Lấy thông tin người bán
+          try {
+            const userResponse = await gameAccountApi.getInforUser(account.id);
+            if (
+              userResponse.data?.result?.isSuccess &&
+              userResponse.data.result.data
+            ) {
+              sellerName = userResponse.data.result.data.userName || "Unknown";
+            }
+          } catch (error) {
+            console.error(
+              `Lỗi khi lấy thông tin người bán cho tài khoản ${account.id}:`,
+              error
+            );
           }
-        } catch (error) {
-          console.error(`Lỗi khi lấy thông tin người bán cho tài khoản ${account.id}:`, error);
-        }
 
-        // Lấy tên game từ GameInfor
-        try {
-          const game = games.value.find(g => g.id === account.gameInforID);
-          gameName = game ? game.name : 'Unknown';
-        } catch (error) {
-          console.error(`Lỗi khi lấy tên game cho tài khoản ${account.id}:`, error);
-        }
+          // Lấy tên game từ GameInfor
+          try {
+            const game = games.value.find((g) => g.id === account.gameInforID);
+            gameName = game ? game.name : "Unknown";
+          } catch (error) {
+            console.error(
+              `Lỗi khi lấy tên game cho tài khoản ${account.id}:`,
+              error
+            );
+          }
 
-        // Lấy danh sách fields và giá trị cho account này
-        let fields: { fieldName: string; fieldValue: string }[] = [];
-        try {
-          // Lấy tất cả GameField của game
-          const fieldResponse = await gamefieldApi.getField(account.gameInforID);
-          if (fieldResponse.data?.result?.isSuccess && fieldResponse.data.result.data) {
-            const fieldPromises = fieldResponse.data.result.data.map(async (field: any) => {
-              try {
-                // Lấy fieldValue cho account và field cụ thể
-                const valueResponse = await gameAccountApi.getByIdForGame(account.id, field.id);
-                if (
-                  valueResponse.data?.result?.isSuccess &&
-                  valueResponse.data.result.data?.length > 0 &&
-                  valueResponse.data.result.data[0].fieldValue
-                ) {
-                  return {
-                    fieldName: field.fieldName,
-                    fieldValue: valueResponse.data.result.data[0].fieldValue,
-                  };
+          // Lấy danh sách fields và giá trị cho account này
+          let fields: { fieldName: string; fieldValue: string }[] = [];
+          try {
+            // Lấy tất cả GameField của game
+            const fieldResponse = await gamefieldApi.getField(
+              account.gameInforID
+            );
+            if (
+              fieldResponse.data?.result?.isSuccess &&
+              fieldResponse.data.result.data
+            ) {
+              const fieldPromises = fieldResponse.data.result.data.map(
+                async (field: any) => {
+                  try {
+                    // Lấy fieldValue cho account và field cụ thể
+                    const valueResponse = await gameAccountApi.getByIdForGame(
+                      account.id,
+                      field.id
+                    );
+                    if (
+                      valueResponse.data?.result?.isSuccess &&
+                      valueResponse.data.result.data?.length > 0 &&
+                      valueResponse.data.result.data[0].fieldValue
+                    ) {
+                      return {
+                        fieldName: field.fieldName,
+                        fieldValue:
+                          valueResponse.data.result.data[0].fieldValue,
+                      };
+                    }
+                    return null; // Không có giá trị, không thêm vào danh sách
+                  } catch (error) {
+                    console.error(
+                      `Lỗi khi lấy giá trị của field ${field.id} cho tài khoản ${account.id}:`,
+                      error
+                    );
+                    return null;
+                  }
                 }
-                return null; // Không có giá trị, không thêm vào danh sách
-              } catch (error) {
-                console.error(`Lỗi khi lấy giá trị của field ${field.id} cho tài khoản ${account.id}:`, error);
-                return null;
-              }
-            });
-            const fieldResults = await Promise.all(fieldPromises);
-            // Lọc bỏ các kết quả null để chỉ giữ lại field có giá trị
-            fields = fieldResults.filter(result => result !== null) as { fieldName: string; fieldValue: string }[];
+              );
+              const fieldResults = await Promise.all(fieldPromises);
+              // Lọc bỏ các kết quả null để chỉ giữ lại field có giá trị
+              fields = fieldResults.filter((result) => result !== null) as {
+                fieldName: string;
+                fieldValue: string;
+              }[];
+            }
+          } catch (error) {
+            console.error(
+              `Lỗi khi lấy danh sách fields cho game ${account.gameInforID}:`,
+              error
+            );
           }
-        } catch (error) {
-          console.error(`Lỗi khi lấy danh sách fields cho game ${account.gameInforID}:`, error);
-        }
 
-        return {
-          id: account.id,
-          seller: sellerName,
-          game: gameName,
-          name: account.accountName,
-          price: account.price,
-          status: account.status || 'Đang bán',
-          image: getFullImageUrl(account.image),
-          fields,
-          priceMin: account.priceMin || 0,
-        };
-      });
+          return {
+            id: account.id,
+            seller: sellerName,
+            game: gameName,
+            name: account.accountName,
+            price: account.price,
+            status: account.status || "Đang bán",
+            image: getFullImageUrl(account.image),
+            fields,
+            priceMin: account.priceMin || 0,
+          };
+        }
+      );
       accounts.value = await Promise.all(accountPromises);
     } else {
-      errorMessage.value = 'Không thể lấy danh sách tài khoản';
+      errorMessage.value = "Không thể lấy danh sách tài khoản";
     }
   } catch (error) {
-    errorMessage.value = 'Lỗi khi gọi API tài khoản';
+    errorMessage.value = "Lỗi khi gọi API tài khoản";
     console.error(error);
   } finally {
     isLoading.value = false;
@@ -162,9 +196,30 @@ const fetchAccounts = async () => {
 // Dữ liệu dịch vụ tĩnh (giả định)
 const fetchServices = () => {
   services.value = [
-    { id: 1, creator: 'UserC', game: 'Valorant', name: 'Cày rank lên Immortal', price: 30, description: 'Cày từ rank hiện tại lên Immortal trong 7 ngày.' },
-    { id: 2, creator: 'UserD', game: 'Genshin Impact', name: 'Leo cấp AR 50', price: 40, description: 'Leo từ AR 1 lên 50, bao gồm cày nguyên liệu.' },
-    { id: 3, creator: 'UserE', game: 'LoL', name: 'Vượt ải rank', price: 25, description: 'Giúp bạn vượt 5 trận rank bất kỳ.' },
+    {
+      id: 1,
+      creator: "UserC",
+      game: "Valorant",
+      name: "Cày rank lên Immortal",
+      price: 30,
+      description: "Cày từ rank hiện tại lên Immortal trong 7 ngày.",
+    },
+    {
+      id: 2,
+      creator: "UserD",
+      game: "Genshin Impact",
+      name: "Leo cấp AR 50",
+      price: 40,
+      description: "Leo từ AR 1 lên 50, bao gồm cày nguyên liệu.",
+    },
+    {
+      id: 3,
+      creator: "UserE",
+      game: "LoL",
+      name: "Vượt ải rank",
+      price: 25,
+      description: "Giúp bạn vượt 5 trận rank bất kỳ.",
+    },
   ];
 };
 
@@ -177,13 +232,14 @@ onMounted(() => {
 // Computed properties cho filtered accounts
 const filteredAccounts = computed(() => {
   let result = accounts.value;
-  if (selectedGame.value !== 'All') {
-    result = result.filter(account => account.game === selectedGame.value);
+  if (selectedGame.value !== "All") {
+    result = result.filter((account) => account.game === selectedGame.value);
   }
   if (searchQuery.value) {
-    result = result.filter(account =>
-      account.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      account.game.toLowerCase().includes(searchQuery.value.toLowerCase())
+    result = result.filter(
+      (account) =>
+        account.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        account.game.toLowerCase().includes(searchQuery.value.toLowerCase())
     );
   }
   return result;
@@ -192,13 +248,14 @@ const filteredAccounts = computed(() => {
 // Computed properties cho filtered services
 const filteredServices = computed(() => {
   let result = services.value;
-  if (selectedGame.value !== 'All') {
-    result = result.filter(service => service.game === selectedGame.value);
+  if (selectedGame.value !== "All") {
+    result = result.filter((service) => service.game === selectedGame.value);
   }
   if (searchQuery.value) {
-    result = result.filter(service =>
-      service.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      service.game.toLowerCase().includes(searchQuery.value.toLowerCase())
+    result = result.filter(
+      (service) =>
+        service.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        service.game.toLowerCase().includes(searchQuery.value.toLowerCase())
     );
   }
   return result;
@@ -223,13 +280,20 @@ const filteredServices = computed(() => {
               <span class="side side3"></span>
               <span class="side side4"></span>
               <span class="shadow"></span>
-            </div>  
+            </div>
           </div>
           <h1 class="header-title">GameTradeZone</h1>
         </div>
-        <p class="header-subtitle">Nơi giao dịch tài khoản và dịch vụ game đỉnh cao</p>
+        <p class="header-subtitle">
+          Nơi giao dịch tài khoản và dịch vụ game đỉnh cao
+        </p>
         <div class="search-bar">
-          <input v-model="searchQuery" type="text" placeholder="Tìm kiếm tài khoản hoặc dịch vụ..." class="search-input" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Tìm kiếm tài khoản hoặc dịch vụ..."
+            class="search-input"
+          />
           <i class="fas fa-search search-icon"></i>
         </div>
       </div>
@@ -238,8 +302,20 @@ const filteredServices = computed(() => {
     <!-- Filter Bar -->
     <section class="filter-bar">
       <div class="filter-options">
-        <button :class="{ 'active': selectedGame === 'All' }" @click="selectedGame = 'All'">Tất cả</button>
-        <button v-for="game in games" :key="game.id" :class="{ 'active': selectedGame === game.name }" @click="selectedGame = game.name">{{ game.name }}</button>
+        <button
+          :class="{ active: selectedGame === 'All' }"
+          @click="selectedGame = 'All'"
+        >
+          Tất cả
+        </button>
+        <button
+          v-for="game in games"
+          :key="game.id"
+          :class="{ active: selectedGame === game.name }"
+          @click="selectedGame = game.name"
+        >
+          {{ game.name }}
+        </button>
       </div>
     </section>
 
@@ -251,11 +327,17 @@ const filteredServices = computed(() => {
     <section class="account-gallery">
       <h2 class="section-title">Tài khoản đang bán</h2>
       <div class="gallery-wrapper">
-        <div v-for="account in filteredAccounts" :key="account.id" class="account-item">
+        <div
+          v-for="account in filteredAccounts"
+          :key="account.id"
+          class="account-item"
+        >
           <div class="item-image">
             <img :src="account.image" :alt="account.game" />
             <div class="image-overlay">
-              <span class="status-badge" :class="account.status">{{ account.status }}</span>
+              <span class="status-badge" :class="account.status">{{
+                account.status
+              }}</span>
             </div>
           </div>
           <div class="item-details">
@@ -263,14 +345,22 @@ const filteredServices = computed(() => {
             <p class="item-seller">Người bán: {{ account.seller }}</p>
             <div class="price-box">
               <span class="item-price">{{ account.price }} VND</span>
-              <span class="item-price-min">Giá nhỏ nhất: {{ account.priceMin }} VND</span>
+              <span class="item-price-min"
+                >Giá nhỏ nhất: {{ account.priceMin }} VND</span
+              >
             </div>
             <div class="item-fields">
-              <p v-for="field in account.fields" :key="field.fieldName">{{ field.fieldName }}: {{ field.fieldValue }}</p>
+              <p v-for="field in account.fields" :key="field.fieldName">
+                {{ field.fieldName }}: {{ field.fieldValue }}
+              </p>
             </div>
             <div class="item-actions">
-              <button class="bid-btn" :disabled="account.status === 'Đã bán'">Trả giá</button>
-              <button class="buy-btn" :disabled="account.status === 'Đã bán'">Mua ngay</button>
+              <button class="bid-btn" :disabled="account.status === 'Đã bán'">
+                Trả giá
+              </button>
+              <button class="buy-btn" :disabled="account.status === 'Đã bán'">
+                Mua ngay
+              </button>
             </div>
           </div>
         </div>
@@ -281,7 +371,11 @@ const filteredServices = computed(() => {
     <section class="services-gallery">
       <h2 class="section-title">Dịch vụ nổi bật</h2>
       <div class="gallery-wrapper">
-        <div v-for="service in filteredServices" :key="service.id" class="service-item">
+        <div
+          v-for="service in filteredServices"
+          :key="service.id"
+          class="service-item"
+        >
           <div class="service-details">
             <h3 class="service-name">{{ service.name }}</h3>
             <p class="service-game">{{ service.game }}</p>
@@ -300,7 +394,9 @@ const filteredServices = computed(() => {
     <section class="banner-section">
       <div class="banner-content">
         <h3 class="banner-title">Tham gia ngay hôm nay!</h3>
-        <p class="banner-text">Đăng ký để trải nghiệm dịch vụ và giao dịch tốt nhất!</p>
+        <p class="banner-text">
+          Đăng ký để trải nghiệm dịch vụ và giao dịch tốt nhất!
+        </p>
         <button class="banner-btn">Đăng ký ngay</button>
       </div>
     </section>
@@ -347,28 +443,28 @@ const filteredServices = computed(() => {
 
 .pyramid-loader .wrapper .side1 {
   transform: rotateZ(-30deg) rotateY(90deg);
-  background: conic-gradient(#2BDEAC, #F028FD, #D8CCE6, #2F2585);
+  background: conic-gradient(#2bdeac, #f028fd, #d8cce6, #2f2585);
 }
 
 .pyramid-loader .wrapper .side2 {
   transform: rotateZ(30deg) rotateY(90deg);
-  background: conic-gradient(#2F2585, #D8CCE6, #F028FD, #2BDEAC);
+  background: conic-gradient(#2f2585, #d8cce6, #f028fd, #2bdeac);
 }
 
 .pyramid-loader .wrapper .side3 {
   transform: rotateX(30deg);
-  background: conic-gradient(#2F2585, #D8CCE6, #F028FD, #2BDEAC);
+  background: conic-gradient(#2f2585, #d8cce6, #f028fd, #2bdeac);
 }
 
 .pyramid-loader .wrapper .side4 {
   transform: rotateX(-30deg);
-  background: conic-gradient(#2BDEAC, #F028FD, #D8CCE6, #2F2585);
+  background: conic-gradient(#2bdeac, #f028fd, #d8cce6, #2f2585);
 }
 
 .pyramid-loader .wrapper .shadow {
   width: 30px;
   height: 30px;
-  background: #8B5AD5;
+  background: #8b5ad5;
   position: absolute;
   top: 0;
   left: 0;
@@ -383,7 +479,7 @@ const filteredServices = computed(() => {
 .trade-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
   color: #f0f0f0;
   position: relative;
   overflow: hidden;
@@ -410,31 +506,120 @@ const filteredServices = computed(() => {
   background: rgba(255, 0, 255, 0.5);
 }
 
-.particle:nth-child(1) { left: 10%; top: 20%; animation-duration: 12s; }
-.particle:nth-child(2) { left: 20%; top: 80%; animation-duration: 15s; }
-.particle:nth-child(3) { left: 30%; top: 50%; animation-duration: 8s; }
-.particle:nth-child(4) { left: 40%; top: 10%; animation-duration: 10s; }
-.particle:nth-child(5) { left: 50%; top: 70%; animation-duration: 13s; }
-.particle:nth-child(6) { left: 60%; top: 30%; animation-duration: 9s; }
-.particle:nth-child(7) { left: 70%; top: 90%; animation-duration: 11s; }
-.particle:nth-child(8) { left: 80%; top: 40%; animation-duration: 14s; }
-.particle:nth-child(9) { left: 90%; top: 60%; animation-duration: 7s; }
-.particle:nth-child(10) { left: 15%; top: 25%; animation-duration: 16s; }
-.particle:nth-child(11) { left: 25%; top: 85%; animation-duration: 12s; }
-.particle:nth-child(12) { left: 35%; top: 45%; animation-duration: 10s; }
-.particle:nth-child(13) { left: 45%; top: 15%; animation-duration: 8s; }
-.particle:nth-child(14) { left: 55%; top: 75%; animation-duration: 13s; }
-.particle:nth-child(15) { left: 65%; top: 35%; animation-duration: 9s; }
-.particle:nth-child(16) { left: 75%; top: 95%; animation-duration: 11s; }
-.particle:nth-child(17) { left: 85%; top: 55%; animation-duration: 14s; }
-.particle:nth-child(18) { left: 95%; top: 65%; animation-duration: 7s; }
-.particle:nth-child(19) { left: 5%; top: 40%; animation-duration: 15s; }
-.particle:nth-child(20) { left: 15%; top: 60%; animation-duration: 10s; }
+.particle:nth-child(1) {
+  left: 10%;
+  top: 20%;
+  animation-duration: 12s;
+}
+.particle:nth-child(2) {
+  left: 20%;
+  top: 80%;
+  animation-duration: 15s;
+}
+.particle:nth-child(3) {
+  left: 30%;
+  top: 50%;
+  animation-duration: 8s;
+}
+.particle:nth-child(4) {
+  left: 40%;
+  top: 10%;
+  animation-duration: 10s;
+}
+.particle:nth-child(5) {
+  left: 50%;
+  top: 70%;
+  animation-duration: 13s;
+}
+.particle:nth-child(6) {
+  left: 60%;
+  top: 30%;
+  animation-duration: 9s;
+}
+.particle:nth-child(7) {
+  left: 70%;
+  top: 90%;
+  animation-duration: 11s;
+}
+.particle:nth-child(8) {
+  left: 80%;
+  top: 40%;
+  animation-duration: 14s;
+}
+.particle:nth-child(9) {
+  left: 90%;
+  top: 60%;
+  animation-duration: 7s;
+}
+.particle:nth-child(10) {
+  left: 15%;
+  top: 25%;
+  animation-duration: 16s;
+}
+.particle:nth-child(11) {
+  left: 25%;
+  top: 85%;
+  animation-duration: 12s;
+}
+.particle:nth-child(12) {
+  left: 35%;
+  top: 45%;
+  animation-duration: 10s;
+}
+.particle:nth-child(13) {
+  left: 45%;
+  top: 15%;
+  animation-duration: 8s;
+}
+.particle:nth-child(14) {
+  left: 55%;
+  top: 75%;
+  animation-duration: 13s;
+}
+.particle:nth-child(15) {
+  left: 65%;
+  top: 35%;
+  animation-duration: 9s;
+}
+.particle:nth-child(16) {
+  left: 75%;
+  top: 95%;
+  animation-duration: 11s;
+}
+.particle:nth-child(17) {
+  left: 85%;
+  top: 55%;
+  animation-duration: 14s;
+}
+.particle:nth-child(18) {
+  left: 95%;
+  top: 65%;
+  animation-duration: 7s;
+}
+.particle:nth-child(19) {
+  left: 5%;
+  top: 40%;
+  animation-duration: 15s;
+}
+.particle:nth-child(20) {
+  left: 15%;
+  top: 60%;
+  animation-duration: 10s;
+}
 
 @keyframes float {
-  0% { transform: translateY(0) scale(1); opacity: 0.8; }
-  50% { transform: translateY(-100vh) scale(1.5); opacity: 0.3; }
-  100% { transform: translateY(0) scale(1); opacity: 0.8; }
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-100vh) scale(1.5);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.8;
+  }
 }
 
 /* Header */
@@ -649,9 +834,15 @@ const filteredServices = computed(() => {
   box-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
 }
 
-.status-badge.open { color: #00b3e0; }
-.status-badge.bidding { color: #ff00ff; }
-.status-badge.sold { color: #808080; }
+.status-badge.open {
+  color: #00b3e0;
+}
+.status-badge.bidding {
+  color: #ff00ff;
+}
+.status-badge.sold {
+  color: #808080;
+}
 
 .item-details {
   padding: 20px;
@@ -697,7 +888,8 @@ const filteredServices = computed(() => {
   gap: 15px;
 }
 
-.bid-btn, .buy-btn {
+.bid-btn,
+.buy-btn {
   flex: 1;
   padding: 12px;
   border: 1px solid #00b3e0;
@@ -722,7 +914,8 @@ const filteredServices = computed(() => {
   box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
 }
 
-.bid-btn:disabled, .buy-btn:disabled {
+.bid-btn:disabled,
+.buy-btn:disabled {
   background: rgba(28, 37, 38, 0.5);
   color: #808080;
   border-color: #808080;
@@ -871,29 +1064,30 @@ const filteredServices = computed(() => {
     margin-right: 0;
     margin-bottom: 15px;
   }
-  .header-title { 
-    font-size: 2.5rem; 
+  .header-title {
+    font-size: 2.5rem;
   }
-  .header-subtitle { 
-    font-size: 1.2rem; 
+  .header-subtitle {
+    font-size: 1.2rem;
   }
-  .account-item, .service-item { 
-    width: 100%; 
-    max-width: 350px; 
+  .account-item,
+  .service-item {
+    width: 100%;
+    max-width: 350px;
   }
-  .section-title { 
-    font-size: 1.6rem; 
+  .section-title {
+    font-size: 1.6rem;
   }
-  .banner-title { 
-    font-size: 1.6rem; 
+  .banner-title {
+    font-size: 1.6rem;
   }
-  .banner-text { 
-    font-size: 1rem; 
+  .banner-text {
+    font-size: 1rem;
   }
-  .particle { 
-    width: 3px; 
-    height: 3px; 
-    animation-duration: 8s; 
+  .particle {
+    width: 3px;
+    height: 3px;
+    animation-duration: 8s;
   }
 }
 </style>
