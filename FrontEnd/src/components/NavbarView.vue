@@ -68,6 +68,19 @@
       </transition>
     </div>
     <div class="d-flex align-items-center position-relative">
+      <!-- Thanh tìm kiếm -->
+      <div class="search-bar me-2">
+        <input
+          type="text"
+          placeholder="Tìm kiếm..."
+          class="search-input"
+          v-model="searchQuery"
+          @keyup.enter="handleSearch"
+        />
+        <button class="search-btn" @click="handleSearch">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
       <!-- Nút Nạp Tiền -->
       <button class="cosmo-btn" @click="handleRechargeClick">
         <i class="fas fa-coins me-1"></i>
@@ -117,6 +130,11 @@
             <p>No new notifications</p>
           </div>
         </transition>
+      </div>
+      <!-- Hiển thị số dư -->
+      <div v-if="isLoggedIn" class="cosmo-balance mx-2">
+        <i class="fas fa-coins"></i>
+        <span>{{ formatCurrency(balance) }}</span>
       </div>
       <!-- Người dùng chưa đăng nhập -->
       <div v-if="!isLoggedIn" class="position-relative">
@@ -180,7 +198,7 @@
         </transition>
       </div>
     </div>
-    <!-- Modal thông báo cải tiến -->
+    <!-- Modal thông báo -->
     <transition name="modal-zoom">
       <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
         <div class="modal-content">
@@ -208,7 +226,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import authenticateApi from "@/api/authenticate.api";
 import { userStore } from "@/stores/auth.ts";
@@ -229,9 +247,19 @@ export default {
     const modalMessage = ref("");
     const modalActionText = ref("Đăng nhập");
     const modalAction = ref(() => {});
+    const searchQuery = ref("");
 
     const isLoggedIn = computed(() => !!store.user);
-    const fullName = computed(() => store.fullname);
+    const fullName = computed(() => store.user?.fullName || "");
+    const balance = computed(() => store.user?.balance || 0);
+    
+    // Hàm định dạng số tiền
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(amount);
+    };
 
     onMounted(() => {
       store.init();
@@ -317,6 +345,12 @@ export default {
       closeAllMenus();
     };
 
+    const handleSearch = () => {
+      if (searchQuery.value) {
+        router.push(`/search?query=${searchQuery.value}`);
+      }
+    };
+
     const bounceIcon = (event) => {
       event.target.classList.add("animate-bounce");
     };
@@ -367,11 +401,14 @@ export default {
       isAccountMenuOpen,
       isLoggedIn,
       fullName,
+      balance,
+      formatCurrency,
       showModal,
       modalTitle,
       modalMessage,
       modalActionText,
       modalAction,
+      searchQuery,
       toggleAddMenu,
       toggleNotifications,
       toggleUserMenu,
@@ -385,6 +422,7 @@ export default {
       handleRechargeClick,
       handleAddAccountClick,
       handleAddServiceClick,
+      handleSearch,
       bounceIcon,
       resetIcon,
       closeAllMenus,
@@ -689,7 +727,7 @@ a {
   opacity: 0;
 }
 
-/* Modal Styles - Cải tiến mới */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -706,9 +744,9 @@ a {
 
 .modal-content {
   background: linear-gradient(135deg, #1e1e2f, #2a2a40);
-  border-radius: 15px; /* Giảm kích thước bo tròn */
-  padding: 20px; /* Giảm padding */
-  max-width: 400px; /* Thu nhỏ modal */
+  border-radius: 15px;
+  padding: 20px;
+  max-width: 400px;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 10px rgba(255, 0, 122, 0.3);
   border: 1px solid #00ddeb;
   position: relative;
@@ -726,32 +764,32 @@ a {
   border-radius: 17px;
   background: linear-gradient(45deg, #00ffff, #ff00ff, #00ddeb);
   z-index: -1;
-  filter: blur(5px); /* Giảm độ mờ để nhẹ nhàng hơn */
+  filter: blur(5px);
   opacity: 0.2;
   animation: neonPulse 1.5s infinite alternate;
 }
 
 .modal-header {
   text-align: center;
-  margin-bottom: 15px; /* Giảm margin */
+  margin-bottom: 15px;
   position: relative;
 }
 
 .modal-title {
-  font-size: 1.5rem; /* Giảm kích thước chữ */
+  font-size: 1.5rem;
   font-weight: bold;
   color: #00ffff;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5), 0 0 3px rgba(255, 0, 122, 0.3);
-  font-family: "Arial", sans-serif; /* Dùng font cơ bản hơn */
+  font-family: "Arial", sans-serif;
 }
 
 .close-btn {
   position: absolute;
-  top: 5px; /* Giảm khoảng cách */
-  right: 10px; /* Giảm khoảng cách */
+  top: 5px;
+  right: 10px;
   background: none;
   border: none;
-  font-size: 1.2rem; /* Giảm kích thước icon */
+  font-size: 1.2rem;
   color: #e0e0e0;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -759,33 +797,33 @@ a {
 
 .close-btn:hover {
   color: #ff007a;
-  transform: scale(1.1); /* Giảm hiệu ứng phóng to */
+  transform: scale(1.1);
   text-shadow: 0 0 8px rgba(255, 0, 122, 0.6);
 }
 
 .modal-body {
   text-align: center;
-  margin-bottom: 15px; /* Giảm margin */
+  margin-bottom: 15px;
 }
 
 .modal-message {
-  font-size: 1rem; /* Giảm kích thước chữ */
+  font-size: 1rem;
   color: #e0e0e0;
   text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
-  line-height: 1.4; /* Giảm khoảng cách dòng */
+  line-height: 1.4;
 }
 
 .modal-footer {
   display: flex;
   justify-content: space-between;
-  gap: 10px; /* Giảm khoảng cách giữa nút */
+  gap: 10px;
 }
 
 .modal-btn {
   flex: 1;
-  padding: 10px; /* Giảm padding */
-  border-radius: 10px; /* Giảm kích thước bo tròn */
-  font-size: 0.9rem; /* Giảm kích thước chữ */
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
   border: 1px solid transparent;
@@ -808,11 +846,11 @@ a {
 }
 
 .modal-btn:hover::before {
-  opacity: 0.2; /* Giảm độ sáng gradient */
+  opacity: 0.2;
 }
 
 .modal-btn:hover {
-  transform: scale(1.03); /* Giảm hiệu ứng phóng to */
+  transform: scale(1.03);
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.6), 0 0 10px rgba(255, 0, 122, 0.4);
   border-color: #00ddeb;
 }
@@ -835,7 +873,7 @@ a {
 .modal-zoom-enter-from,
 .modal-zoom-leave-to {
   opacity: 0;
-  transform: scale(0.7); /* Hiệu ứng zoom từ nhỏ ra lớn */
+  transform: scale(0.7);
 }
 
 @keyframes neonPulse {
@@ -854,6 +892,62 @@ a {
   to {
     opacity: 0.8;
   }
+}
+
+/* Thanh tìm kiếm */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 5px 10px;
+  border: 1px solid #00ffff;
+  transition: all 0.3s ease;
+}
+
+.search-bar:hover {
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  outline: none;
+  width: 150px;
+  padding: 5px;
+}
+
+.search-btn {
+  background: none;
+  border: none;
+  color: #00ffff;
+  cursor: pointer;
+  padding: 5px;
+  transition: all 0.3s ease;
+}
+
+.search-btn:hover {
+  color: #ff00ff;
+  transform: scale(1.1);
+}
+
+/* Số dư */
+.cosmo-balance {
+  display: flex;
+  align-items: center;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  background: rgba(0, 255, 255, 0.1);
+  padding: 5px 10px;
+  border-radius: 10px;
+  border: 1px solid #00ffff;
+}
+
+.cosmo-balance i {
+  margin-right: 5px;
+  color: #00ffff;
 }
 
 @media (max-width: 768px) {
@@ -923,7 +1017,7 @@ a {
     width: 160px;
   }
   .modal-content {
-    max-width: 80%; /* Thu nhỏ hơn trên mobile */
+    max-width: 80%;
     padding: 15px;
   }
   .modal-title {
@@ -938,6 +1032,14 @@ a {
   }
   .close-btn {
     font-size: 1rem;
+  }
+  .search-bar {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  .cosmo-balance {
+    font-size: 0.8rem;
+    padding: 4px 8px;
   }
 }
 </style>

@@ -1,30 +1,30 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import gameApi from '@/api/gameinfor.api';
 import gameAccountApi from '@/api/gameaccount.api';
 import gamefieldApi from '@/api/gamefield.api';
 
-// Interface cho GameInfor từ API
+import { userStore } from '@/stores/auth'; // Changed from useAuth to userStore
+
 interface Game {
   id: number;
   name: string;
   image: string;
 }
 
-// Interface cho AccountGame từ API
 interface Account {
   id: number;
   seller: string;
+  sellerId: string | null;
   game: string;
-  name: string;
   price: number;
   status: string;
-  image: string;
+  images: string[];
   fields: { fieldName: string; fieldValue: string }[];
   priceMin: number;
 }
 
-// Interface cho Service (giả định)
 interface Service {
   id: number;
   creator: string;
@@ -33,6 +33,14 @@ interface Service {
   price: number;
   description: string;
 }
+
+interface BuyAccountGameModel {
+  Id: number;
+}
+
+const router = useRouter();
+const authStore = userStore(); // Use the store instance
+const user = computed(() => authStore.user); // Access user reactively
 
 const selectedGame = ref<string>('All');
 const searchQuery = ref<string>('');
@@ -43,15 +51,23 @@ const games = ref<Game[]>([]);
 const accounts = ref<Account[]>([]);
 const services = ref<Service[]>([]);
 
-// Hàm lấy URL hình ảnh đầy đủ
-const getFullImageUrl = (imageString: string | null | undefined): string => {
-  if (!imageString || imageString.trim() === '') return 'https://via.placeholder.com/400x250';
+const showImageModal = ref(false);
+const selectedImages = ref<string[]>([]);
+const showMoreDetails = ref<number[]>([]);
+
+const showPurchaseModal = ref(false);
+const purchaseStatus = ref<'success' | 'error'>('success');
+const purchaseMessage = ref<string>('');
+
+const getFullImageUrls = (imageString: string | null | undefined): string[] => {
+  if (!imageString || imageString.trim() === '') {
+    return ['https://via.placeholder.com/400x250'];
+  }
   const baseUrl = 'https://localhost:7232/';
   const images = imageString.split(';').filter(img => img.trim() !== '');
-  return images.length > 0 ? `${baseUrl}${images[0]}` : 'https://via.placeholder.com/400x250';
+  return images.map(img => `${baseUrl}${img}`);
 };
 
-// Lấy danh sách game từ API
 const fetchGames = async () => {
   try {
     isLoading.value = true;
@@ -60,7 +76,7 @@ const fetchGames = async () => {
       games.value = response.data.result.data.map((game: any) => ({
         id: game.id,
         name: game.gameName,
-        image: getFullImageUrl(game.image),
+        image: getFullImageUrls(game.image)[0],
       }));
     } else {
       errorMessage.value = 'Không thể lấy danh sách game';
@@ -73,43 +89,39 @@ const fetchGames = async () => {
   }
 };
 
-// Lấy danh sách tài khoản game từ API và thông tin liên quan
 const fetchAccounts = async () => {
   try {
     isLoading.value = true;
     const response = await gameAccountApi.getAll();
     if (response.data?.result?.isSuccess && response.data.result.data) {
       const accountPromises = response.data.result.data.map(async (account: any) => {
-        let sellerName = 'Unknown';
-        let gameName = 'Unknown';
+        let sellerName = 'Không xác định';
+        let sellerId: string | null = null;
+        let gameName = 'Không xác định';
 
-        // Lấy thông tin người bán
         try {
           const userResponse = await gameAccountApi.getInforUser(account.id);
           if (userResponse.data?.result?.isSuccess && userResponse.data.result.data) {
-            sellerName = userResponse.data.result.data.userName || 'Unknown';
+            sellerName = userResponse.data.result.data.userName || 'Không xác định';
+            sellerId = userResponse.data.result.data.id || null;
           }
         } catch (error) {
           console.error(`Lỗi khi lấy thông tin người bán cho tài khoản ${account.id}:`, error);
         }
 
-        // Lấy tên game từ GameInfor
         try {
           const game = games.value.find(g => g.id === account.gameInforID);
-          gameName = game ? game.name : 'Unknown';
+          gameName = game ? game.name : 'Không xác định';
         } catch (error) {
           console.error(`Lỗi khi lấy tên game cho tài khoản ${account.id}:`, error);
         }
 
-        // Lấy danh sách fields và giá trị cho account này
         let fields: { fieldName: string; fieldValue: string }[] = [];
         try {
-          // Lấy tất cả GameField của game
           const fieldResponse = await gamefieldApi.getField(account.gameInforID);
           if (fieldResponse.data?.result?.isSuccess && fieldResponse.data.result.data) {
             const fieldPromises = fieldResponse.data.result.data.map(async (field: any) => {
               try {
-                // Lấy fieldValue cho account và field cụ thể
                 const valueResponse = await gameAccountApi.getByIdForGame(account.id, field.id);
                 if (
                   valueResponse.data?.result?.isSuccess &&
@@ -121,28 +133,27 @@ const fetchAccounts = async () => {
                     fieldValue: valueResponse.data.result.data[0].fieldValue,
                   };
                 }
-                return null; // Không có giá trị, không thêm vào danh sách
+                return null;
               } catch (error) {
-                console.error(`Lỗi khi lấy giá trị của field ${field.id} cho tài khoản ${account.id}:`, error);
+                console.error(`Lỗi khi lấy giá trị trường ${field.id} cho tài khoản ${account.id}:`, error);
                 return null;
               }
             });
             const fieldResults = await Promise.all(fieldPromises);
-            // Lọc bỏ các kết quả null để chỉ giữ lại field có giá trị
             fields = fieldResults.filter(result => result !== null) as { fieldName: string; fieldValue: string }[];
           }
         } catch (error) {
-          console.error(`Lỗi khi lấy danh sách fields cho game ${account.gameInforID}:`, error);
+          console.error(`Lỗi khi lấy trường cho game ${account.gameInforID}:`, error);
         }
 
         return {
           id: account.id,
           seller: sellerName,
+          sellerId: sellerId,
           game: gameName,
-          name: account.accountName,
           price: account.price,
-          status: account.status || 'Đang bán',
-          image: getFullImageUrl(account.image),
+          status: account.status || 'Còn hàng',
+          images: getFullImageUrls(account.image),
           fields,
           priceMin: account.priceMin || 0,
         };
@@ -159,22 +170,19 @@ const fetchAccounts = async () => {
   }
 };
 
-// Dữ liệu dịch vụ tĩnh (giả định)
 const fetchServices = () => {
   services.value = [
-    { id: 1, creator: 'UserC', game: 'Valorant', name: 'Cày rank lên Immortal', price: 30, description: 'Cày từ rank hiện tại lên Immortal trong 7 ngày.' },
-    { id: 2, creator: 'UserD', game: 'Genshin Impact', name: 'Leo cấp AR 50', price: 40, description: 'Leo từ AR 1 lên 50, bao gồm cày nguyên liệu.' },
-    { id: 3, creator: 'UserE', game: 'LoL', name: 'Vượt ải rank', price: 25, description: 'Giúp bạn vượt 5 trận rank bất kỳ.' },
+    { id: 1, creator: 'UserC', game: 'Valorant', name: 'Tăng hạng lên Immortal', price: 30, description: 'Tăng từ hạng hiện tại lên Immortal trong 7 ngày.' },
+    { id: 2, creator: 'UserD', game: 'Genshin Impact', name: 'Lên cấp AR 50', price: 40, description: 'Lên cấp từ AR 1 đến 50, bao gồm farm tài nguyên.' },
+    { id: 3, creator: 'UserE', game: 'LoL', name: 'Hỗ trợ trận hạng', price: 25, description: 'Giúp bạn thắng 5 trận hạng.' },
   ];
 };
 
-// Gọi API khi component được mounted
 onMounted(() => {
-  fetchGames().then(() => fetchAccounts()); // Đảm bảo lấy games trước accounts
+  fetchGames().then(() => fetchAccounts());
   fetchServices();
 });
 
-// Computed properties cho filtered accounts
 const filteredAccounts = computed(() => {
   let result = accounts.value;
   if (selectedGame.value !== 'All') {
@@ -182,14 +190,12 @@ const filteredAccounts = computed(() => {
   }
   if (searchQuery.value) {
     result = result.filter(account =>
-      account.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       account.game.toLowerCase().includes(searchQuery.value.toLowerCase())
     );
   }
   return result;
 });
 
-// Computed properties cho filtered services
 const filteredServices = computed(() => {
   let result = services.value;
   if (selectedGame.value !== 'All') {
@@ -203,697 +209,1485 @@ const filteredServices = computed(() => {
   }
   return result;
 });
+
+const isOwnAccount = (account: Account) => {
+  return user.value && account.sellerId !== null && Number(account.sellerId) === user.value.id;
+};
+
+const buyAccount = async (accountId: number) => {
+  if (!user.value) {
+    purchaseStatus.value = 'error';
+    purchaseMessage.value = 'Vui lòng đăng nhập để mua tài khoản';
+    showPurchaseModal.value = true;
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    const model: BuyAccountGameModel = { Id: accountId };
+    const response = await gameAccountApi.buy(model);
+    if (response.data?.result?.isSuccess) {
+      await fetchAccounts();
+      purchaseStatus.value = 'success';
+      purchaseMessage.value = 'Mua tài khoản thành công!';
+    } else {
+      purchaseStatus.value = 'error';
+      const errorMsg = response.data?.result?.message || 'Lỗi không xác định';
+      switch (errorMsg) {
+        case 'This account does not exist or has been deleted!':
+          purchaseMessage.value = 'Tài khoản này không tồn tại hoặc đã bị xóa!';
+          break;
+        case 'This account has already been sold!':
+          purchaseMessage.value = 'Tài khoản này đã được bán!';
+          break;
+        case 'Game information does not exist!':
+          purchaseMessage.value = 'Thông tin game không tồn tại!';
+          break;
+        case 'Buyer information does not exist!':
+          purchaseMessage.value = 'Thông tin người mua không tồn tại!';
+          break;
+        case 'Insufficient balance':
+          purchaseMessage.value = 'Số dư không đủ';
+          break;
+        case 'Cannot buy your own account':
+          purchaseMessage.value = 'Không thể mua tài khoản của chính bạn';
+          break;
+        default:
+          purchaseMessage.value = `Mua thất bại: ${errorMsg}`;
+      }
+    }
+  } catch (error) {
+    purchaseStatus.value = 'error';
+    purchaseMessage.value = 'Lỗi khi gọi API mua hàng';
+    console.error('Lỗi mua hàng:', error);
+  } finally {
+    isLoading.value = false;
+    showPurchaseModal.value = true;
+  }
+};
+
+const closePurchaseModal = () => {
+  showPurchaseModal.value = false;
+  purchaseMessage.value = '';
+};
+
+const goToLogin = () => {
+  router.push('/login');
+};
+
+const openImageModal = (images: string[]) => {
+  selectedImages.value = images;
+  showImageModal.value = true;
+};
+
+const closeImageModal = () => {
+  showImageModal.value = false;
+  selectedImages.value = [];
+};
+
+const toggleMoreDetails = (accountId: number) => {
+  const index = showMoreDetails.value.indexOf(accountId);
+  if (index === -1) {
+    showMoreDetails.value.push(accountId);
+  } else {
+    showMoreDetails.value.splice(index, 1);
+  }
+};
 </script>
 
 <template>
-  <div class="trade-container">
-    <!-- Particle Background -->
-    <div class="particle-background">
-      <div v-for="i in 20" :key="i" class="particle"></div>
+  <!-- The template remains unchanged -->
+  <div class="cosmo-trade-zone">
+    <div class="stars-container">
+      <div class="stars stars-small"></div>
+      <div class="stars stars-medium"></div>
+      <div class="stars stars-large"></div>
     </div>
 
-    <!-- Header -->
-    <header class="header">
-      <div class="header-content">
-        <div class="header-title-container">
-          <div class="pyramid-loader">
-            <div class="wrapper">
-              <span class="side side1"></span>
-              <span class="side side2"></span>
-              <span class="side side3"></span>
-              <span class="side side4"></span>
-              <span class="shadow"></span>
-            </div>  
-          </div>
-          <h1 class="header-title">GameTradeZone</h1>
-        </div>
-        <p class="header-subtitle">Nơi giao dịch tài khoản và dịch vụ game đỉnh cao</p>
-        <div class="search-bar">
-          <input v-model="searchQuery" type="text" placeholder="Tìm kiếm tài khoản hoặc dịch vụ..." class="search-input" />
-          <i class="fas fa-search search-icon"></i>
-        </div>
-      </div>
-    </header>
+    <div class="nebula-bg"></div>
 
-    <!-- Filter Bar -->
-    <section class="filter-bar">
-      <div class="filter-options">
-        <button :class="{ 'active': selectedGame === 'All' }" @click="selectedGame = 'All'">Tất cả</button>
-        <button v-for="game in games" :key="game.id" :class="{ 'active': selectedGame === game.name }" @click="selectedGame = game.name">{{ game.name }}</button>
-      </div>
-    </section>
+    <div class="planet planet-1"></div>
+    <div class="planet planet-2"></div>
 
-    <!-- Loading/Error State -->
-    <div v-if="isLoading" class="loading">Đang tải dữ liệu...</div>
-    <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
-
-    <!-- Account Gallery -->
-    <section class="account-gallery">
-      <h2 class="section-title">Tài khoản đang bán</h2>
-      <div class="gallery-wrapper">
-        <div v-for="account in filteredAccounts" :key="account.id" class="account-item">
-          <div class="item-image">
-            <img :src="account.image" :alt="account.game" />
-            <div class="image-overlay">
-              <span class="status-badge" :class="account.status">{{ account.status }}</span>
-            </div>
-          </div>
-          <div class="item-details">
-            <p class="item-game">{{ account.game }}</p>
-            <p class="item-seller">Người bán: {{ account.seller }}</p>
-            <div class="price-box">
-              <span class="item-price">{{ account.price }} VND</span>
-              <span class="item-price-min">Giá nhỏ nhất: {{ account.priceMin }} VND</span>
-            </div>
-            <div class="item-fields">
-              <p v-for="field in account.fields" :key="field.fieldName">{{ field.fieldName }}: {{ field.fieldValue }}</p>
-            </div>
-            <div class="item-actions">
-              <button class="bid-btn" :disabled="account.status === 'Đã bán'">Trả giá</button>
-              <button class="buy-btn" :disabled="account.status === 'Đã bán'">Mua ngay</button>
-            </div>
+    <section class="top-banner">
+      <div class="banner-image">
+        <div class="banner-overlay">
+          <h1 class="banner-title">GameTradeZone</h1>
+          <p class="banner-subtitle">Nền tảng trung gian hàng đầu cho giao dịch tài khoản game</p>
+          <div class="banner-icons">
+            <i class="fas fa-gamepad"></i>
+            <i class="fas fa-users"></i>
+            <i class="fas fa-shield-alt"></i>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Services Gallery -->
-    <section class="services-gallery">
-      <h2 class="section-title">Dịch vụ nổi bật</h2>
-      <div class="gallery-wrapper">
-        <div v-for="service in filteredServices" :key="service.id" class="service-item">
-          <div class="service-details">
-            <h3 class="service-name">{{ service.name }}</h3>
-            <p class="service-game">{{ service.game }}</p>
-            <p class="service-creator">Người tạo: {{ service.creator }}</p>
-            <p class="service-description">{{ service.description }}</p>
-            <div class="service-price-box">
-              <span class="service-price">{{ service.price }} VND</span>
-            </div>
-            <button class="hire-btn">Thuê ngay</button>
-          </div>
+    <nav class="game-nav">
+      <div class="nav-container">
+        <button
+          class="game-filter-btn"
+          :class="{ active: selectedGame === 'All' }"
+          @click="selectedGame = 'All'"
+        >
+          <i class="fas fa-globe-asia"></i> Tất cả
+        </button>
+        <button
+          v-for="game in games"
+          :key="game.id"
+          class="game-filter-btn"
+          :class="{ active: selectedGame === game.name }"
+          @click="selectedGame = game.name"
+        >
+          <i class="fas fa-gamepad"></i> {{ game.name }}
+        </button>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <div v-if="isLoading" class="loading-container">
+        <div class="space-loader">
+          <div class="orbit"></div>
+          <div class="core"></div>
+          <p>Đang tải dữ liệu...</p>
         </div>
       </div>
-    </section>
 
-    <!-- Banner bổ sung -->
-    <section class="banner-section">
+      <div v-if="errorMessage && !isLoading" class="error-container">
+        <div class="error-box">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>{{ errorMessage }}</p>
+          <button class="retry-btn" @click="fetchGames().then(() => fetchAccounts())">
+            <i class="fas fa-redo"></i> Thử lại
+          </button>
+        </div>
+      </div>
+
+      <section v-if="!isLoading && !errorMessage" class="accounts-section">
+        <div class="section-header">
+          <h2 class="glow-text"><i class="fas fa-user-shield"></i> Tài khoản Game</h2>
+          <p class="section-desc">Mua và bán tài khoản an toàn, đáng tin cậy và nhanh chóng</p>
+        </div>
+
+        <div class="card-grid">
+          <div
+            v-for="account in filteredAccounts"
+            :key="account.id"
+            class="account-card"
+            :class="{ 'sold': account.status === 'Đã bán' }"
+          >
+            <div class="card-banner">
+              <img :src="account.images[0]" :alt="account.game" class="card-img">
+              <div class="game-badge">{{ account.game }}</div>
+              <div v-if="account.status === 'Đã bán'" class="sold-tag">Đã bán</div>
+              <button
+                v-if="account.images.length > 1"
+                @click="openImageModal(account.images)"
+                class="view-more-images"
+              >
+                Xem thêm hình ảnh
+              </button>
+            </div>
+
+            <div class="card-content">
+              <div class="seller-info">
+                <i class="fas fa-user-circle"></i>
+                <span>{{ account.seller }}</span>
+              </div>
+
+              <div class="account-details">
+                <div v-for="field in showMoreDetails.includes(account.id) ? account.fields : account.fields.slice(0, 3)" 
+                     :key="field.fieldName" 
+                     class="detail-item">
+                  <span class="detail-label">{{ field.fieldName }}:</span>
+                  <span class="detail-value">{{ field.fieldValue }}</span>
+                </div>
+                <div v-if="account.fields.length > 3" class="more-details">
+                  <button 
+                    class="toggle-details-btn"
+                    @click="toggleMoreDetails(account.id)"
+                  >
+                    {{ showMoreDetails.includes(account.id) ? 'Ẩn bớt' : `+${account.fields.length - 3} chi tiết nữa` }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="price-container">
+                <div class="price">
+                  <span class="price-label">Giá:</span>
+                  <span class="price-value">{{ account.price.toLocaleString() }} VNĐ</span>
+                </div>
+                <div class="min-price">
+                  <span class="price-label">Giá tối thiểu:</span>
+                  <span class="price-value">{{ account.priceMin.toLocaleString() }} VNĐ</span>
+                </div>
+              </div>
+
+              <div class="card-actions" v-if="!isOwnAccount(account)">
+                <button class="bid-btn" :disabled="account.status === 'Đã bán'">
+                  <i class="fas fa-gavel"></i> Đặt giá
+                </button>
+                <button class="buy-btn" :disabled="account.status === 'Đã bán'" @click="buyAccount(account.id)">
+                  <i class="fas fa-shopping-cart"></i> Mua ngay
+                </button>
+              </div>
+              <div v-else class="own-account-message">
+                Đây là tài khoản của bạn
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="!isLoading && !errorMessage" class="services-section">
+        <div class="section-header">
+          <h2 class="glow-text"><i class="fas fa-hands-helping"></i> Dịch vụ Game</h2>
+          <p class="section-desc">Đội ngũ hỗ trợ chuyên nghiệp đảm bảo tiến độ kịp thời</p>
+        </div>
+
+        <div class="card-grid">
+          <div v-for="service in filteredServices" :key="service.id" class="service-card">
+            <div class="service-header">
+              <h3 class="service-title">{{ service.name }}</h3>
+              <div class="service-game">{{ service.game }}</div>
+            </div>
+
+            <div class="service-content">
+              <div class="creator-info">
+                <i class="fas fa-user-astronaut"></i>
+                <span>{{ service.creator }}</span>
+              </div>
+              <p class="service-desc">{{ service.description }}</p>
+              <div class="service-price">
+                <span class="price-label">Giá dịch vụ:</span>
+                <span class="price-value">{{ service.price.toLocaleString() }} VNĐ</span>
+              </div>
+              <button class="hire-btn">
+                <i class="fas fa-handshake"></i> Thuê ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="promotion-banner">
       <div class="banner-content">
-        <h3 class="banner-title">Tham gia ngay hôm nay!</h3>
-        <p class="banner-text">Đăng ký để trải nghiệm dịch vụ và giao dịch tốt nhất!</p>
-        <button class="banner-btn">Đăng ký ngay</button>
+        <div class="banner-text">
+          <h2 class="banner-title">BẠN MUỐN BÁN TÀI KHOẢN?</h2>
+          <p class="banner-desc">Đăng ký ngay để bắt đầu bán tài khoản game của bạn một cách an toàn</p>
+        </div>
+        <div class="banner-actions">
+          <button class="banner-btn">
+            <i class="fas fa-rocket"></i> Đăng bán tài khoản ngay
+          </button>
+        </div>
       </div>
     </section>
+
+    <teleport to="body">
+      <div v-if="showImageModal" class="image-modal" @click="closeImageModal">
+        <div class="modal-content" @click.stop>
+          <button class="close-btn" @click="closeImageModal">×</button>
+          <div class="image-carousel">
+            <div class="carousel-container">
+              <img
+                v-for="(image, index) in selectedImages"
+                :key="index"
+                :src="image"
+                :alt="'Hình ' + (index + 1)"
+                class="carousel-image"
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
+    <teleport to="body">
+      <div v-if="showPurchaseModal" class="purchase-modal" @click="closePurchaseModal">
+        <div class="modal-content animated" @click.stop>
+          <button class="close-btn" @click="closePurchaseModal">×</button>
+          <div class="modal-body">
+            <i :class="purchaseStatus === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'"
+               class="modal-icon"></i>
+            <h3 class="modal-title">
+              {{ purchaseStatus === 'success' ? 'Thành công!' : 'Thất bại!' }}
+            </h3>
+            <p class="modal-message">{{ purchaseMessage }}</p>
+            <div class="modal-actions">
+              <button v-if="purchaseMessage === 'Vui lòng đăng nhập để mua tài khoản'" 
+                      class="modal-btn login-btn" 
+                      @click="goToLogin">
+                Đăng nhập
+              </button>
+              <button class="modal-btn" @click="closePurchaseModal">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <style scoped>
-/* Pyramid Loader */
-.pyramid-loader {
-  width: 100px;
-  height: 100px;
-  display: block;
-  transform-style: preserve-3d;
-  transform: rotateX(-20deg);
-  margin-right: 20px;
-}
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Open+Sans:wght@400&display=swap');
 
-.wrapper {
+.cosmo-trade-zone {
+  font-family: 'Open Sans', sans-serif;
+  color: #e1e7ef;
+  min-height: 100vh;
+  background-color: #050A15;
   position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  animation: spin 4s linear infinite;
+  overflow-x: hidden;
 }
 
-@keyframes spin {
-  100% {
-    transform: rotateY(360deg);
+h1, h2, h3, h4, .banner-title {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stars-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+}
+
+.stars-small {
+  background-image:
+    radial-gradient(1px 1px at 25px 5px, #fff, rgba(255, 255, 255, 0)),
+    radial-gradient(1px 1px at 50px 25px, #fff, rgba(255, 255, 255, 0)),
+    radial-gradient(1px 1px at 125px 20px, #fff, rgba(255, 255, 255, 0)),
+    radial-gradient(1.5px 1.5px at 50px 75px, #fff, rgba(255, 255, 255, 0)),
+    radial-gradient(1.5px 1.5px at 100px 10px, #fff, rgba(255, 255, 255, 0));
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  animation: animateStars 50s linear infinite;
+  opacity: 0.6;
+}
+
+.stars-medium {
+  background-image:
+    radial-gradient(2px 2px at 50px 100px, #fff, rgba(255, 255, 255, 0)),
+    radial-gradient(2px 2px at 100px 50px, #fff, rgba(255, 255, 255, 0)),
+    radial-gradient(2px 2px at 150px 150px, #fff, rgba(255, 255, 255, 0)),
+    radial-gradient(2px 2px at 200px 200px, #fff, rgba(255, 255, 255, 0)),
+    radial-gradient(2px 2px at 250px 250px, #fff, rgba(255, 255, 255, 0));
+  background-repeat: repeat;
+  background-size: 300px 300px;
+  animation: animateStars 75s linear infinite;
+  opacity: 0.5;
+}
+
+.stars-large {
+  background-image:
+    radial-gradient(3px 3px at 300px 300px, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)),
+    radial-gradient(3px 3px at 400px 400px, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)),
+    radial-gradient(3px 3px at 500px 500px, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)),
+    radial-gradient(3px 3px at 600px 600px, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+  background-repeat: repeat;
+  background-size: 600px 600px;
+  animation: animateStars 100s linear infinite;
+  opacity: 0.4;
+}
+
+@keyframes animateStars {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-200px);
   }
 }
 
-.pyramid-loader .wrapper .side {
-  width: 40px;
-  height: 40px;
-  position: absolute;
+.nebula-bg {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  margin: auto;
-  transform-origin: center top;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  background:
+    radial-gradient(circle at 20% 30%, rgba(142, 45, 226, 0.1), transparent 80%),
+    radial-gradient(circle at 80% 70%, rgba(41, 121, 255, 0.1), transparent 80%),
+    radial-gradient(circle at 50% 50%, rgba(114, 9, 183, 0.05), transparent 100%);
+  filter: blur(10px);
+  z-index: 0;
+  opacity: 0.7;
+  animation: pulsate 15s ease-in-out infinite alternate;
 }
 
-.pyramid-loader .wrapper .side1 {
-  transform: rotateZ(-30deg) rotateY(90deg);
-  background: conic-gradient(#2BDEAC, #F028FD, #D8CCE6, #2F2585);
+@keyframes pulsate {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
-.pyramid-loader .wrapper .side2 {
-  transform: rotateZ(30deg) rotateY(90deg);
-  background: conic-gradient(#2F2585, #D8CCE6, #F028FD, #2BDEAC);
-}
-
-.pyramid-loader .wrapper .side3 {
-  transform: rotateX(30deg);
-  background: conic-gradient(#2F2585, #D8CCE6, #F028FD, #2BDEAC);
-}
-
-.pyramid-loader .wrapper .side4 {
-  transform: rotateX(-30deg);
-  background: conic-gradient(#2BDEAC, #F028FD, #D8CCE6, #2F2585);
-}
-
-.pyramid-loader .wrapper .shadow {
-  width: 30px;
-  height: 30px;
-  background: #8B5AD5;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: auto;
-  transform: rotateX(90deg) translateZ(-20px);
-  filter: blur(8px);
-}
-
-/* Tổng thể */
-.trade-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
-  font-family: 'Arial', sans-serif;
-  color: #f0f0f0;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Particle Background */
-.particle-background {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
-}
-
-.particle {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  background: rgba(0, 179, 224, 0.5);
+.planet {
+  position: fixed;
   border-radius: 50%;
-  animation: float 10s infinite ease-in-out;
+  z-index: 0;
 }
 
-.particle:nth-child(odd) {
-  background: rgba(255, 0, 255, 0.5);
+.planet-1 {
+  width: 150px;
+  height: 150px;
+  top: 15%;
+  right: -50px;
+  background: radial-gradient(circle at 30% 30%, #7A4EFE, #4A00E0);
+  box-shadow: 0 0 30px rgba(122, 78, 254, 0.4);
+  opacity: 0.5;
+  animation: rotate1 120s linear infinite;
 }
 
-.particle:nth-child(1) { left: 10%; top: 20%; animation-duration: 12s; }
-.particle:nth-child(2) { left: 20%; top: 80%; animation-duration: 15s; }
-.particle:nth-child(3) { left: 30%; top: 50%; animation-duration: 8s; }
-.particle:nth-child(4) { left: 40%; top: 10%; animation-duration: 10s; }
-.particle:nth-child(5) { left: 50%; top: 70%; animation-duration: 13s; }
-.particle:nth-child(6) { left: 60%; top: 30%; animation-duration: 9s; }
-.particle:nth-child(7) { left: 70%; top: 90%; animation-duration: 11s; }
-.particle:nth-child(8) { left: 80%; top: 40%; animation-duration: 14s; }
-.particle:nth-child(9) { left: 90%; top: 60%; animation-duration: 7s; }
-.particle:nth-child(10) { left: 15%; top: 25%; animation-duration: 16s; }
-.particle:nth-child(11) { left: 25%; top: 85%; animation-duration: 12s; }
-.particle:nth-child(12) { left: 35%; top: 45%; animation-duration: 10s; }
-.particle:nth-child(13) { left: 45%; top: 15%; animation-duration: 8s; }
-.particle:nth-child(14) { left: 55%; top: 75%; animation-duration: 13s; }
-.particle:nth-child(15) { left: 65%; top: 35%; animation-duration: 9s; }
-.particle:nth-child(16) { left: 75%; top: 95%; animation-duration: 11s; }
-.particle:nth-child(17) { left: 85%; top: 55%; animation-duration: 14s; }
-.particle:nth-child(18) { left: 95%; top: 65%; animation-duration: 7s; }
-.particle:nth-child(19) { left: 5%; top: 40%; animation-duration: 15s; }
-.particle:nth-child(20) { left: 15%; top: 60%; animation-duration: 10s; }
-
-@keyframes float {
-  0% { transform: translateY(0) scale(1); opacity: 0.8; }
-  50% { transform: translateY(-100vh) scale(1.5); opacity: 0.3; }
-  100% { transform: translateY(0) scale(1); opacity: 0.8; }
+.planet-2 {
+  width: 100px;
+  height: 100px;
+  bottom: 10%;
+  left: -30px;
+  background: radial-gradient(circle at 40% 40%, #00E0AA, #00807A);
+  box-shadow: 0 0 20px rgba(0, 224, 170, 0.4);
+  opacity: 0.5;
+  animation: rotate2 80s linear infinite;
 }
 
-/* Header */
-.header {
-  padding: 60px 20px;
-  text-align: center;
-  background: linear-gradient(to bottom, rgba(26, 9, 51, 0.9), transparent);
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 0 20px rgba(0, 204, 255, 0.2);
+@keyframes rotate1 {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.header-content {
-  max-width: 800px;
-  margin: 0 auto;
+@keyframes rotate2 {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
 }
 
-.header-title-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.header-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  letter-spacing: 3px;
-  color: #f8f8f8;
-  text-shadow: 0 0 15px #00b3e0, 0 0 5px #ff00ff;
-  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-  margin: 0;
-}
-
-.header-title:hover {
-  color: #00b3e0;
-  transform: scale(1.05);
-}
-
-.header-subtitle {
-  font-size: 1.4rem;
-  color: #e0e0e0;
-  margin-bottom: 30px;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
-}
-
-.search-bar {
-  position: relative;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.search-input {
-  width: 100%;
-  padding: 15px 50px 15px 20px;
-  background: rgba(28, 37, 38, 0.9);
-  border: 1px solid #00b3e0;
-  border-radius: 8px;
-  color: #f0f0f0;
-  font-size: 1.1rem;
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
-  transition: all 0.2s ease-in-out;
-}
-
-.search-input:focus {
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.6);
-  outline: none;
-  border-color: #ff00ff;
-}
-
-.search-icon {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #00b3e0;
-  font-size: 1.2rem;
-  transition: all 0.2s ease-in-out;
-}
-
-.search-icon:hover {
-  color: #ff00ff;
-}
-
-/* Filter Bar */
-.filter-bar {
-  padding: 20px 40px;
-  background: rgba(13, 27, 42, 0.9);
-  border-bottom: 1px solid #00b3e0;
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
-}
-
-.filter-options {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.filter-options button {
-  background: rgba(28, 37, 38, 0.9);
-  color: #f0f0f0;
-  padding: 10px 25px;
-  border: 1px solid #00b3e0;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease-in-out;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
-}
-
-.filter-options button.active,
-.filter-options button:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff);
-  color: #f8f8f8;
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
-  transform: translateY(-1px);
-}
-
-/* Section Titles */
-.section-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #00b3e0;
-  text-align: center;
-  margin-bottom: 30px;
-  text-shadow: 0 0 10px #00b3e0, 0 0 5px #ff00ff;
-  position: relative;
-  z-index: 1;
-  transition: all 0.2s ease-in-out;
-}
-
-.section-title:hover {
-  transform: scale(1.05);
-}
-
-/* Loading/Error State */
-.loading,
-.error {
-  text-align: center;
-  padding: 20px;
-  font-size: 1.2rem;
-  color: #ff00ff;
-}
-
-/* Account Gallery */
-.account-gallery {
-  padding: 60px 40px;
-  position: relative;
-  z-index: 1;
-}
-
-.gallery-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 30px;
+.nav-container,
+.section-header,
+.card-grid,
+.banner-content {
   max-width: 1400px;
   margin: 0 auto;
-}
-
-.account-item {
-  width: 400px;
-  background: rgba(28, 37, 38, 0.9);
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.2s ease-in-out;
+  padding: 0 20px;
   position: relative;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
+  z-index: 2;
 }
 
-.account-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 0 20px rgba(0, 204, 255, 0.4);
-}
-
-.item-image {
+section {
+  padding: 40px 0;
   position: relative;
+  z-index: 2;
 }
 
-.item-image img {
+.glow-text {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(41, 121, 255, 0.7),
+               0 0 20px rgba(41, 121, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.glow-text:hover {
+  text-shadow: 0 0 15px rgba(41, 121, 255, 0.9),
+               0 0 30px rgba(41, 121, 255, 0.6);
+}
+
+.top-banner {
+  position: relative;
   width: 100%;
-  height: 250px;
-  object-fit: cover;
-  transition: all 0.2s ease-in-out;
+  height: 400px;
+  overflow: hidden;
+  z-index: 2;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
 }
 
-.account-item:hover .item-image img {
-  filter: brightness(110%);
+.banner-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
-.image-overlay {
+.banner-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to top, rgba(26, 9, 51, 0.7), transparent);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
 }
 
-.status-badge {
+.banner-title {
+  font-size: 4rem;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+  margin-bottom: 15px;
+  animation: fadeInDown 1s ease;
+}
+
+.banner-subtitle {
+  font-size: 1.8rem;
+  color: #e1e7ef;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  animation: fadeInUp 1s ease;
+}
+
+.banner-icons {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+  animation: fadeIn 1.5s ease;
+}
+
+.banner-icons i {
+  font-size: 2.5rem;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  transition: transform 0.3s ease;
+}
+
+.banner-icons i:hover {
+  transform: scale(1.2);
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.game-nav {
+  padding: 15px 0;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+}
+
+.nav-container {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: #7A4EFE #0a0e17;
+}
+
+.nav-container::-webkit-scrollbar {
+  height: 5px;
+}
+
+.nav-container::-webkit-scrollbar-thumb {
+  background: #7A4EFE;
+  border-radius: 5px;
+}
+
+.nav-container::-webkit-scrollbar-track {
+  background: #0a0e17;
+}
+
+.game-filter-btn {
+  background: rgba(26, 34, 52, 0.6);
+  color: #e1e7ef;
+  border: 1px solid rgba(122, 78, 254, 0.2);
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.game-filter-btn i {
+  color: #00E0AA;
+  font-size: 1rem;
+}
+
+.game-filter-btn:hover, .game-filter-btn.active {
+  background: linear-gradient(to right, rgba(122, 78, 254, 0.2), rgba(0, 224, 170, 0.2));
+  border-color: #7A4EFE;
+  box-shadow: 0 5px 15px rgba(122, 78, 254, 0.3);
+}
+
+.game-filter-btn.active {
+  background: linear-gradient(to right, rgba(122, 78, 254, 0.6), rgba(0, 224, 170, 0.6));
+  color: white;
+}
+
+.main-content {
+  min-height: 60vh;
+  padding: 40px 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.section-header h2 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.section-desc {
+  color: #b0b5c3;
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40vh;
+}
+
+.space-loader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.orbit {
+  width: 80px;
+  height: 80px;
+  border: 2px solid rgba(122, 78, 254, 0.3);
+  border-top: 2px solid #7A4EFE;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle at 30% 30%, #00E0AA, #009B8F);
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(0, 224, 170, 0.6);
+  animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.space-loader p {
+  color: #7A4EFE;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(122, 78, 254, 0.6);
+}
+
+.error-container {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.error-box {
+  background: rgba(255, 0, 76, 0.1);
+  border: 1px solid rgba(255, 0, 76, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 600px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.error-box i {
+  color: #FF004C;
+  font-size: 3rem;
+}
+
+.error-box p {
+  color: #e1e7ef;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+}
+
+.retry-btn {
+  background: rgba(255, 0, 76, 0.2);
+  color: #e1e7ef;
+  border: 1px solid rgba(255, 0, 76, 0.5);
+  border-radius: 50px;
+  padding: 10px 25px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retry-btn:hover {
+  background: rgba(255, 0, 76, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(255, 0, 76, 0.3);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+}
+
+.account-card {
+  background: rgba(26, 34, 52, 0.8);
+  backdrop-filter: blur(5px);
+  border-radius: 15px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(122, 78, 254, 0.2);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.account-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(122, 78, 254, 0.3);
+  border-color: #7A4EFE;
+}
+
+.account-card.sold {
+  opacity: 0.7;
+  filter: grayscale(0.5);
+}
+
+.card-banner {
+  position: relative;
+  height: 180px;
+}
+
+.card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.game-badge {
   position: absolute;
   top: 15px;
-  right: 15px;
-  padding: 6px 12px;
+  left: 15px;
+  padding: 5px 12px;
+  background: linear-gradient(to right, #7A4EFE, #4A00E0);
+  color: white;
+  font-weight: 600;
+  font-size: 0.8rem;
   border-radius: 8px;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  background: rgba(28, 37, 38, 0.9);
-  box-shadow: 0 0 5px rgba(0, 204, 255, 0.3);
+  box-shadow: 0 5px 10px rgba(122, 78, 254, 0.3);
 }
 
-.status-badge.open { color: #00b3e0; }
-.status-badge.bidding { color: #ff00ff; }
-.status-badge.sold { color: #808080; }
+.sold-tag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255, 0, 76, 0.8);
+}
 
-.item-details {
+.view-more-images {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  z-index: 10;
+}
+
+.view-more-images:hover {
+  background-color: #0056b3;
+}
+
+.card-content {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
+  flex: 1;
 }
 
-.item-game {
-  font-size: 1.1rem;
-  color: #e0e0e0;
+.seller-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b0b5c3;
+  font-size: 0.9rem;
 }
 
-.item-seller {
-  font-size: 0.95rem;
-  color: #b0b0b0;
+.seller-info i {
+  color: #00E0AA;
 }
 
-.price-box {
+.account-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(5, 10, 21, 0.5);
+  border-radius: 10px;
+  border: 1px solid rgba(122, 78, 254, 0.1);
+}
+
+.detail-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 0.9rem;
+}
+
+.detail-label {
+  color: #b0b5c3;
+  min-width: 100px;
+  font-weight: 600;
+}
+
+.detail-value {
+  color: #e1e7ef;
+  flex: 1;
+}
+
+.more-details {
+  margin-top: 5px;
+  text-align: center;
+}
+
+.toggle-details-btn {
+  background: none;
+  border: none;
+  color: #7A4EFE;
+  font-size: 0.85rem;
+  font-style: italic;
+  cursor: pointer;
+  padding: 5px;
+  transition: all 0.3s ease;
+}
+
+.toggle-details-btn:hover {
+  color: #00E0AA;
+  text-decoration: underline;
+}
+
+.price-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(122, 78, 254, 0.1);
+  border-radius: 10px;
+  margin-top: auto;
+}
+
+.price, .min-price {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.item-price {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #00b3e0;
-}
-
-.item-price-min {
-  font-size: 1rem;
-  color: #b0b0b0;
-}
-
-.item-fields {
+.price-label {
+  color: #b0b5c3;
   font-size: 0.9rem;
-  color: #e0e0e0;
 }
 
-.item-actions {
-  display: flex;
-  gap: 15px;
+.price-value {
+  color: #00E0AA;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-shadow: 0 0 5px rgba(0, 224, 170, 0.3);
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.own-account-message {
+  text-align: center;
+  color: #FF004C;
+  font-size: 0.9rem;
+  margin-top: 15px;
+  text-shadow: 0 0 5px rgba(255, 0, 76, 0.3);
 }
 
 .bid-btn, .buy-btn {
-  flex: 1;
-  padding: 12px;
-  border: 1px solid #00b3e0;
+  padding: 10px;
+  border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s ease-in-out;
-  background: rgba(28, 37, 38, 0.9);
-  color: #f0f0f0;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.3s ease;
+}
+
+.bid-btn {
+  background: rgba(0, 224, 170, 0.2);
+  color: #e1e7ef;
+  border: 1px solid rgba(0, 224, 170, 0.4);
 }
 
 .bid-btn:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff);
-  color: #f8f8f8;
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
+  background: rgba(0, 224, 170, 0.3);
+  transform: translateY(-3px);
+}
+
+.buy-btn {
+  background: linear-gradient(to right, #7A4EFE, #00E0AA);
+  color: white;
+  box-shadow: 0 5px 10px rgba(122, 78, 254, 0.2);
 }
 
 .buy-btn:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff);
-  color: #f8f8f8;
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(122, 78, 254, 0.4);
 }
 
 .bid-btn:disabled, .buy-btn:disabled {
-  background: rgba(28, 37, 38, 0.5);
-  color: #808080;
-  border-color: #808080;
+  background: #2c3e50;
+  border-color: transparent;
+  color: #8896ae;
+  box-shadow: none;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* Services Gallery */
-.services-gallery {
-  padding: 60px 40px;
-  background: rgba(13, 27, 42, 0.9);
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
-}
-
-.service-item {
-  width: 400px;
-  background: rgba(28, 37, 38, 0.9);
-  border-radius: 8px;
+.service-card {
+  background: rgba(0, 224, 170, 0.05);
+  backdrop-filter: blur(5px);
+  border-radius: 15px;
   overflow: hidden;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
-}
-
-.service-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 0 20px rgba(0, 204, 255, 0.4);
-}
-
-.service-details {
-  padding: 20px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 224, 170, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  height: 100%;
 }
 
-.service-name {
-  font-size: 1.6rem;
+.service-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(0, 224, 170, 0.3);
+  border-color: #00E0AA;
+}
+
+.service-header {
+  padding: 15px;
+  background: linear-gradient(to right, rgba(0, 224, 170, 0.2), rgba(41, 121, 255, 0.2));
+  border-bottom: 1px solid rgba(0, 224, 170, 0.2);
+}
+
+.service-title {
+  font-size: 1.3rem;
   font-weight: 700;
-  color: #f8f8f8;
-  margin: 0;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+  color: #fff;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
 }
 
 .service-game {
-  font-size: 1.1rem;
-  color: #e0e0e0;
+  display: inline-block;
+  padding: 3px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #00E0AA;
+  font-size: 0.8rem;
+  border-radius: 5px;
+  margin-top: 5px;
 }
 
-.service-creator {
-  font-size: 0.95rem;
-  color: #b0b0b0;
+.service-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1;
 }
 
-.service-description {
+.creator-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b0b5c3;
   font-size: 0.9rem;
-  color: #b0b0b0;
-  line-height: 1.4;
 }
 
-.service-price-box {
-  margin: 10px 0;
+.creator-info i {
+  color: #7A4EFE;
+}
+
+.service-desc {
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  flex: 1;
 }
 
 .service-price {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #00b3e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(0, 224, 170, 0.1);
+  border-radius: 8px;
+  margin-top: auto;
 }
 
 .hire-btn {
   width: 100%;
   padding: 12px;
-  background: rgba(28, 37, 38, 0.9);
-  color: #f0f0f0;
-  border: 1px solid #00b3e0;
+  margin-top: 15px;
+  background: linear-gradient(to right, #00E0AA, #00b3e0);
+  color: white;
+  border: none;
   border-radius: 8px;
-  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 10px rgba(0, 224, 170, 0.2);
 }
 
 .hire-btn:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff);
-  color: #f8f8f8;
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 224, 170, 0.4);
 }
 
-/* Banner Section */
-.banner-section {
-  padding: 40px 40px;
-  text-align: center;
-  background: rgba(13, 27, 42, 0.9);
+.promotion-banner {
+  background: linear-gradient(135deg, rgba(122, 78, 254, 0.2), rgba(0, 224, 170, 0.2));
+  padding: 50px 0;
   position: relative;
-  z-index: 1;
-  box-shadow: 0 0 15px rgba(0, 204, 255, 0.2);
+  overflow: hidden;
+  margin: 40px 0;
+}
+
+.promotion-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(122, 78, 254, 0.3), transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(0, 224, 170, 0.3), transparent 50%);
+  filter: blur(20px);
+  z-index: 0;
 }
 
 .banner-content {
-  max-width: 800px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
 }
 
 .banner-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #00b3e0;
-  text-shadow: 0 0 10px #00b3e0, 0 0 5px #ff00ff;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(122, 78, 254, 0.6);
+  margin-bottom: 10px;
 }
 
-.banner-text {
+.banner-desc {
   font-size: 1.2rem;
-  color: #e0e0e0;
-  margin: 10px 0 20px;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+  color: #e1e7ef;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .banner-btn {
-  padding: 12px 30px;
-  background: rgba(28, 37, 38, 0.9);
-  color: #f0f0f0;
-  border: 1px solid #00b3e0;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 15px 40px;
+  background: linear-gradient(to right, #7A4EFE, #00E0AA);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 20px rgba(122, 78, 254, 0.4);
 }
 
 .banner-btn:hover {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff);
-  color: #f8f8f8;
-  box-shadow: 0 0 12px rgba(0, 204, 255, 0.4);
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(122, 78, 254, 0.6);
 }
 
-/* Responsive */
+.image-modal, .purchase-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 10, 21, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  position: relative;
+  max-width: 500px;
+  width: 90%;
+  background: rgba(26, 34, 52, 0.9);
+  padding: 30px;
+  border-radius: 15px;
+  border: 1px solid rgba(122, 78, 254, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 2rem;
+  cursor: pointer;
+  border: none;
+  background: rgba(255, 0, 76, 0.2);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 0, 76, 0.4);
+  transform: rotate(90deg);
+}
+
+.image-carousel {
+  width: 100%;
+  overflow: hidden;
+}
+
+.carousel-container {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto;
+  padding: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #7A4EFE #0a0e17;
+}
+
+.carousel-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.carousel-container::-webkit-scrollbar-thumb {
+  background: #7A4EFE;
+  border-radius: 4px;
+}
+
+.carousel-container::-webkit-scrollbar-track {
+  background: #0a0e17;
+}
+
+.carousel-image {
+  width: 300px;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid rgba(122, 78, 254, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.carousel-image:hover {
+  transform: scale(1.05);
+}
+
+.modal-body {
+  text-align: center;
+  padding: 20px;
+}
+
+.modal-icon {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+}
+
+.modal-icon.fa-check-circle {
+  color: #00E0AA;
+  text-shadow: 0 0 15px rgba(0, 224, 170, 0.6);
+}
+
+.modal-icon.fa-exclamation-triangle {
+  color: #FF004C;
+  text-shadow: 0 0 15px rgba(255, 0, 76, 0.6);
+}
+
+.modal-title {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 15px;
+  text-shadow: 0 0 10px rgba(122, 78, 254, 0.6);
+}
+
+.modal-message {
+  font-size: 1.2rem;
+  color: #e1e7ef;
+  margin-bottom: 25px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.modal-btn {
+  padding: 12px 30px;
+  background: linear-gradient(to right, #7A4EFE, #00E0AA);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(122, 78, 254, 0.3);
+}
+
+.modal-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(122, 78, 254, 0.5);
+}
+
+.login-btn {
+  background: linear-gradient(to right, #FF004C, #FF4C7A);
+  box-shadow: 0 5px 15px rgba(255, 0, 76, 0.3);
+}
+
+.login-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(255, 0, 76, 0.5);
+}
+
+.animated {
+  animation: fadeInScale 0.3s ease;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 1200px) {
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 992px) {
+  .top-banner {
+    height: 350px;
+  }
+
+  .banner-title {
+    font-size: 3rem;
+  }
+
+  .banner-subtitle {
+    font-size: 1.5rem;
+  }
+
+  .section-header h2 {
+    font-size: 2rem;
+  }
+
+  .carousel-image {
+    width: 250px;
+    height: 166px;
+  }
+}
+
 @media (max-width: 768px) {
-  .header-title-container {
+  .top-banner {
+    height: 300px;
+  }
+
+  .banner-title {
+    font-size: 2.5rem;
+  }
+
+  .banner-subtitle {
+    font-size: 1.2rem;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+
+  .carousel-image {
+    width: 200px;
+    height: 133px;
+  }
+}
+
+@media (max-width: 576px) {
+  .top-banner {
+    height: 250px;
+  }
+
+  .banner-title {
+    font-size: 2rem;
+  }
+
+  .banner-subtitle {
+    font-size: 1rem;
+  }
+
+  .banner-icons i {
+    font-size: 2rem;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header h2 {
+    font-size: 1.7rem;
+  }
+
+  .section-desc {
+    font-size: 1rem;
+  }
+
+  .banner-btn {
+    padding: 12px 30px;
+    font-size: 1rem;
+  }
+
+  .carousel-image {
+    width: 150px;
+    height: 100px;
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+  }
+
+  .modal-message {
+    font-size: 1rem;
+  }
+
+  .modal-btn, .login-btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+
+  .modal-actions {
     flex-direction: column;
-    margin-bottom: 10px;
-  }
-  .pyramid-loader {
-    margin-right: 0;
-    margin-bottom: 15px;
-  }
-  .header-title { 
-    font-size: 2.5rem; 
-  }
-  .header-subtitle { 
-    font-size: 1.2rem; 
-  }
-  .account-item, .service-item { 
-    width: 100%; 
-    max-width: 350px; 
-  }
-  .section-title { 
-    font-size: 1.6rem; 
-  }
-  .banner-title { 
-    font-size: 1.6rem; 
-  }
-  .banner-text { 
-    font-size: 1rem; 
-  }
-  .particle { 
-    width: 3px; 
-    height: 3px; 
-    animation-duration: 8s; 
+    gap: 10px;
   }
 }
 </style>
