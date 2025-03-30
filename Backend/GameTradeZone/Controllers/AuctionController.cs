@@ -1,7 +1,10 @@
-﻿using GameTradeZone.Service.Interfaces;
+﻿using GameTradeZone.Domain.Entities;
+using GameTradeZone.Service.Hubs;
+using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models.Auction;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace GameTradeZone.Controllers
 {
@@ -10,6 +13,7 @@ namespace GameTradeZone.Controllers
     public class AuctionController : BaseController
     {
         private readonly IAuctionService _auctionService;
+        private readonly IHubContext<AuctionHub> _hubContext;
 
         public AuctionController(IAuctionService auctionService)
         {
@@ -80,6 +84,22 @@ namespace GameTradeZone.Controllers
             try
             {
                 var result = await _auctionService.AddAuctionDetail(model);
+                if (result.IsSuccess)
+                {
+                    var auctionDetail = result.Data as AuctionDetail;
+                    if (auctionDetail != null)
+                    {
+                        await _hubContext.Clients.Group("AuctionDetailGroup")
+                            .SendAsync("AuctionDetailAdded", new
+                            {
+                                Id = auctionDetail.Id,
+                                AuctionId = auctionDetail.AuctionId,
+                                UserId = auctionDetail.UserId,
+                                RaisePrice = auctionDetail.RaisePrice,
+                                RaiseDateTime = auctionDetail.RaiseDateTime
+                            });
+                    }
+                }
                 return Response(result);
             }
             catch (Exception e)
