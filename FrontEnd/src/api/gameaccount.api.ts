@@ -19,7 +19,7 @@ export interface UpdateAccountGameModel extends AddAccountGameModel {
 }
 
 export interface BuyAccountGameModel {
-  accountId: number;
+  Id: number;
 }
 
 export default {

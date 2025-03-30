@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import NavbarView from './components/NavbarView.vue'
+import { RouterView } from 'vue-router';
+import NavbarView from './components/NavbarView.vue';
 </script>
 
 <template>
-  <NavbarView/>
+  <NavbarView />
 
   <div class="cosmo-content">
     <RouterView />
   </div>
+
+  <!-- Messenger Support Icon -->
+  <a href="https://m.me/your-messenger-id" target="_blank" class="messenger-btn" title="Chat hỗ trợ qua Messenger">
+    <i class="fab fa-facebook-messenger"></i>
+  </a>
 </template>
 
 <style scoped>
@@ -83,6 +88,35 @@ body::-webkit-scrollbar-thumb:hover {
   box-shadow: 0 0 12px rgba(255, 0, 255, 0.7);
 }
 
+/* Messenger Button Styles */
+.messenger-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(45deg, #0088cc, #00b7ff); /* Gradient màu Messenger */
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 136, 204, 0.5);
+  text-decoration: none;
+  z-index: 1000;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.messenger-btn i {
+  font-size: 2rem;
+  color: #fff;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+.messenger-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 136, 204, 0.7);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .cosmo-sidebar {
@@ -106,6 +140,15 @@ body::-webkit-scrollbar-thumb:hover {
   /* Đảm bảo scrollbar responsive */
   .cosmo-content::-webkit-scrollbar {
     width: 8px; /* Thu nhỏ thanh cuộn trên màn hình nhỏ */
+  }
+
+  /* Messenger button responsive */
+  .messenger-btn {
+    width: 50px;
+    height: 50px;
+  }
+  .messenger-btn i {
+    font-size: 1.5rem;
   }
 }
 </style>

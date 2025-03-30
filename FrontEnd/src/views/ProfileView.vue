@@ -1,63 +1,115 @@
 <template>
   <div class="profile-container">
+    <div class="cosmo-particles"></div>
     <div class="profile-card">
       <div class="profile-grid">
-        <!-- Cột trái: Avatar + Info cơ bản -->
+        <!-- Left column: Avatar + Basic Info -->
         <div class="profile-left">
           <div class="avatar-container">
-            <img :src="user.avatar || defaultAvatar" alt="Avatar" class="avatar" @mouseenter="isAvatarHovered = true" @mouseleave="isAvatarHovered = false" />
-            <div class="status-indicator" :class="{ 'online': user.status }"></div>
-            <transition name="fade">
+            <div class="avatar-ring">
+              <img :src="user.avatar || defaultAvatar" alt="Avatar" class="avatar" @mouseenter="isAvatarHovered = true" @mouseleave="isAvatarHovered = false" />
+              <div class="status-indicator" :class="{ 'online': user.status }">
+                <span class="status-pulse"></span>
+              </div>
+            </div>
+            <transition name="scale">
               <div v-if="isAvatarHovered" class="avatar-overlay" @click="changeAvatar">
+                <i class="fas fa-camera"></i>
                 <span class="overlay-text">Đổi avatar</span>
               </div>
             </transition>
           </div>
           <h2 class="profile-name">{{ user.fullName || 'Chưa có tên' }}</h2>
-          <div class="balance-coins">
-            <span class="balance"><i class="fas fa-wallet"></i> {{ formatCurrency(user.balance) }}</span>
-            <span class="coins"><i class="fas fa-coins"></i> {{ user.coin || 0 }}</span>
+          <div class="profile-badges">
+            <div class="badge" :class="levelClass">Level {{ user.level }}</div>
+            <div class="badge membership">Premium</div>
+          </div>
+          <div class="balance-container">
+            <div class="balance-card">
+              <div class="balance-icon"><i class="fas fa-wallet"></i></div>
+              <div class="balance-info">
+                <span class="balance-label">Số dư</span>
+                <span class="balance-value">{{ formatCurrency(user.balance) }}</span>
+              </div>
+            </div>
+            <div class="balance-card">
+              <div class="balance-icon"><i class="fas fa-coins"></i></div>
+              <div class="balance-info">
+                <span class="balance-label">Xu</span>
+                <span class="balance-value">{{ user.coin || 0 }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Cột phải: Chi tiết + Hành động -->
+        <!-- Right column: Details + Actions -->
         <div class="profile-right">
+          <div class="section-title">
+            <i class="fas fa-user-astronaut"></i>
+            <span>Thông tin tài khoản</span>
+          </div>
+
           <div class="profile-details">
             <div class="detail-item">
               <i class="fas fa-envelope detail-icon"></i>
-              <span class="detail-label">Email</span>
-              <span class="detail-value">{{ user.email || 'Chưa cập nhật' }}</span>
+              <div class="detail-content">
+                <span class="detail-label">Email</span>
+                <span class="detail-value">{{ user.email || 'Chưa cập nhật' }}</span>
+              </div>
             </div>
+
             <div class="detail-item exp-item">
               <i class="fas fa-star detail-icon"></i>
-              <span class="detail-label">Kinh nghiệm</span>
-              <span class="level-badge" :class="levelClass">Level {{ user.level }}</span>
-              <div class="exp-container">
-                <div class="exp-bar-container">
-                  <div class="exp-bar" :style="{ width: expPercentage + '%' }"></div>
-                  <span class="exp-text">{{ user.experience || 0 }} / {{ expToNextLevel }} XP</span>
+              <div class="detail-content exp-content">
+                <span class="detail-label">Kinh nghiệm</span>
+                <div class="exp-container">
+                  <div class="exp-bar-container">
+                    <div class="exp-bar" :style="{ width: expPercentage + '%' }"></div>
+                    <span class="exp-text">{{ user.experience || 0 }} / {{ expToNextLevel }} XP</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="detail-item">
+
+            <div class="detail-item bank-item">
               <i class="fas fa-university detail-icon"></i>
-              <span class="detail-label">Ngân hàng</span>
-              <span class="detail-value">{{ user.bankName || 'Chưa cập nhật' }}</span>
+              <div class="detail-content">
+                <span class="detail-label">Thông tin ngân hàng</span>
+                <div class="bank-info">
+                  <span class="bank-name">{{ user.bankName || 'Chưa cập nhật' }}</span>
+                  <span class="bank-number">{{ formatBankNumber(user.bankNumber) }}</span>
+                </div>
+              </div>
+              <i class="fas fa-shield-alt security-icon" title="Thông tin được mã hóa"></i>
             </div>
-            <div class="detail-item">
-              <i class="fas fa-credit-card detail-icon"></i>
-              <span class="detail-label">Số tài khoản</span>
-              <span class="detail-value">{{ user.bankNumber || 'Chưa cập nhật' }}</span>
-            </div>
+
             <div class="detail-item">
               <i class="fas fa-calendar-alt detail-icon"></i>
-              <span class="detail-label">Ngày tham gia</span>
-              <span class="detail-value">{{ formatDate(user.createdDate) }}</span>
+              <div class="detail-content">
+                <span class="detail-label">Ngày tham gia</span>
+                <span class="detail-value">{{ formatDate(user.createdDate) }}</span>
+              </div>
             </div>
           </div>
+
+          <div class="section-title">
+            <i class="fas fa-cog"></i>
+            <span>Quản lý tài khoản</span>
+          </div>
+
           <div class="profile-actions">
-            <button class="action-btn edit-btn" @click="editProfile">Chỉnh sửa</button>
-            <button class="action-btn logout-btn" @click="logout">Đăng xuất</button>
+            <button class="action-btn edit-btn" @click="editProfile">
+              <i class="fas fa-pen"></i>
+              <span>Chỉnh sửa</span>
+            </button>
+            <button class="action-btn security-btn" @click="securitySettings">
+              <i class="fas fa-shield-alt"></i>
+              <span>Bảo mật</span>
+            </button>
+            <button class="action-btn logout-btn" @click="logout">
+              <i class="fas fa-sign-out-alt"></i>
+              <span>Đăng xuất</span>
+            </button>
           </div>
         </div>
       </div>
@@ -124,6 +176,14 @@ const formatDate = (date?: string | null) => {
   });
 };
 
+const formatBankNumber = (number?: string | null) => {
+  if (!number) return 'Chưa cập nhật';
+  // Mask bank number for security (show only last 4 digits)
+  return number.length > 4
+    ? '••••••' + number.slice(-4)
+    : number;
+};
+
 const fetchUserProfile = async () => {
   try {
     const userId = store.user?.id || JSON.parse(localStorage.getItem('user') || '{}').id;
@@ -152,6 +212,11 @@ const editProfile = () => {
   router.push('/profile/edit');
 };
 
+const securitySettings = () => {
+  console.log('Mở trang cài đặt bảo mật');
+  // router.push('/profile/security');
+};
+
 const logout = async () => {
   await store.logout();
   router.push('/login');
@@ -159,93 +224,249 @@ const logout = async () => {
 
 onMounted(() => {
   fetchUserProfile();
+  initParticles();
 });
+
+// Initialize particles
+const initParticles = () => {
+  requestAnimationFrame(() => {
+    const container = document.querySelector('.cosmo-particles');
+    if (!container) return;
+
+    for (let i = 0; i < 50; i++) {
+      const particle = document.createElement('div');
+      particle.classList.add('particle');
+
+      // Random positioning
+      const size = Math.random() * 4 + 1;
+      particle.style.width = `${size}px`;
+      particle.style.height = `${size}px`;
+      particle.style.left = `${Math.random() * 100}%`;
+      particle.style.top = `${Math.random() * 100}%`;
+
+      // Random animation duration
+      const duration = Math.random() * 50 + 10;
+      particle.style.animationDuration = `${duration}s`;
+
+      // Random animation delay
+      const delay = Math.random() * 10;
+      particle.style.animationDelay = `-${delay}s`;
+
+      // Random opacity
+      particle.style.opacity = (Math.random() * 0.5 + 0.1).toString();
+
+      container.appendChild(particle);
+    }
+  });
+};
 </script>
 
 <style scoped>
-/* Tổng thể */
-.profile-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column; /* Đặt container dọc để sát lên trên */
-  background: linear-gradient(135deg, #1e1e2f 0%, #2a2a40 100%);
-  position: relative;
-  overflow: hidden;
-  padding-top: 20px; /* Thêm padding trên để tránh dính sát quá */
+/* Base styles and animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  50% {
+    transform: translateY(5px) translateX(-5px);
+  }
+  75% {
+    transform: translateY(-5px) translateX(-10px);
+  }
 }
 
-.profile-container::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(0, 221, 235, 0.15), transparent);
-  animation: pulseGlow 10s infinite;
-  z-index: 0;
-}
-
-@keyframes pulseGlow {
-  0%,
-  100% {
+@keyframes pulse {
+  0%, 100% {
     transform: scale(1);
-    opacity: 0.6;
+    opacity: 0.8;
   }
   50% {
     transform: scale(1.2);
-    opacity: 0.9;
+    opacity: 1;
   }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes statusPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes particle-float {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-100vh) rotate(360deg);
+  }
+}
+
+/* Main container */
+.profile-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #0f0f1f 0%, #1a1a2e 100%);
+  position: relative;
+  overflow: hidden;
+  padding: 40px 20px;
+  color: #e0e0ff;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Particle background */
+.cosmo-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  background: linear-gradient(180deg, #00f7ff, #8f3cfc);
+  border-radius: 50%;
+  animation: particle-float linear infinite;
+  z-index: 0;
 }
 
 /* Profile Card */
 .profile-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(15px);
-  border-radius: 20px;
-  padding: 30px;
+  background: rgba(17, 17, 38, 0.7);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 40px;
   width: 100%;
-  max-width: 1200px; /* Tăng max-width để container rộng hơn */
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(0, 221, 235, 0.3);
+  max-width: 1200px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(90, 135, 255, 0.1) inset,
+    0 0 30px rgba(90, 135, 255, 0.1) inset;
   position: relative;
   z-index: 1;
   overflow: hidden;
-  margin: 0 auto; /* Canh giữa theo chiều ngang */
+  transition: all 0.4s ease;
 }
 
-/* Grid 2 cột */
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(90, 135, 255, 0.5), transparent);
+}
+
+.profile-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(90, 135, 255, 0.5), transparent);
+}
+
+/* Grid layout */
 .profile-grid {
   display: grid;
-  grid-template-columns: 1fr 2fr; /* Tăng tỷ lệ cột phải để chứa nội dung dài */
-  gap: 30px;
+  grid-template-columns: 1fr 2fr;
+  gap: 40px;
 }
 
-/* Cột trái */
+/* Left column */
 .profile-left {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  padding-right: 40px;
+  border-right: 1px solid rgba(90, 135, 255, 0.15);
 }
 
+/* Avatar styling */
 .avatar-container {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  perspective: 1000px;
+}
+
+.avatar-ring {
+  position: relative;
+  padding: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(90, 135, 255, 0.2), rgba(147, 88, 247, 0.2));
 }
 
 .avatar {
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #00ddeb;
-  box-shadow: 0 0 20px rgba(0, 221, 235, 0.6);
-  transition: filter 0.3s ease;
+  border: 3px solid transparent;
+  background: linear-gradient(#11112a, #11112a) padding-box,
+              linear-gradient(135deg, #5a87ff, #9358f7) border-box;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  filter: saturate(1.1) brightness(1.05);
 }
 
 .avatar-container:hover .avatar {
-  filter: brightness(70%);
+  transform: scale(1.03);
+  filter: saturate(1.2) brightness(1.1);
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #11112a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 3px solid rgba(17, 17, 38, 0.8);
+  z-index: 2;
+}
+
+.status-indicator.online {
+  background: #00e676;
+}
+
+.status-indicator:not(.online) {
+  background: #ff5252;
+}
+
+.status-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  animation: statusPulse 2s infinite;
+  background: inherit;
 }
 
 .avatar-overlay {
@@ -254,183 +475,244 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 221, 235, 0.3);
   border-radius: 50%;
+  background: rgba(17, 17, 38, 0.7);
+  backdrop-filter: blur(2px);
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  gap: 8px;
+  z-index: 3;
+}
+
+.avatar-overlay i {
+  font-size: 1.8rem;
+  color: #fff;
 }
 
 .overlay-text {
-  color: #ffffff;
-  font-size: 1.2rem;
-  font-weight: 600;
-  text-shadow: 0 0 5px rgba(0, 221, 235, 0.8);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #fff;
+  margin-top: 5px;
 }
 
-.status-indicator {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid #1e1e2f;
-}
-
-.status-indicator.online {
-  background: #00ff00;
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
-}
-
-.status-indicator:not(.online) {
-  background: #ff0000;
-  box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
-}
-
+/* Name and badges */
 .profile-name {
-  font-size: 1.5rem; /* Giảm kích thước font của tên */
+  font-size: 1.8rem;
   font-weight: 700;
-  color: #00ddeb;
-  text-shadow: 0 0 10px rgba(0, 221, 235, 0.6);
-  margin: 0;
-  white-space: nowrap; /* Ngăn tên dài xuống dòng */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%; /* Đảm bảo tên không vượt ra ngoài */
+  background: linear-gradient(135deg, #5a87ff, #9358f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0 0 15px;
+  letter-spacing: -0.5px;
 }
 
-.balance-coins {
+.profile-badges {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.membership {
+  background: linear-gradient(135deg, #ff9d00, #ff612c);
+  color: #fff;
+}
+
+/* Level badge colors */
+.level-gray {
+  background: linear-gradient(135deg, #9e9e9e, #616161);
+  color: #ffffff;
+}
+
+.level-green {
+  background: linear-gradient(135deg, #00e676, #00c853);
+  color: #11112a;
+}
+
+.level-gold {
+  background: linear-gradient(135deg, #ffd54f, #ffb300);
+  color: #11112a;
+}
+
+.level-purple {
+  background: linear-gradient(135deg, #b388ff, #7c4dff);
+  color: #ffffff;
+}
+
+.level-red {
+  background: linear-gradient(135deg, #ff5252, #d50000);
+  color: #ffffff;
+}
+
+/* Balance cards */
+.balance-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
+  gap: 15px;
+  width: 100%;
+  margin-top: 10px;
 }
 
-.balance,
-.coins {
-  font-size: 1rem;
-  color: #ffffff;
+.balance-card {
+  background: rgba(40, 40, 80, 0.4);
+  border-radius: 16px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(90, 135, 255, 0.1);
 }
 
-.balance i,
-.coins i {
-  color: #00ddeb;
-  margin-right: 8px;
+.balance-card:hover {
+  transform: translateY(-3px);
+  background: rgba(50, 50, 100, 0.5);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
-/* Cột phải */
+.balance-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(90, 135, 255, 0.2), rgba(147, 88, 247, 0.2));
+  border-radius: 12px;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.balance-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.balance-label {
+  font-size: 0.8rem;
+  color: #b0b0cc;
+  margin-bottom: 3px;
+}
+
+.balance-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Right column */
 .profile-right {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.section-title i {
+  color: #5a87ff;
+}
+
+/* Detail items */
 .profile-details {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  margin-bottom: 30px;
 }
 
 .detail-item {
   display: flex;
   align-items: center;
   gap: 15px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 10px 15px;
-  border-radius: 10px;
-  position: relative; /* Thêm để chứa .level-badge */
+  background: rgba(40, 40, 80, 0.4);
+  padding: 16px;
+  border-radius: 16px;
   transition: all 0.3s ease;
+  border: 1px solid rgba(90, 135, 255, 0.1);
 }
 
 .detail-item:hover {
-  background: rgba(0, 221, 235, 0.1);
-  box-shadow: 0 0 10px rgba(0, 221, 235, 0.3);
-}
-
-.exp-item {
-  flex-direction: column;
-  align-items: flex-start;
+  background: rgba(50, 50, 100, 0.5);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .detail-icon {
-  color: #00ddeb;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  color: #5a87ff;
+  width: 24px;
+  text-align: center;
+}
+
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .detail-label {
-  color: #b0b0b0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  min-width: 100px;
+  font-size: 0.8rem;
+  color: #b0b0cc;
+  margin-bottom: 4px;
 }
 
 .detail-value {
-  color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  color: #fff;
 }
 
-/* Container kinh nghiệm */
+/* Experience bar */
+.exp-item {
+  background: rgba(40, 40, 80, 0.4);
+}
+
+.exp-content {
+  width: 100%;
+}
+
 .exp-container {
   width: 100%;
   margin-top: 5px;
 }
 
-.level-badge {
-  position: absolute;
-  top: 5px; /* Điều chỉnh khoảng cách từ trên */
-  right: 15px; /* Điều chỉnh khoảng cách từ bên phải */
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  box-shadow: 0 0 10px rgba(0, 221, 235, 0.6);
-  z-index: 1;
-}
-
-/* Màu sắc cho level-badge theo cấp độ */
-.level-gray {
-  background: #808080; /* Xám nhạt - Cấp 0-2 */
-  color: #ffffff;
-}
-
-.level-green {
-  background: #00ff00; /* Xanh lá - Cấp 3-5 */
-  color: #1e1e2f;
-}
-
-.level-gold {
-  background: #ffd700; /* Vàng - Cấp 6-8 */
-  color: #1e1e2f;
-}
-
-.level-purple {
-  background: #9400d3; /* Tím - Cấp 9-10 */
-  color: #ffffff;
-}
-
-.level-red {
-  background: #ff0000; /* Đỏ rực - Cấp 11 trở lên */
-  color: #ffffff;
-}
-
 .exp-bar-container {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(17, 17, 38, 0.6);
   border-radius: 8px;
-  height: 20px;
+  height: 12px;
   position: relative;
   overflow: hidden;
 }
 
 .exp-bar {
   height: 100%;
-  background: linear-gradient(90deg, #00ddeb, #33e6f2);
+  background: linear-gradient(90deg, #5a87ff, #9358f7);
   border-radius: 8px;
-  transition: width 0.5s ease;
-  box-shadow: 0 0 10px rgba(0, 221, 235, 0.6);
+  transition: width 1s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .exp-text {
@@ -438,98 +720,181 @@ onMounted(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #1e1e2f;
-  font-size: 0.85rem;
+  color: #fff;
+  font-size: 0.7rem;
   font-weight: 600;
-  text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
 }
 
-/* Profile Actions */
-.profile-actions {
+/* Bank info */
+.bank-item {
+  position: relative;
+}
+
+.bank-info {
   display: flex;
+  flex-direction: column;
+}
+
+.bank-name {
+  font-size: 1rem;
+  color: #fff;
+}
+
+.bank-number {
+  font-size: 0.9rem;
+  color: #b0b0cc;
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+.security-icon {
+  position: absolute;
+  right: 16px;
+  color: #5a87ff;
+  font-size: 1.1rem;
+  opacity: 0.7;
+}
+
+/* Action buttons */
+.profile-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 .action-btn {
-  flex: 1;
   padding: 12px;
   border: none;
-  border-radius: 12px;
-  font-size: 1rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.4s ease;
+  transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(40, 40, 80, 0.4);
+  color: #fff;
+  border: 1px solid rgba(90, 135, 255, 0.1);
+}
+
+.action-btn i {
+  font-size: 0.9rem;
+}
+
+.action-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .edit-btn {
-  background: #00ddeb;
-  color: #1e1e2f;
-  box-shadow: 0 4px 12px rgba(0, 221, 235, 0.4);
+  background: linear-gradient(135deg, rgba(90, 135, 255, 0.2), rgba(147, 88, 247, 0.2));
 }
 
 .edit-btn:hover {
-  background: #33e6f2;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 221, 235, 0.6);
+  background: linear-gradient(135deg, rgba(90, 135, 255, 0.3), rgba(147, 88, 247, 0.3));
+}
+
+.security-btn {
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.2), rgba(0, 200, 83, 0.2));
+}
+
+.security-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.3), rgba(0, 200, 83, 0.3));
 }
 
 .logout-btn {
-  background: #ff007a;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(255, 0, 122, 0.4);
+  background: linear-gradient(135deg, rgba(255, 82, 82, 0.2), rgba(213, 0, 0, 0.2));
 }
 
 .logout-btn:hover {
-  background: #ff3399;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 0, 122, 0.6);
+  background: linear-gradient(135deg, rgba(255, 82, 82, 0.3), rgba(213, 0, 0, 0.3));
 }
 
-/* Transition cho overlay */
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.3s ease;
+/* Transitions */
+.scale-enter-active,
+.scale-leave-active {
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.detail-item.bank-info {
-  background: rgba(0, 221, 235, 0.1);
-  border-left: 3px solid #00ddeb;
-}
-.fade-enter-from,
-.fade-leave-to {
+
+.scale-enter-from,
+.scale-leave-to {
   opacity: 0;
   transform: scale(0.9);
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .profile-card {
+    padding: 30px;
+  }
+
+  .profile-grid {
+    gap: 30px;
+  }
+
+  .profile-left {
+    padding-right: 30px;
+  }
+
+  .avatar {
+    width: 140px;
+    height: 140px;
+  }
+}
+
 @media (max-width: 768px) {
   .profile-card {
-    padding: 20px;
+    padding: 25px;
     max-width: 90%;
   }
+
   .profile-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 30px;
   }
+
+  .profile-left {
+    padding-right: 0;
+    padding-bottom: 30px;
+    border-right: none;
+    border-bottom: 1px solid rgba(90, 135, 255, 0.15);
+  }
+
+  .avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .balance-container {
+    max-width: 300px;
+  }
+
+  .profile-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-card {
+    padding: 20px;
+  }
+
   .avatar {
     width: 100px;
     height: 100px;
   }
+
   .profile-name {
-    font-size: 1.3rem; /* Giảm thêm ở màn hình nhỏ */
+    font-size: 1.5rem;
   }
-  .balance-coins {
-    flex-direction: row;
-    gap: 20px;
-  }
-  .exp-bar-container {
-    height: 18px;
-  }
-  .level-badge {
-    font-size: 0.8rem;
-    padding: 3px 6px;
-    top: 5px;
-    right: 10px;
+
+  .detail-item {
+    padding: 12px;
   }
 }
 </style>

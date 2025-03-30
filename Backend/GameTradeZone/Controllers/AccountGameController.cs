@@ -106,7 +106,6 @@ namespace GameTradeZone.Controllers
             }
         }
 
-        [Authorize]
         [HttpGet("Get-Infor-User")]
         public async Task<IActionResult> GetInforUser(int id)
         {
