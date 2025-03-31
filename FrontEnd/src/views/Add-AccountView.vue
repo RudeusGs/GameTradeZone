@@ -794,7 +794,7 @@ const toggleGuideModal = () => {
                 <div class="step">
                   <div class="step-indicator">3</div>
                   <div class="step-description">
-                    <strong>Tải ảnh lên</strong>: Thêm ảnh chụp màn hình tài khoản để tăng độ tin cậy
+                    <strong>Tải ảnh lên</strong>: Thêm ảnh chụp màn hình tài khoản mà bạn muốn đăng, nhưng thông tin phải khớp với hình ảnh
                   </div>
                 </div>
 
@@ -1691,6 +1691,7 @@ const toggleGuideModal = () => {
 .modal {
   background: #1a2234;
   border-radius: 20px;
+  height: 400px;
   max-width: 500px;
   width: 100%;
   position: relative;
@@ -1738,7 +1739,7 @@ const toggleGuideModal = () => {
 .modal-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #e1e7ef;
+  color: #ff3700;
   margin-bottom: 15px;
   text-align: center;
 }
@@ -1755,7 +1756,7 @@ const toggleGuideModal = () => {
 }
 
 .warning-message p {
-  color: #e1e7ef;
+  color: #ff2a00;
   line-height: 1.5;
   font-size: 0.95rem;
 }
