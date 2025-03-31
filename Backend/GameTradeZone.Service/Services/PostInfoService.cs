@@ -114,5 +114,13 @@ namespace GameTradeZone.Service.Services
                 .Where(p => p.CategoryId == categoryId)
                 .ToListAsync();
         }
+
+        public async Task<List<PostInfo>> GetAllPostsByUserId(int userId)
+        {
+            return await _context.PostInfos
+                .Include(p => p.User)
+                .Where(p => p.UserId == userId)
+                .ToListAsync();
+        }
     }
 }

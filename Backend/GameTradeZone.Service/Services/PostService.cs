@@ -115,5 +115,47 @@ namespace GameTradeZone.Service.Services
                 Message = "Comment added successfully"
             };
         }
+
+        public async Task<ApiResult> DeleteComment(int commentId)
+        {
+            var comment = await _context.CommentDatas.FindAsync(commentId);
+            if (comment == null)
+                return new ApiResult { Message = "Comment not found" };
+
+            _context.CommentDatas.Remove(comment);
+
+            var post = await _context.PostInfos.FindAsync(comment.PostId);
+            if (post != null && post.CommentsCount > 0)
+                post.CommentsCount -= 1;
+
+            await _context.SaveChangesAsync();
+
+            return new ApiResult { Message = "Comment deleted successfully" };
+        }
+        public async Task<ApiResult> EditComment(int commentId, string content)
+        {
+            var comment = await _context.CommentDatas.FindAsync(commentId);
+            if (comment == null)
+                return new ApiResult { Message = "Comment not found" };
+
+            comment.Content = content;
+            await _context.SaveChangesAsync();
+
+            return new ApiResult { Message = "Comment updated successfully" };
+        }
+
+        public async Task<ApiResult> UnlikePost(int postId)
+        {
+            var post = await _context.PostInfos.FindAsync(postId);
+            if (post == null)
+            {
+                return new ApiResult { Message = "Post not found" };
+            }
+
+            if (post.LikesCount > 0) post.LikesCount -= 1;
+
+            await _context.SaveChangesAsync();
+            return new ApiResult { Message = "Post unliked" };
+        }
     }
 }

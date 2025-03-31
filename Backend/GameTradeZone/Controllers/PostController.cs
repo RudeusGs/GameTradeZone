@@ -16,7 +16,7 @@ public class PostInfoController : BaseController
     {
         _postService = postService;
     }
-
+    [Authorize]
     [HttpPost("like/{postId}")]
     public async Task<IActionResult> LikePost(int postId)
     {
@@ -52,6 +52,48 @@ public class PostInfoController : BaseController
             Console.WriteLine($"📌 Received Post ID: {postId}"); // Debug log
             var comments = await _postService.GetAllCommentsInPost(postId);
             return Response(comments);
+        }
+        catch (Exception e)
+        {
+            return Response(e.Message, 500);
+        }
+    }
+    [Authorize]
+    [HttpDelete("comment/{commentId}")]
+    public async Task<IActionResult> DeleteComment(int commentId)
+    {
+        try
+        {
+            var result = await _postService.DeleteComment(commentId);
+            return Response(result);
+        }
+        catch (Exception e)
+        {
+            return Response(e.Message, 500);
+        }
+    }
+    [Authorize]
+    [HttpPost("comment/{commentId}")]
+    public async Task<IActionResult> EditComment(int commentId, [FromBody] CommentRequest request)
+    {
+        try
+        {
+            var result = await _postService.EditComment(commentId, request.Content);
+            return Response(result);
+        }
+        catch (Exception e)
+        {
+            return Response(e.Message, 500);
+        }
+    }
+    [Authorize]
+    [HttpPost("unlike/{postId}")]
+    public async Task<IActionResult> UnlikePost(int postId)
+    {
+        try
+        {
+            var result = await _postService.UnlikePost(postId);
+            return Response(result);
         }
         catch (Exception e)
         {
