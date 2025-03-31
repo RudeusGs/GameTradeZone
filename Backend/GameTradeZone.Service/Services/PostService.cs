@@ -58,25 +58,30 @@ namespace GameTradeZone.Service.Services
 
         public async Task<List<CommentData>> GetAllCommentsInPost(int postId)
         {
-            return await _context.CommentDatas
-        .Where(c => c.PostId == postId)
-        .Include(c => c.User) // Lấy thông tin người dùng
-        .Select(c => new CommentData
-        {
-            Id = c.Id,
-            PostId = c.PostId,
-            UserId = c.UserId,
-            Content = c.Content,
-            CreatedDate = c.CreatedDate,
-            User = new User // Trả về thông tin user cần thiết
-            {
-                Id = c.User.Id,
-                UserName = c.User.UserName,
-                FullName = c.User.FullName,
-                Avatar = c.User.Avatar
-            }
-        })
-        .ToListAsync();
+            Console.WriteLine($"📌 Fetching comments for Post ID: {postId}"); // Debug log
+
+            var comments = await _context.CommentDatas
+                .Where(c => c.PostId == postId) // Lọc theo postId
+                .Include(c => c.User) // Lấy thông tin người dùng
+                .Select(c => new CommentData
+                {
+                    Id = c.Id,
+                    PostId = c.PostId,
+                    UserId = c.UserId,
+                    Content = c.Content,
+                    CreatedDate = c.CreatedDate,
+                    User = new User
+                    {
+                        Id = c.User.Id,
+                        UserName = c.User.UserName,
+                        FullName = c.User.FullName,
+                        Avatar = c.User.Avatar
+                    }
+                })
+                .ToListAsync();
+
+            Console.WriteLine($"✅ Found {comments.Count} comments for Post ID: {postId}"); // Debug log
+            return comments;
         }
 
         public async Task<ApiResult> Comment(int postId, string content)

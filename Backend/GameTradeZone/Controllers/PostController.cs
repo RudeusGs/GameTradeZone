@@ -49,6 +49,7 @@ public class PostInfoController : BaseController
     {
         try
         {
+            Console.WriteLine($"📌 Received Post ID: {postId}"); // Debug log
             var comments = await _postService.GetAllCommentsInPost(postId);
             return Response(comments);
         }
