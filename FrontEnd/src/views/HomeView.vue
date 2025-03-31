@@ -431,9 +431,6 @@ const toggleMoreDetails = (accountId: number) => {
                   <i class="fas fa-shopping-cart"></i> Mua ngay
                 </button>
               </div>
-              <div v-else class="own-account-message">
-                Đây là tài khoản của bạn
-              </div>
             </div>
           </div>
         </div>
