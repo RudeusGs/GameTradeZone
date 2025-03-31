@@ -35,15 +35,25 @@ namespace GameTradeZone.Service.Services
             return userId;
         }
 
-        public async Task<PostInfo> CreatePost(string caption, int categoryId, string content, IFormFile? image)
+        public async Task<PostInfo> CreatePost(string caption, int categoryId, string content, List<IFormFile>? images)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
                 throw new UnauthorizedAccessException("User is not logged in");
-            string imageUrl = null;
-            if (image != null)
+
+            string imageUrls = null;
+            if (images != null && images.Count > 1)
             {
-                imageUrl = await _cloudinaryService.UploadImageAsync(image);
+                var uploadedImages = await _cloudinaryService.UploadMutilImage(images);
+                if (uploadedImages.Any())
+                {
+                    imageUrls = string.Join(";", uploadedImages);
+                }
+            }
+            else if (images != null && images.Count == 1)
+            {
+                var uploadedImage = await _cloudinaryService.UploadImageAsync(images[0]);
+                imageUrls = uploadedImage;
             }
 
             var post = new PostInfo
@@ -52,7 +62,7 @@ namespace GameTradeZone.Service.Services
                 Caption = caption,
                 CategoryId = categoryId,
                 Content = content,
-                ImageUrl = imageUrl,
+                ImageUrl = imageUrls,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -95,6 +105,14 @@ namespace GameTradeZone.Service.Services
                 .Include(p => p.User)
                 .FirstOrDefaultAsync(p => p.Id == postId);
             return post ?? throw new KeyNotFoundException($"Post with ID {postId} not found.");
+        }
+
+        public async Task<List<PostInfo>> GetAllPostByCategoryId(int categoryId)
+        {
+            return await _context.PostInfos
+                .Include(p => p.User)
+                .Where(p => p.CategoryId == categoryId)
+                .ToListAsync();
         }
     }
 }

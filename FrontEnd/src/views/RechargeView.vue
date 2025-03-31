@@ -1,79 +1,216 @@
 <template>
-  <div class="recharge-container">
-    <!-- Particle Background -->
-    <div class="particle-background">
-      <div v-for="i in 15" :key="i" class="particle"></div>
-    </div>
+  <div class="recharge-container" v-if="user">
+    <!-- Gradient Background -->
+    <div class="gradient-background"></div>
+
     <section class="recharge-content">
-      <h1 class="recharge-title">Nạp Tiền GameTradeZone</h1>
-      <p class="recharge-subtitle">Nhập số tiền bạn muốn nạp và bấm xác nhận để tiếp tục.</p>
+      <div class="recharge-header">
+        <h1 class="recharge-title">Nạp Tiền GameTradeZone</h1>
+        <p class="recharge-subtitle">
+          Xin chào <span class="username">{{ fullname }}</span>, hãy chọn số tiền bạn muốn nạp.
+        </p>
+      </div>
 
       <!-- Nhập số tiền -->
       <div v-if="!showPaymentDetails" class="amount-section">
-        <label for="rechargeAmount" class="amount-label">Số tiền (VNĐ):</label>
-        <input
-          v-model="rechargeAmount"
-          type="number"
-          id="rechargeAmount"
-          class="amount-input"
-          placeholder="Nhập số tiền"
-          min="10000"
-          required
-        />
-        <button
-          @click="confirmRecharge"
-          class="confirm-btn"
-          :disabled="!isValidAmount"
-        >
-          <i class="fas fa-check"></i> Xác Nhận
-        </button>
+        <div class="card-container">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-wallet"></i></div>
+            <h2 class="section-title">Chọn Số Tiền</h2>
+          </div>
+
+          <div class="input-group">
+            <label for="rechargeAmount" class="amount-label">Số tiền (VNĐ):</label>
+            <div class="input-wrapper">
+              <span class="currency-prefix">₫</span>
+              <input
+                v-model="rechargeAmount"
+                type="number"
+                id="rechargeAmount"
+                class="amount-input"
+                placeholder="Nhập số tiền"
+                min="10000"
+                required
+                :disabled="!isAuthenticated"
+              />
+            </div>
+          </div>
+
+          <div class="preset-amounts">
+            <button
+              v-for="amount in presetAmounts"
+              :key="amount"
+              @click="rechargeAmount = amount"
+              class="preset-btn"
+              :class="{ 'active': rechargeAmount === amount }"
+              :disabled="!isAuthenticated"
+            >
+              {{ amount.toLocaleString() }} ₫
+            </button>
+          </div>
+
+          <div class="payment-info">
+            <div class="info-item">
+              <i class="fas fa-info-circle"></i>
+              <span>Số tiền tối thiểu: 10.000₫</span>
+            </div>
+            <div class="info-item">
+              <i class="fas fa-info-circle"></i>
+              <span>Tài khoản được cập nhật sau 1-5 phút</span>
+            </div>
+          </div>
+
+          <button
+            @click="confirmRecharge"
+            class="confirm-btn"
+            :disabled="!isValidAmount || !isAuthenticated"
+          >
+            <i class="fas fa-check-circle"></i> Tiếp Tục Thanh Toán
+          </button>
+
+          <p v-if="!isAuthenticated" class="auth-warning">
+            <i class="fas fa-exclamation-triangle"></i> Vui lòng đăng nhập để nạp tiền!
+          </p>
+        </div>
       </div>
 
       <!-- Hiển thị mã QR và thông tin ngân hàng -->
-      <div v-else class="payment-details">
-        <h2 class="method-title">Thông Tin Thanh Toán</h2>
-        <div class="qr-section">
-          <img :src="qrCodeUrl" alt="Mã QR Thanh Toán" class="qr-image" />
-          <p class="qr-instruction">Quét mã QR để chuyển khoản</p>
+      <div v-else class="payment-details-container">
+        <div class="card-container payment-details">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-credit-card"></i></div>
+            <h2 class="section-title">Thông Tin Thanh Toán</h2>
+          </div>
+
+          <div class="payment-grid">
+            <div class="qr-section">
+              <img :src="qrCodeUrl" alt="Mã QR Thanh Toán" class="qr-image" />
+              <p class="qr-instruction">Quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
+            </div>
+
+            <div class="bank-details">
+              <div class="payment-amount">
+                <span class="amount-label">Số tiền:</span>
+                <span class="amount-value">{{ rechargeAmount.toLocaleString() }}₫</span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-university"></i> Ngân Hàng:</span>
+                <span class="detail-value">BIDV</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-id-card"></i> Số Tài Khoản:</span>
+                <span class="detail-value">{{ bankAccount.number }}</span>
+                <button class="copy-btn" @click="copyToClipboard(bankAccount.number)" title="Sao chép">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-user"></i> Chủ Tài Khoản:</span>
+                <span class="detail-value">{{ bankAccount.holder }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label"><i class="fas fa-file-alt"></i> Nội Dung CK:</span>
+                <span class="detail-value">USERID {{ userId }}</span>
+                <button class="copy-btn" @click="copyToClipboard(`USERID ${userId}`)" title="Sao chép">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+
+              <div class="payment-note">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>Vui lòng nhập đúng nội dung chuyển khoản để được xử lý tự động</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="payment-steps">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h3>Chuyển khoản</h3>
+                <p>Thực hiện chuyển khoản theo thông tin bên trên</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h3>Xác nhận</h3>
+                <p>Hệ thống sẽ tự động xác nhận giao dịch của bạn</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h3>Hoàn tất</h3>
+                <p>Số dư tài khoản sẽ được cập nhật trong vòng 1-5 phút</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="support-info">
+            <p>
+              Cần hỗ trợ? Liên hệ:
+              <a href="mailto:support@gametradezone.com" class="support-link">
+                <i class="fas fa-envelope"></i> support@gametradezone.com
+              </a>
+            </p>
+          </div>
+
+          <button @click="goBack" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Quay Lại
+          </button>
         </div>
-        <div class="bank-details">
-          <p><strong>Số Tài Khoản:</strong> {{ bankAccount.number }}</p>
-          <p><strong>Tên Chủ Tài Khoản:</strong> {{ bankAccount.holder }}</p>
-          <p><strong>Nội Dung Chuyển Khoản:</strong> USERID {{ userId }}</p>
-        </div>
-        <p class="note-text">
-          Vui lòng chuyển khoản theo thông tin trên. Giao dịch sẽ được xử lý trong 1-5 phút.
-          Nếu gặp vấn đề, liên hệ: 
-          <a href="mailto:support@gametradezone.com" class="note-link">support@gametradezone.com</a>
-        </p>
       </div>
     </section>
 
     <!-- Footer -->
     <footer class="recharge-footer">
-      <p class="footer-text">© 2025 GameTradeZone. Tất cả quyền được bảo lưu.</p>
+      <p class="footer-text">
+        © 2025 GameTradeZone. Tất cả quyền được bảo lưu.
+      </p>
     </footer>
+  </div>
+  <div v-else class="login-prompt">
+    <div class="login-card">
+      <i class="fas fa-lock login-icon"></i>
+      <h2>Bạn cần đăng nhập để sử dụng tính năng này!</h2>
+      <button @click="redirectToLogin" class="login-btn">
+        <i class="fas fa-sign-in-alt"></i> Đăng nhập
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { userStore } from '@/stores/auth';
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { userStore } from "@/stores/auth";
+import * as signalR from "@microsoft/signalr";
+import type { UserInfoModel } from "@/models/user-model"; // Adjust the import path as needed
 
 const store = userStore();
-const userId = store.user?.id || JSON.parse(localStorage.getItem('user') || '{}').id;
+const user = computed(() => store.user as UserInfoModel | null);
+const fullname = computed(() => store.fullname);
+const userId = computed(() => user.value?.id || 0);
 const rechargeAmount = ref<number>(0);
 const showPaymentDetails = ref<boolean>(false);
-const qrCodeUrl = ref<string>('');
+const qrCodeUrl = ref<string>("");
 const bankAccount = {
-  number: '123456789', // Thay bằng số tài khoản thực tế
-  holder: 'GameTradeZone Corp' // Thay bằng tên chủ tài khoản thực tế
+  number: "123456789",
+  holder: "GameTradeZone Corp",
 };
+const presetAmounts = [10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000];
 
-const isValidAmount = computed(() => rechargeAmount.value >= 10000);
+// SignalR connection
+let connection: signalR.HubConnection | null = null;
+
+const isAuthenticated = computed(() => !!user.value);
+const isValidAmount = computed(
+  () => rechargeAmount.value >= 10000 && isAuthenticated.value
+);
 
 const generateQRCode = () => {
-  const qrData = `https://qr.sepay.vn/img?acc=96247XAAD6&bank=BIDV&amount=${rechargeAmount.value}&des=USERID%20${userId}`;
+  const qrData = `https://qr.sepay.vn/img?acc=96247XAAD6&bank=BIDV&amount=${rechargeAmount.value}&des=USERID%20${userId.value}`;
   qrCodeUrl.value = qrData;
 };
 
@@ -83,278 +220,598 @@ const confirmRecharge = () => {
     showPaymentDetails.value = true;
   }
 };
+
+const goBack = () => {
+  showPaymentDetails.value = false;
+  rechargeAmount.value = 0;
+};
+
+const redirectToLogin = () => {
+  // Replace with your login route
+  window.location.href = "/login";
+};
+
+const copyToClipboard = (text: string) => {
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      alert("Đã sao chép vào clipboard!");
+    })
+    .catch(err => {
+      console.error('Không thể sao chép: ', err);
+    });
+};
+
+const initializeSignalR = async () => {
+  if (!isAuthenticated.value) return;
+
+  connection = new signalR.HubConnectionBuilder()
+    .withUrl(
+      "https://d2a0-2402-800-63af-bfoe-7981-11d7-6552-5e2c.ngrok-free.app/transactionHub",
+      {
+        // Replace with your deployed SignalR hub URL
+        accessTokenFactory: () => "", // Removed token assumption since UserInfoModel doesn't have it
+      }
+    )
+    .withAutomaticReconnect()
+    .build();
+
+  connection.on("ReceiveTransactionStatus", (message: string) => {
+    alert(message); // Show the success message
+  });
+
+  connection.on("PaymentCompleted", () => {
+    showPaymentDetails.value = false; // Redirect back to the amount selection screen
+    rechargeAmount.value = 0;
+    alert("Thanh toán thành công!");
+  });
+
+  try {
+    await connection.start();
+    console.log("SignalR Connected for UserId: ", userId.value);
+  } catch (err) {
+    console.error("SignalR Connection Error:", err);
+  }
+};
+
+onMounted(() => {
+  store.init(); // Initialize user from localStorage
+  if (isAuthenticated.value) {
+    initializeSignalR();
+  }
+});
+
+onUnmounted(() => {
+  if (connection) {
+    connection.stop();
+    connection = null;
+  }
+});
 </script>
 
 <style scoped>
-/* Tổng thể */
+/* Modern payment design */
 .recharge-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
-  font-family: 'Arial', sans-serif;
+  background: #0f1222;
   color: #f0f0f0;
+  font-family: 'Segoe UI', 'Roboto', sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   position: relative;
-  overflow: hidden;
 }
 
-/* Particle Background */
-.particle-background {
+.gradient-background {
   position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0a101f, #171e3c);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+  opacity: 0.8;
+  z-index: 0;
 }
 
-.particle {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background: rgba(0, 179, 224, 0.5);
-  border-radius: 50%;
-  animation: float 10s infinite ease-in-out;
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
-.particle:nth-child(odd) {
-  background: rgba(255, 0, 255, 0.5);
-}
-
-@keyframes float {
-  0% { transform: translateY(0) scale(1); opacity: 0.8; }
-  50% { transform: translateY(-100vh) scale(1.3); opacity: 0.3; }
-  100% { transform: translateY(0) scale(1); opacity: 0.8; }
-}
-
-/* Main Content */
 .recharge-content {
-  max-width: 700px;
-  margin: 0 auto;
   padding: 40px 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
   position: relative;
   z-index: 1;
 }
 
-/* Titles */
-.recharge-title {
-  font-size: 2.8rem;
-  font-weight: 800;
-  color: #f8f8f8;
+.recharge-header {
   text-align: center;
-  margin-bottom: 15px;
-  text-shadow: 0 0 15px #00b3e0, 0 0 5px #ff00ff;
-  transition: all 0.3s ease-in-out;
+  margin-bottom: 30px;
+}
+
+.recharge-title {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+  color: #ffffff;
+  text-shadow: 0 0 15px rgba(82, 109, 255, 0.5);
 }
 
 .recharge-subtitle {
-  font-size: 1.2rem;
-  color: #e0e0e0;
-  text-align: center;
-  margin-bottom: 25px;
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+  font-size: 1.1rem;
+  color: #b8c4ff;
 }
 
-/* Amount Section */
-.amount-section {
+.username {
+  color: #61dafb;
+  font-weight: 600;
+}
+
+.card-container {
+  background: rgba(20, 30, 60, 0.7);
+  border-radius: 16px;
+  border: 1px solid rgba(79, 102, 255, 0.1);
+  padding: 40px; /* Tăng từ 30px lên 40px để giao diện thoáng hơn */
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
+}
+
+.card-header {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 15px;
-  background: rgba(28, 37, 38, 0.9);
-  padding: 25px;
-  border: 1px solid #00b3e0;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.2);
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(79, 102, 255, 0.2);
+}
+
+.card-icon {
+  background: linear-gradient(135deg, #4661ff, #6e8cff);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  font-size: 1.2rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.input-group {
+  margin-bottom: 20px;
 }
 
 .amount-label {
-  font-size: 1.2rem;
-  color: #00b3e0;
-  text-shadow: 0 0 3px #00b3e0;
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  color: #c4c9e0;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency-prefix {
+  position: absolute;
+  left: 15px;
+  color: #6e8cff;
+  font-weight: bold;
+  font-size: 1.1rem;
 }
 
 .amount-input {
   width: 100%;
-  max-width: 300px;
-  padding: 10px;
-  background: rgba(28, 37, 38, 0.9);
-  border: 1px solid #00b3e0;
+  padding: 15px 15px 15px 35px;
+  border: 1px solid rgba(79, 102, 255, 0.3);
   border-radius: 8px;
-  color: #f0f0f0;
+  background: rgba(14, 23, 49, 0.6);
+  color: #ffffff;
   font-size: 1.1rem;
-  box-shadow: 0 0 5px rgba(0, 204, 255, 0.1);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s ease;
 }
 
 .amount-input:focus {
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.3);
   outline: none;
-  border-color: #ff00ff;
+  border-color: #4f66ff;
+  box-shadow: 0 0 0 3px rgba(79, 102, 255, 0.25);
 }
 
-/* Payment Details */
-.payment-details {
-  background: rgba(28, 37, 38, 0.95);
-  border: 1px solid #00b3e0;
+.preset-amounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.preset-btn {
+  padding: 12px 10px;
+  background: rgba(20, 34, 75, 0.8);
+  border: 1px solid rgba(79, 102, 255, 0.2);
   border-radius: 8px;
-  padding: 25px;
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.2);
-  margin-bottom: 15px;
+  color: #c4c9e0;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
 }
 
-.method-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #00b3e0;
-  margin-bottom: 15px;
-  text-shadow: 0 0 10px #00b3e0, 0 0 4px #ff00ff;
+.preset-btn:hover {
+  background: rgba(32, 52, 115, 0.8);
+  border-color: #4f66ff;
+  color: #ffffff;
 }
 
-.qr-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
+.preset-btn.active {
+  background: linear-gradient(135deg, #3651d4, #5d76f0);
+  border-color: #4f66ff;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(79, 102, 255, 0.3);
 }
 
-.qr-image {
-  width: 200px;
-  height: 200px;
-  border: 1px solid #00b3e0;
-  border-radius: 8px;
-  box-shadow: 0 0 8px rgba(0, 204, 255, 0.1);
-}
-
-.qr-instruction {
-  font-size: 1rem;
-  color: #e0e0e0;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
-}
-
-.bank-details {
-  background: rgba(28, 37, 38, 0.7);
+.payment-info {
+  margin-bottom: 25px;
+  background: rgba(14, 23, 49, 0.6);
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(0, 204, 255, 0.1);
-  margin-bottom: 15px;
+  border-left: 3px solid #4f66ff;
 }
 
-.bank-details p {
-  font-size: 1.1rem;
-  color: #e0e0e0;
-  margin: 5px 0;
+.info-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #b8c4ff;
+  font-size: 0.9rem;
 }
 
-.bank-details strong {
-  color: #00b3e0;
+.info-item:last-child {
+  margin-bottom: 0;
 }
 
-/* Confirm Button */
+.info-item i {
+  color: #4f66ff;
+  margin-right: 10px;
+}
+
 .confirm-btn {
   width: 100%;
-  max-width: 300px;
-  padding: 10px;
-  background: rgba(28, 37, 38, 0.9);
-  color: #f0f0f0;
-  border: 1px solid #00b3e0;
+  padding: 15px;
+  background: linear-gradient(135deg, #4661ff, #6e8cff);
+  border: none;
   border-radius: 8px;
+  color: #ffffff;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
-  box-shadow: 0 3px 10px rgba(0, 204, 255, 0.1);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.confirm-btn:hover {
+  background: linear-gradient(135deg, #3b52d9, #5d76f0);
+  box-shadow: 0 4px 12px rgba(79, 102, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.confirm-btn:disabled {
+  background: #3a3e52;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.auth-warning {
+  color: #ff6b6b;
+  font-size: 0.95rem;
+  margin-top: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
 
-.confirm-btn:disabled {
-  background: rgba(28, 37, 38, 0.5);
-  color: #808080;
-  border-color: #808080;
-  cursor: not-allowed;
-  box-shadow: none;
+/* Payment details styles */
+.payment-details-container {
+  animation: fadeIn 0.5s ease;
 }
 
-.confirm-btn:hover:not(:disabled) {
-  background: linear-gradient(45deg, #00b3e0, #ff00ff);
-  color: #f8f8f8;
-  box-shadow: 0 5px 15px rgba(0, 204, 255, 0.3);
-  transform: translateY(-2px);
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Note Text */
-.note-text {
-  font-size: 0.9rem;
-  color: #b0b0b0;
-  margin-top: 10px;
-  text-align: center;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
+.payment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
 }
 
-.note-link {
-  color: #00b3e0;
-  text-decoration: underline;
-  transition: all 0.2s ease-in-out;
-}
-
-.note-link:hover {
-  color: #ff00ff;
-  text-shadow: 0 0 6px #ff00ff;
-}
-
-/* Footer */
-.recharge-footer {
-  margin-top: 20px;
-  text-align: center;
-  padding: 15px;
-  background: rgba(13, 27, 42, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(0, 204, 255, 0.1);
-}
-
-.footer-text {
-  font-size: 1rem;
-  color: #b0b0b0;
-  margin: 5px 0;
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .recharge-content {
-    padding: 20px 15px;
+  .payment-grid {
+    grid-template-columns: 1fr;
   }
+}
 
-  .recharge-title {
-    font-size: 2rem;
-  }
+.qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
 
-  .recharge-subtitle {
-    font-size: 1rem;
-  }
+.qr-image {
+  max-width: 200px;
+  border: 3px solid #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  margin-bottom: 15px;
+}
 
-  .amount-section,
-  .payment-details {
-    padding: 15px;
-  }
+.qr-instruction {
+  font-size: 0.9rem;
+  color: #b8c4ff;
+  text-align: center;
+}
 
-  .qr-image {
-    width: 150px;
-    height: 150px;
-  }
+.bank-details {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
 
-  .confirm-btn {
-    padding: 8px;
-    font-size: 1rem;
-  }
+.payment-amount {
+  background: rgba(14, 23, 49, 0.6);
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 5px;
+}
 
-  .note-text {
-    font-size: 0.8rem;
-  }
+.amount-label {
+  font-size: 0.9rem;
+  color: #b8c4ff;
+}
 
-  .footer-text {
-    font-size: 0.9rem;
+.amount-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #61dafb;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: rgba(14, 23, 49, 0.4);
+  border-radius: 8px;
+  position: relative;
+}
+
+.detail-label {
+  width: 140px;
+  color: #b8c4ff;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-value {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.copy-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(79, 102, 255, 0.2);
+  border: none;
+  color: #b8c4ff;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+  background: rgba(79, 102, 255, 0.4);
+  color: #ffffff;
+}
+
+.payment-note {
+  display: flex;
+  gap: 10px;
+  background: rgba(255, 107, 107, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  border-left: 3px solid #ff6b6b;
+}
+
+.payment-note i {
+  color: #ff6b6b;
+  font-size: 1.2rem;
+}
+
+.payment-note p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #ffb0b0;
+}
+
+.payment-steps {
+  display: flex;
+  justify-content: space-between;
+  margin: 30px 0;
+}
+
+@media (max-width: 768px) {
+  .payment-steps {
+    flex-direction: column;
+    gap: 20px;
   }
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  flex: 1;
+}
+
+.step-number {
+  background: linear-gradient(135deg, #4661ff, #6e8cff);
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.step-content h3 {
+  margin: 0 0 5px 0;
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.step-content p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #b8c4ff;
+}
+
+.support-info {
+  text-align: center;
+  margin: 20px 0;
+  color: #b8c4ff;
+  font-size: 0.9rem;
+}
+
+.support-link {
+  color: #61dafb;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.support-link:hover {
+  text-decoration: underline;
+  color: #85e6ff;
+}
+
+.back-btn {
+  padding: 12px 20px;
+  background: rgba(14, 23, 49, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.back-btn:hover {
+  background: rgba(20, 34, 75, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.recharge-footer {
+  padding: 20px;
+  text-align: center;
+  background: rgba(10, 16, 31, 0.8);
+  color: #a0a9c8;
+  z-index: 1;
+  font-size: 0.9rem;
+}
+
+.login-prompt {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a101f, #171e3c);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.login-card {
+  background: rgba(20, 30, 60, 0.7);
+  border-radius: 16px;
+  border: 1px solid rgba(79, 102, 255, 0.1);
+  padding: 40px 30px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  max-width: 400px;
+  width: 100%;
+}
+
+.login-icon {
+  font-size: 3rem;
+  color: #4f66ff;
+  margin-bottom: 20px;
+}
+
+.login-btn {
+  padding: 15px 25px;
+  background: linear-gradient(135deg, #4661ff, #6e8cff);
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px auto 0;
+}
+
+.login-btn:hover {
+  background: linear-gradient(135deg, #3b52d9, #5d76f0);
+  box-shadow: 0 4px 12px rgba(79, 102, 255, 0.4);
+  transform: translateY(-2px);
 }
 </style>
