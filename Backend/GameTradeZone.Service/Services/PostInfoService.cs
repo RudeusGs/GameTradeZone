@@ -122,5 +122,53 @@ namespace GameTradeZone.Service.Services
                 .Where(p => p.UserId == userId)
                 .ToListAsync();
         }
+
+        public async Task<PostInfo> UpdatePost(int postId, string caption, int categoryId, string content, List<IFormFile>? images)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+                throw new UnauthorizedAccessException("User is not logged in");
+
+            var post = await _context.PostInfos.FirstOrDefaultAsync(p => p.Id == postId && p.UserId == userId);
+            if (post == null)
+                throw new KeyNotFoundException($"Post with ID {postId} not found or you do not have permission to update it.");
+
+            post.Caption = caption;
+            post.CategoryId = categoryId;
+            post.Content = content;
+
+            if (images != null && images.Count > 0)
+            {
+                if (!string.IsNullOrEmpty(post.ImageUrl))
+                {
+                    var existingImages = post.ImageUrl.Split(';');
+                    foreach (var imageUrl in existingImages)
+                    {
+                        await _cloudinaryService.DeleteImageAsync(imageUrl);
+                    }
+                }
+
+                string imageUrls = null;
+                if (images.Count > 1)
+                {
+                    var uploadedImages = await _cloudinaryService.UploadMutilImage(images);
+                    if (uploadedImages.Any())
+                    {
+                        imageUrls = string.Join(";", uploadedImages);
+                    }
+                }
+                else if (images.Count == 1)
+                {
+                    var uploadedImage = await _cloudinaryService.UploadImageAsync(images[0]);
+                    imageUrls = uploadedImage;
+                }
+                post.ImageUrl = imageUrls;
+            }
+
+            _context.PostInfos.Update(post);
+            await _context.SaveChangesAsync();
+            return post;
+        }
+
     }
 }

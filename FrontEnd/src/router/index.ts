@@ -14,6 +14,7 @@ import AddServiceView from "@/views/Add-ServiceView.vue";
 import ListAuctionView from "@/views/ListAuctionView.vue";
 import DetailAuctionView from "@/views/DetailAuctionView.vue";
 import AddPostView from "@/views/Add-PostView.vue";
+import AllPostsView from "@/views/AllPostsView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -91,6 +92,11 @@ const router = createRouter({
       path: "/add-post",
       name: "add-post",
       component: AddPostView,
+    },
+    {
+      path: "/all-posts",
+      name: "all-posts",
+      component: AllPostsView,
     },
   ],
 });
