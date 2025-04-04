@@ -263,6 +263,8 @@ const initParticles = () => {
 
 <style scoped>
 /* Base styles and animations */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@400;500;700&display=swap');
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0) translateX(0);
@@ -324,12 +326,12 @@ const initParticles = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #0f0f1f 0%, #1a1a2e 100%);
+  background: linear-gradient(90deg, #0a0a20 0%, #1a0933 50%, #0d1b2a 100%);
   position: relative;
   overflow: hidden;
-  padding: 40px 20px;
+  padding: 100px 20px 40px;
   color: #e0e0ff;
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Rajdhani', sans-serif;
 }
 
 /* Particle background */
@@ -345,7 +347,7 @@ const initParticles = () => {
 
 .particle {
   position: absolute;
-  background: linear-gradient(180deg, #00f7ff, #8f3cfc);
+  background: linear-gradient(180deg, #00ffff, #ff00ff);
   border-radius: 50%;
   animation: particle-float linear infinite;
   z-index: 0;
@@ -353,20 +355,21 @@ const initParticles = () => {
 
 /* Profile Card */
 .profile-card {
-  background: rgba(17, 17, 38, 0.7);
+  background: rgba(10, 10, 32, 0.7);
   backdrop-filter: blur(20px);
-  border-radius: 24px;
+  border-radius: 16px;
   padding: 40px;
   width: 100%;
   max-width: 1200px;
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(90, 135, 255, 0.1) inset,
-    0 0 30px rgba(90, 135, 255, 0.1) inset;
+    0 0 0 1px rgba(0, 255, 255, 0.1) inset,
+    0 0 30px rgba(0, 255, 255, 0.1) inset;
   position: relative;
   z-index: 1;
   overflow: hidden;
   transition: all 0.4s ease;
+  border: 1px solid rgba(0, 255, 255, 0.2);
 }
 
 .profile-card::before {
@@ -376,7 +379,7 @@ const initParticles = () => {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(90, 135, 255, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), transparent);
 }
 
 .profile-card::after {
@@ -386,7 +389,7 @@ const initParticles = () => {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(90, 135, 255, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), transparent);
 }
 
 /* Grid layout */
@@ -403,7 +406,7 @@ const initParticles = () => {
   align-items: center;
   text-align: center;
   padding-right: 40px;
-  border-right: 1px solid rgba(90, 135, 255, 0.15);
+  border-right: 1px solid rgba(0, 255, 255, 0.15);
 }
 
 /* Avatar styling */
@@ -417,7 +420,7 @@ const initParticles = () => {
   position: relative;
   padding: 8px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(90, 135, 255, 0.2), rgba(147, 88, 247, 0.2));
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 0, 255, 0.2));
 }
 
 .avatar {
@@ -426,8 +429,8 @@ const initParticles = () => {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid transparent;
-  background: linear-gradient(#11112a, #11112a) padding-box,
-              linear-gradient(135deg, #5a87ff, #9358f7) border-box;
+  background: linear-gradient(#0a0a20, #0a0a20) padding-box,
+              linear-gradient(135deg, #00ffff, #ff00ff) border-box;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   filter: saturate(1.1) brightness(1.05);
 }
@@ -444,16 +447,16 @@ const initParticles = () => {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #11112a;
+  background: #0a0a20;
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 3px solid rgba(17, 17, 38, 0.8);
+  border: 3px solid rgba(10, 10, 32, 0.8);
   z-index: 2;
 }
 
 .status-indicator.online {
-  background: #00e676;
+  background: #00ffaa;
 }
 
 .status-indicator:not(.online) {
@@ -476,7 +479,7 @@ const initParticles = () => {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: rgba(17, 17, 38, 0.7);
+  background: rgba(10, 10, 32, 0.7);
   backdrop-filter: blur(2px);
   display: flex;
   flex-direction: column;
@@ -490,13 +493,13 @@ const initParticles = () => {
 
 .avatar-overlay i {
   font-size: 1.8rem;
-  color: #fff;
+  color: #00ffff;
 }
 
 .overlay-text {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #fff;
+  color: #00ffff;
   margin-top: 5px;
 }
 
@@ -504,12 +507,13 @@ const initParticles = () => {
 .profile-name {
   font-size: 1.8rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #5a87ff, #9358f7);
+  background: linear-gradient(135deg, #00ffff, #ff00ff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   margin: 0 0 15px;
   letter-spacing: -0.5px;
+  font-family: 'Orbitron', sans-serif;
 }
 
 .profile-badges {
@@ -520,7 +524,7 @@ const initParticles = () => {
 
 .badge {
   padding: 5px 12px;
-  border-radius: 20px;
+  border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
   display: flex;
@@ -541,17 +545,17 @@ const initParticles = () => {
 }
 
 .level-green {
-  background: linear-gradient(135deg, #00e676, #00c853);
-  color: #11112a;
+  background: linear-gradient(135deg, #00ffaa, #00cc88);
+  color: #0a0a20;
 }
 
 .level-gold {
   background: linear-gradient(135deg, #ffd54f, #ffb300);
-  color: #11112a;
+  color: #0a0a20;
 }
 
 .level-purple {
-  background: linear-gradient(135deg, #b388ff, #7c4dff);
+  background: linear-gradient(135deg, #ff00ff, #cc00cc);
   color: #ffffff;
 }
 
@@ -570,20 +574,21 @@ const initParticles = () => {
 }
 
 .balance-card {
-  background: rgba(40, 40, 80, 0.4);
-  border-radius: 16px;
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 12px;
   padding: 15px;
   display: flex;
   align-items: center;
   gap: 15px;
   transition: all 0.3s ease;
-  border: 1px solid rgba(90, 135, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.1);
 }
 
 .balance-card:hover {
   transform: translateY(-3px);
-  background: rgba(50, 50, 100, 0.5);
+  background: rgba(0, 255, 255, 0.1);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border-color: rgba(0, 255, 255, 0.3);
 }
 
 .balance-icon {
@@ -592,10 +597,10 @@ const initParticles = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(90, 135, 255, 0.2), rgba(147, 88, 247, 0.2));
-  border-radius: 12px;
+  background: rgba(0, 255, 255, 0.1);
+  border-radius: 10px;
   font-size: 1.2rem;
-  color: #fff;
+  color: #00ffff;
 }
 
 .balance-info {
@@ -633,7 +638,7 @@ const initParticles = () => {
 }
 
 .section-title i {
-  color: #5a87ff;
+  color: #00ffff;
 }
 
 /* Detail items */
@@ -648,22 +653,23 @@ const initParticles = () => {
   display: flex;
   align-items: center;
   gap: 15px;
-  background: rgba(40, 40, 80, 0.4);
+  background: rgba(0, 255, 255, 0.05);
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 12px;
   transition: all 0.3s ease;
-  border: 1px solid rgba(90, 135, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.1);
 }
 
 .detail-item:hover {
-  background: rgba(50, 50, 100, 0.5);
+  background: rgba(0, 255, 255, 0.1);
   transform: translateY(-3px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
 }
 
 .detail-icon {
   font-size: 1.3rem;
-  color: #5a87ff;
+  color: #00ffff;
   width: 24px;
   text-align: center;
 }
@@ -687,7 +693,7 @@ const initParticles = () => {
 
 /* Experience bar */
 .exp-item {
-  background: rgba(40, 40, 80, 0.4);
+  background: rgba(0, 255, 255, 0.05);
 }
 
 .exp-content {
@@ -701,7 +707,7 @@ const initParticles = () => {
 
 .exp-bar-container {
   width: 100%;
-  background: rgba(17, 17, 38, 0.6);
+  background: rgba(10, 10, 32, 0.6);
   border-radius: 8px;
   height: 12px;
   position: relative;
@@ -710,7 +716,7 @@ const initParticles = () => {
 
 .exp-bar {
   height: 100%;
-  background: linear-gradient(90deg, #5a87ff, #9358f7);
+  background: linear-gradient(90deg, #00ffff, #ff00ff);
   border-radius: 8px;
   transition: width 1s cubic-bezier(0.19, 1, 0.22, 1);
 }
@@ -752,7 +758,7 @@ const initParticles = () => {
 .security-icon {
   position: absolute;
   right: 16px;
-  color: #5a87ff;
+  color: #00ffff;
   font-size: 1.1rem;
   opacity: 0.7;
 }
@@ -768,7 +774,7 @@ const initParticles = () => {
 .action-btn {
   padding: 12px;
   border: none;
-  border-radius: 16px;
+  border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -777,9 +783,10 @@ const initParticles = () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(40, 40, 80, 0.4);
+  background: rgba(0, 255, 255, 0.05);
   color: #fff;
-  border: 1px solid rgba(90, 135, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  font-family: 'Rajdhani', sans-serif;
 }
 
 .action-btn i {
@@ -789,30 +796,55 @@ const initParticles = () => {
 .action-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.action-btn:hover::before {
+  left: 100%;
 }
 
 .edit-btn {
-  background: linear-gradient(135deg, rgba(90, 135, 255, 0.2), rgba(147, 88, 247, 0.2));
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  position: relative;
+  overflow: hidden;
 }
 
 .edit-btn:hover {
-  background: linear-gradient(135deg, rgba(90, 135, 255, 0.3), rgba(147, 88, 247, 0.3));
+  background: rgba(0, 255, 255, 0.2);
 }
 
 .security-btn {
-  background: linear-gradient(135deg, rgba(0, 230, 118, 0.2), rgba(0, 200, 83, 0.2));
+  background: rgba(0, 255, 170, 0.1);
+  color: #00ffaa;
+  position: relative;
+  overflow: hidden;
 }
 
 .security-btn:hover {
-  background: linear-gradient(135deg, rgba(0, 230, 118, 0.3), rgba(0, 200, 83, 0.3));
+  background: rgba(0, 255, 170, 0.2);
 }
 
 .logout-btn {
-  background: linear-gradient(135deg, rgba(255, 82, 82, 0.2), rgba(213, 0, 0, 0.2));
+  background: rgba(255, 82, 82, 0.1);
+  color: #ff5252;
+  position: relative;
+  overflow: hidden;
 }
 
 .logout-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 82, 82, 0.3), rgba(213, 0, 0, 0.3));
+  background: rgba(255, 82, 82, 0.2);
 }
 
 /* Transitions */
@@ -862,7 +894,7 @@ const initParticles = () => {
     padding-right: 0;
     padding-bottom: 30px;
     border-right: none;
-    border-bottom: 1px solid rgba(90, 135, 255, 0.15);
+    border-bottom: 1px solid rgba(0, 255, 255, 0.15);
   }
 
   .avatar {
@@ -898,3 +930,4 @@ const initParticles = () => {
   }
 }
 </style>
+

@@ -649,45 +649,40 @@ const toggleGuideModal = () => {
     <!-- Warning Modal -->
     <transition name="modal-fade">
       <div v-if="showWarningModal" class="modal-overlay">
-        <div class="modal warning-modal">
-          <div class="modal-icon warning">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-
-          <div class="modal-content">
-            <h3 class="modal-title">Xác nhận thông tin</h3>
-
-            <div class="modal-message warning-message">
-              <p>
-                Tôi cam kết rằng tất cả thông tin tài khoản đã cung cấp là <strong>chính xác 100%</strong>.
-                Tôi hiểu rằng việc cố ý cung cấp thông tin sai sự thật có thể dẫn đến việc
-                <strong>khóa vĩnh viễn</strong> tài khoản của tôi.
-              </p>
-            </div>
-
-            <div class="confirmation-checkbox">
-              <input type="checkbox" id="confirm-checkbox" v-model="isConfirmed" />
-              <label for="confirm-checkbox">
-                Tôi xác nhận thông tin là chính xác và đồng ý với các điều khoản
-              </label>
-            </div>
-
-            <div class="modal-actions">
-              <button
-                @click="showWarningModal = false"
-                class="btn btn-cancel"
-              >
+        <div class="modal-container">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3>Xác nhận thông tin</h3>
+              <button @click="showWarningModal = false" class="close-btn">
                 <i class="fas fa-times"></i>
-                <span>Hủy bỏ</span>
               </button>
-
-              <button
-                @click="confirmSubmission"
-                :disabled="!isConfirmed"
-                class="btn btn-confirm"
+            </div>
+            <div class="modal-body">
+              <div class="warning-box">
+                <div class="warning-icon">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <p>
+                  Tôi cam kết rằng tất cả thông tin tài khoản đã cung cấp là <strong>chính xác 100%</strong>.
+                  Tôi hiểu rằng việc cố ý cung cấp thông tin sai sự thật có thể dẫn đến việc
+                  <strong>khóa vĩnh viễn</strong> tài khoản của tôi.
+                </p>
+              </div>
+              <div class="checkbox-container">
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="isConfirmed" />
+                  <span class="checkbox-text">Tôi xác nhận thông tin là chính xác và đồng ý với các điều khoản</span>
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button @click="showWarningModal = false" class="btn-cancel">Hủy bỏ</button>
+              <button 
+                @click="confirmSubmission" 
+                :disabled="!isConfirmed" 
+                :class="['btn-confirm', {'btn-disabled': !isConfirmed}]"
               >
-                <i class="fas fa-check"></i>
-                <span>Xác nhận</span>
+                Xác nhận
               </button>
             </div>
           </div>
@@ -698,22 +693,33 @@ const toggleGuideModal = () => {
     <!-- Success Modal -->
     <transition name="modal-fade">
       <div v-if="showSuccessModal" class="modal-overlay">
-        <div class="modal success-modal">
-          <div class="modal-icon success">
-            <i class="fas fa-check-circle"></i>
-          </div>
-
-          <div class="modal-content">
-            <h3 class="modal-title">Thành công!</h3>
-
-            <div class="modal-message success-message">
-              <p>Tài khoản của bạn đã được đăng thành công và đang được hiển thị cho người mua tiềm năng.</p>
+        <div class="modal-container">
+          <div class="modal-card success-card">
+            <div class="success-icon">
+              <i class="fas fa-check-circle"></i>
             </div>
-
-            <div class="modal-actions center">
-              <button @click="showSuccessModal = false" class="btn btn-success">
-                <span>Đóng</span>
-              </button>
+            <div class="modal-body text-center">
+              <h3 class="success-title">Thành công!</h3>
+              <p class="success-message">
+                Tài khoản của bạn đã được đăng thành công và đang được hiển thị cho người mua tiềm năng.
+              </p>
+              <div class="success-info">
+                <div class="info-item">
+                  <i class="fas fa-check"></i>
+                  <span>Thông tin đã được xác nhận</span>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-eye"></i>
+                  <span>Tài khoản đã hiển thị công khai</span>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-bell"></i>
+                  <span>Bạn sẽ nhận thông báo khi có người đặt mua</span>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer center">
+              <button @click="showSuccessModal = false" class="btn-success">Đóng</button>
             </div>
           </div>
         </div>
@@ -722,96 +728,91 @@ const toggleGuideModal = () => {
 
     <!-- Guide Modal -->
     <transition name="modal-fade">
-      <div v-if="showGuideModal" class="modal-overlay">
-        <div class="modal guide-modal">
-          <div class="modal-header">
-            <h3 class="modal-title">
-              <i class="fas fa-book"></i>
-              Hướng dẫn đăng tài khoản
-            </h3>
-            <button @click="toggleGuideModal" class="close-button">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-
-          <div class="guide-content">
-            <div class="guide-section">
-              <h4 class="guide-title">
-                <i class="fas fa-shield-alt"></i>
-                Bảo vệ thông tin cá nhân
-              </h4>
-              <p>
-                Trước khi đăng bán, hãy kiểm tra kỹ Gmail liên kết với tài khoản game.
-                Đừng để sót thông tin nhạy cảm như số điện thoại hay dữ liệu cá nhân –
-                bảo vệ sự riêng tư của bạn là điều quan trọng nhất!
-              </p>
+      <div v-if="showGuideModal" class="modal-overlay guide-modal-overlay">
+        <div class="modal-container guide-modal-container">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3><i class="fas fa-book"></i> Hướng dẫn đăng tài khoản</h3>
+              <button @click="toggleGuideModal" class="close-btn">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
+            <div class="modal-body guide-content">
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-shield-alt"></i>
+                  Bảo vệ thông tin cá nhân
+                </h4>
+                <p>
+                  Trước khi đăng bán, hãy kiểm tra kỹ Gmail liên kết với tài khoản game.
+                  Đừng để sót thông tin nhạy cảm như số điện thoại hay dữ liệu cá nhân –
+                  bảo vệ sự riêng tư của bạn là điều quan trọng nhất!
+                </p>
+              </div>
 
-            <div class="guide-section">
-              <h4 class="guide-title">
-                <i class="fas fa-envelope"></i>
-                Sử dụng Gmail rác
-              </h4>
-              <p>
-                Người mua có thể hỏi tên Gmail của tài khoản. Hãy dùng Gmail rác –
-                loại không chứa thông tin quan trọng – để giữ an toàn. Tốt nhất là liên kết
-                tài khoản với Gmail dùng một lần trước khi bán.
-              </p>
-            </div>
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-envelope"></i>
+                  Sử dụng Gmail rác
+                </h4>
+                <p>
+                  Người mua có thể hỏi tên Gmail của tài khoản. Hãy dùng Gmail rác –
+                  loại không chứa thông tin quan trọng – để giữ an toàn. Tốt nhất là liên kết
+                  tài khoản với Gmail dùng một lần trước khi bán.
+                </p>
+              </div>
 
-            <div class="guide-section">
-              <h4 class="guide-title">
-                <i class="fas fa-exchange-alt"></i>
-                Cung cấp thông tin cho người mua
-              </h4>
-              <p>
-                Giao dịch xong xuôi? Hãy gửi đầy đủ và chính xác thông tin như
-                tên tài khoản, mật khẩu cho người mua. Uy tín của bạn sẽ được củng cố,
-                và chẳng ai thích tranh cãi sau khi deal xong đâu, đúng không?
-              </p>
-            </div>
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-exchange-alt"></i>
+                  Cung cấp thông tin cho người mua
+                </h4>
+                <p>
+                  Giao dịch xong xuôi? Hãy gửi đầy đủ và chính xác thông tin như
+                  tên tài khoản, mật khẩu cho người mua. Uy tín của bạn sẽ được củng cố,
+                  và chẳng ai thích tranh cãi sau khi deal xong đâu, đúng không?
+                </p>
+              </div>
 
-            <div class="guide-section">
-              <h4 class="guide-title">
-                <i class="fas fa-list-ol"></i>
-                Các bước đăng bán tài khoản
-              </h4>
-              <div class="steps">
-                <div class="step">
-                  <div class="step-indicator">1</div>
-                  <div class="step-description">
-                    <strong>Chọn game</strong>: Chọn loại game bạn muốn bán tài khoản từ danh sách
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-list-ol"></i>
+                  Các bước đăng bán tài khoản
+                </h4>
+                <div class="steps">
+                  <div class="step">
+                    <div class="step-indicator">1</div>
+                    <div class="step-description">
+                      <strong>Chọn game</strong>: Chọn loại game bạn muốn bán tài khoản từ danh sách
+                    </div>
                   </div>
-                </div>
 
-                <div class="step">
-                  <div class="step-indicator">2</div>
-                  <div class="step-description">
-                    <strong>Nhập thông tin</strong>: Điền tên đăng nhập, mật khẩu, giá bán và các thuộc tính cụ thể
+                  <div class="step">
+                    <div class="step-indicator">2</div>
+                    <div class="step-description">
+                      <strong>Nhập thông tin</strong>: Điền tên đăng nhập, mật khẩu, giá bán và các thuộc tính cụ thể
+                    </div>
                   </div>
-                </div>
 
-                <div class="step">
-                  <div class="step-indicator">3</div>
-                  <div class="step-description">
-                    <strong>Tải ảnh lên</strong>: Thêm ảnh chụp màn hình tài khoản mà bạn muốn đăng, nhưng thông tin phải khớp với hình ảnh
+                  <div class="step">
+                    <div class="step-indicator">3</div>
+                    <div class="step-description">
+                      <strong>Tải ảnh lên</strong>: Thêm ảnh chụp màn hình tài khoản mà bạn muốn đăng, nhưng thông tin phải khớp với hình ảnh
+                    </div>
                   </div>
-                </div>
 
-                <div class="step">
-                  <div class="step-indicator">4</div>
-                  <div class="step-description">
-                    <strong>Xác nhận</strong>: Kiểm tra lại thông tin và xác nhận để đăng bán
+                  <div class="step">
+                    <div class="step-indicator">4</div>
+                    <div class="step-description">
+                      <strong>Xác nhận</strong>: Kiểm tra lại thông tin và xác nhận để đăng bán
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="modal-footer">
-            <button @click="toggleGuideModal" class="btn btn-primary">
-              <span>Đã hiểu</span>
-            </button>
+            <div class="modal-footer">
+              <button @click="toggleGuideModal" class="btn-primary">Đã hiểu</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1063,11 +1064,11 @@ const toggleGuideModal = () => {
 /* Progress Step */
 .progress-step {
   display: flex;
-  flex-direction: column; /* Xếp số và nhãn theo chiều dọc trong mỗi bước */
-  align-items: center; /* Căn giữa nội dung trong bước */
+  flex-direction: column;
+  align-items: center;
   position: relative;
-  z-index: 2; /* Đảm bảo bước nằm trên đường nối */
-  min-width: 80px; /* Đặt chiều rộng tối thiểu để tránh chồng lấn */
+  z-index: 10000; /* Tăng z-index lên cao hơn modal */
+  min-width: 80px;
 }
 
 /* Step Number */
@@ -1168,6 +1169,7 @@ const toggleGuideModal = () => {
   margin-bottom: 25px;
   text-align: center;
   background: linear-gradient(45deg, #3498db, #9b59b6);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -1672,54 +1674,34 @@ const toggleGuideModal = () => {
   line-height: 1.4;
 }
 
-/* Modals */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(10, 14, 23, 0.9);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
+/* Enhanced Modal Styles */
 .modal {
   background: #1a2234;
   border-radius: 20px;
-  height: 400px;
-  max-width: 500px;
   width: 100%;
+  max-width: 500px;
   position: relative;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  opacity: 0;
-  transform: scale(0.9);
-  animation: modalIn 0.3s forwards;
+  border: 1px solid rgba(52, 152, 219, 0.3);
 }
 
-@keyframes modalIn {
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.warning-modal, .success-modal {
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-icon {
-  width: 70px;
-  height: 70px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: -35px auto 20px;
-  font-size: 2rem;
+  margin: 30px auto 10px;
+  font-size: 2.5rem;
   color: white;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
@@ -1737,15 +1719,15 @@ const toggleGuideModal = () => {
 }
 
 .modal-title {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  color: #ff3700;
-  margin-bottom: 15px;
+  color: #e1e7ef;
+  margin-bottom: 20px;
   text-align: center;
 }
 
-.modal-message {
-  margin-bottom: 20px;
+.success-title {
+  color: #2ecc71;
 }
 
 .warning-message {
@@ -1753,25 +1735,28 @@ const toggleGuideModal = () => {
   border-radius: 12px;
   padding: 15px;
   border-left: 4px solid #e74c3c;
+  margin-bottom: 20px;
 }
 
 .warning-message p {
-  color: #ff2a00;
-  line-height: 1.5;
+  color: #e1e7ef;
+  line-height: 1.6;
   font-size: 0.95rem;
+  margin: 0;
 }
 
 .success-message {
   background: rgba(46, 204, 113, 0.1);
   border-radius: 12px;
   padding: 15px;
-  border-left: 4px solid #2ecc71;
+  margin-bottom: 20px;
 }
 
 .success-message p {
   color: #e1e7ef;
-  line-height: 1.5;
+  line-height: 1.6;
   font-size: 0.95rem;
+  margin: 0;
   text-align: center;
 }
 
@@ -1779,7 +1764,10 @@ const toggleGuideModal = () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 10px;
 }
 
 .confirmation-checkbox input[type="checkbox"] {
@@ -1839,43 +1827,307 @@ const toggleGuideModal = () => {
   box-shadow: 0 5px 20px rgba(46, 204, 113, 0.6);
 }
 
-/* Guide Modal */
-.guide-modal {
-  max-width: 600px;
-  max-height: 80vh;
+.success-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 25px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.success-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e1e7ef;
+  font-size: 0.95rem;
+}
+
+.success-detail i {
+  color: #2ecc71;
+  font-size: 1.1rem;
+}
+
+/* Modal Animation */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(10, 14, 23, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Tăng z-index lên cao hơn */
+  padding: 20px;
+}
+
+/* Specific styles for guide modal overlay */
+.guide-modal-overlay {
+  align-items: flex-start; /* Align to top instead of center */
+  padding-top: 150px; /* Add padding to push modal down */
+}
+
+.modal-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.modal-card {
+  background-color: #1a2234;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
 .modal-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 20px 25px;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: #212a3e;
   border-bottom: 1px solid rgba(52, 152, 219, 0.2);
-  background: rgba(52, 152, 219, 0.1);
 }
 
-.close-button {
+.modal-header h3 {
+  margin: 0;
+  color: #e1e7ef;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.close-btn {
   background: none;
   border: none;
-  color: #e1e7ef;
-  font-size: 1.2rem;
+  color: #8896ae;
+  font-size: 1.25rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: color 0.2s;
 }
 
-.close-button:hover {
-  color: #3498db;
-  transform: scale(1.1);
+.close-btn:hover {
+  color: #e1e7ef;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-footer.center {
+  justify-content: center;
+}
+
+.warning-box {
+  display: flex;
+  gap: 16px;
+  background-color: rgba(231, 76, 60, 0.1);
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.warning-icon {
+  color: #e74c3c;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.warning-box p {
+  margin: 0;
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.checkbox-container {
+  margin-bottom: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #3498db;
+  cursor: pointer;
+}
+
+.checkbox-text {
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e1e7ef;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-confirm {
+  padding: 10px 20px;
+  background-color: #e74c3c;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm:hover {
+  background-color: #c0392b;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-disabled:hover {
+  background-color: #e74c3c;
+}
+
+/* Success Modal */
+.success-card {
+  text-align: center;
+  padding-top: 24px;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  background-color: #2ecc71;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 40px;
+  color: white;
+  box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
+}
+
+.success-title {
+  color: #2ecc71;
+  font-size: 1.75rem;
+  margin: 0 0 16px;
+}
+
+.success-message {
+  color: #e1e7ef;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.success-info {
+  background-color: rgba(46, 204, 113, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #e1e7ef;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-item i {
+  color: #2ecc71;
+}
+
+.btn-success {
+  padding: 10px 30px;
+  background-color: #2ecc71;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-success:hover {
+  background-color: #27ae60;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Modal Animation */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: all 0.3s;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* Guide Modal Styles */
+.guide-modal-container {
+  max-width: 650px;
 }
 
 .guide-content {
-  padding: 25px;
+  max-height: 55vh; /* Giảm chiều cao tối đa để tránh bị tràn */
   overflow-y: auto;
-  max-height: calc(80vh - 180px);
+  padding-right: 16px;
+  padding-top: 10px; /* Thêm padding-top */
 }
 
 .guide-section {
-  margin-bottom: 25px;
+  margin-bottom: 24px;
 }
 
 .guide-section:last-child {
@@ -1886,7 +2138,7 @@ const toggleGuideModal = () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #3498db;
   margin-bottom: 12px;
   font-weight: 600;
@@ -1900,18 +2152,19 @@ const toggleGuideModal = () => {
   color: #e1e7ef;
   line-height: 1.6;
   font-size: 0.95rem;
+  margin: 0 0 16px 0;
 }
 
 .steps {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-top: 15px;
+  gap: 16px;
 }
 
 .step {
   display: flex;
-  gap: 15px;
+  gap: 16px;
+  align-items: flex-start;
 }
 
 .step-indicator {
@@ -1939,75 +2192,19 @@ const toggleGuideModal = () => {
   color: #3498db;
 }
 
-.modal-footer {
-  padding: 15px 25px 25px;
-  display: flex;
-  justify-content: center;
-}
-
 .btn-primary {
+  padding: 10px 30px;
   background: linear-gradient(45deg, #3498db, #9b59b6);
+  border: none;
   color: white;
-  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-  padding: 12px 30px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .btn-primary:hover {
-  box-shadow: 0 5px 20px rgba(52, 152, 219, 0.6);
-}
-
-/* Transitions */
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
-}
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-  .progress-bar {
-    padding: 0 10px;
-  }
-
-  .content-card {
-    padding: 20px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .info-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .step-number {
-    width: 35px;
-    height: 35px;
-  }
-
-  .step-label {
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .game-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  }
-
-  .btn {
-    padding: 10px 20px;
-    font-size: 0.9rem;
-  }
-
-  .field-name {
-    min-width: 120px;
-  }
+  background: linear-gradient(45deg, #2980b9, #8e44ad);
 }
 </style>
+
