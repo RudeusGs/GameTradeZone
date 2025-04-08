@@ -4,7 +4,6 @@ import gameApi from '@/api/gameinfor.api';
 import gameFieldApi from '@/api/gamefield.api';
 import gameAccountApi from '@/api/gameaccount.api';
 import type { GameField } from '@/models/gameinfor.model';
-import type { AddAccountGameModel } from '@/api/gameaccount.api';
 import type { GameAccountField } from '@/models/gameaccountfield.model';
 
 // Danh sách game lấy từ API
@@ -277,292 +276,544 @@ const confirmSubmission = async () => {
 // Mở modal hướng dẫn
 const toggleGuideModal = () => {
   showGuideModal.value = !showGuideModal.value;
-};
+}
 </script>
 
 <template>
   <div class="add-account-container">
-    <!-- Bubble Background -->
-    <div class="bubble-background">
-      <div v-for="i in 50" :key="i" class="bubble"></div>
+    <!-- Glass Panel Background -->
+    <div class="glass-panels">
+      <div class="glass-panel panel-1"></div>
+      <div class="glass-panel panel-2"></div>
+      <div class="glass-panel panel-3"></div>
+      <div class="glass-panel panel-4"></div>
     </div>
 
-    <!-- Layout chính với 3 cột -->
-    <div class="main-layout">
-      <!-- Sidebar trái: Thống kê giao dịch gần đây -->
-      <div class="sidebar sidebar-left">
-        <h3 class="sidebar-title">Giao dịch gần đây</h3>
-        <div class="transaction-list">
-          <div class="transaction-item">Tài khoản Valorant - 500,000 VND</div>
-          <div class="transaction-item">Tài khoản Genshin Impact - 1,200,000 VND</div>
-          <div class="transaction-item">Tài khoản League of Legends - 800,000 VND</div>
+    <!-- Animated Particles -->
+    <div class="particles">
+      <div v-for="i in 30" :key="i" class="particle"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="app-header">
+      <button class="help-button" @click="toggleGuideModal">
+        <i class="fas fa-question-circle"></i>
+        <span>Hướng dẫn</span>
+      </button>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+      <!-- Progress Steps -->
+      <div class="progress-bar">
+        <div class="progress-step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+          <div class="step-number">1</div>
+          <div class="step-label">Chọn Game</div>
+        </div>
+        <div class="progress-line" :class="{ active: currentStep > 1 }"></div>
+        <div class="progress-step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+          <div class="step-number">2</div>
+          <div class="step-label">Thông Tin</div>
+        </div>
+        <div class="progress-line" :class="{ active: currentStep > 2 }"></div>
+        <div class="progress-step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
+          <div class="step-number">3</div>
+          <div class="step-label">Hình Ảnh</div>
+        </div>
+        <div class="progress-line" :class="{ active: currentStep > 3 }"></div>
+        <div class="progress-step" :class="{ active: currentStep >= 4 }">
+          <div class="step-number">4</div>
+          <div class="step-label">Xác Nhận</div>
         </div>
       </div>
 
-      <!-- Nội dung chính -->
-      <div class="main-content">
-        <!-- Form thêm tài khoản -->
-        <div class="form-card">
-          <div class="form-header">
-            <div class="step-indicator">
-              <span :class="{ active: currentStep === 1 }">1</span>
-              <span :class="{ active: currentStep === 2 }">2</span>
-              <span :class="{ active: currentStep === 3 }">3</span>
-              <span :class="{ active: currentStep === 4 }">4</span>
-            </div>
-          </div>
-          <!-- Bước 1: Chọn game -->
-          <div v-if="currentStep === 1" class="step-content game-step">
-            <div class="search-bar">
+      <!-- Content Card -->
+      <div class="content-card">
+        <!-- Step 1: Game Selection -->
+        <div v-if="currentStep === 1" class="step-content game-selection">
+          <h2 class="step-title">Chọn Game Cần Bán</h2>
+          <div class="search-container">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
               <input
                 v-model="searchQuery"
                 type="text"
+                placeholder="Tìm tên game..."
                 class="search-input"
-                placeholder="Tìm kiếm game..."
               />
-            </div>
-            <div class="game-list">
-              <div v-for="game in filteredGames" :key="game.id" class="game-item" @click="selectGame(game)">
-                <img :src="game.image" alt="Game Image" class="game-image" />
-                <p>{{ game.name }}</p>
-              </div>
             </div>
           </div>
 
-          <!-- Bước 2: Nhập thông tin -->
-          <div v-if="currentStep === 2" class="step-content">
-            <div class="form-group">
-              <label>Tên tài khoản <span class="required">*</span></label>
+          <div class="game-grid">
+            <div
+              v-for="game in filteredGames"
+              :key="game.id"
+              class="game-card"
+              @click="selectGame(game)"
+            >
+              <div class="game-img-container">
+                <img :src="game.image" :alt="game.name" class="game-img" />
+              </div>
+              <div class="game-name">{{ game.name }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Account Details -->
+        <div v-if="currentStep === 2" class="step-content account-details">
+          <h2 class="step-title">Thông Tin Tài Khoản</h2>
+          <p class="game-selected">
+            <span class="label">Game đã chọn:</span>
+            <span class="value">{{ formData.selectedGame }}</span>
+          </p>
+
+          <div class="form-group">
+            <label for="accountName">
+              Tên tài khoản <span class="required">*</span>
+            </label>
+            <div class="input-container">
+              <i class="fas fa-user"></i>
               <input
+                id="accountName"
                 v-model="formData.accountName"
                 type="text"
-                class="form-input"
-                placeholder="Tên tài khoản"
-                required
+                placeholder="Nhập tên tài khoản"
               />
-              <span class="error-message">{{ errors.accountName }}</span>
             </div>
-            <div class="form-group">
-              <label>Mật khẩu <span class="required">*</span></label>
+            <p class="error-message" v-if="errors.accountName">{{ errors.accountName }}</p>
+          </div>
+
+          <div class="form-group">
+            <label for="password">
+              Mật khẩu <span class="required">*</span>
+            </label>
+            <div class="input-container">
+              <i class="fas fa-lock"></i>
               <input
+                id="password"
                 v-model="formData.password"
                 type="password"
-                class="form-input"
-                placeholder="Mật khẩu"
-                required
+                placeholder="Nhập mật khẩu"
               />
-              <span class="error-message">{{ errors.password }}</span>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Giá bán (VND) <span class="required">*</span></label>
+            <p class="error-message" v-if="errors.password">{{ errors.password }}</p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="price">
+                Giá bán (VNĐ) <span class="required">*</span>
+              </label>
+              <div class="input-container">
+                <i class="fas fa-tag"></i>
                 <input
+                  id="price"
                   v-model.number="formData.price"
                   type="number"
-                  class="form-input"
-                  placeholder="Giá bán"
+                  placeholder="Nhập giá bán"
                   min="0"
                   step="1000"
-                  required
                 />
-                <span class="error-message">{{ errors.price }}</span>
               </div>
-              <div class="form-group">
-                <label>Giá tối thiểu (VND) <span class="required">*</span></label>
+              <p class="error-message" v-if="errors.price">{{ errors.price }}</p>
+            </div>
+
+            <div class="form-group">
+              <label for="priceMin">
+                Giá tối thiểu (VNĐ) <span class="required">*</span>
+              </label>
+              <div class="input-container">
+                <i class="fas fa-money-bill-wave"></i>
                 <input
+                  id="priceMin"
                   v-model.number="formData.priceMin"
                   type="number"
-                  class="form-input"
-                  placeholder="Giá tối thiểu"
+                  placeholder="Nhập giá tối thiểu"
                   min="0"
                   step="1000"
-                  required
                 />
-                <span class="error-message">{{ errors.priceMin }}</span>
               </div>
+              <p class="error-message" v-if="errors.priceMin">{{ errors.priceMin }}</p>
             </div>
-            <!-- Input động cho các thuộc tính của game -->
-            <div v-if="formData.gameFields.length > 0" class="dynamic-fields">
-              <span class="spanTitle">Thông tin thêm</span>
-              <div v-for="(field, index) in formData.gameFields" :key="field.id" class="form-group">
-                <label>{{ field.name }} <span class="required">*</span></label>
+          </div>
+
+          <div v-if="formData.gameFields.length > 0" class="game-fields">
+            <h3 class="fields-title">Thông Tin Bổ Sung</h3>
+
+            <div v-for="(field, index) in formData.gameFields" :key="field.id" class="form-group">
+              <label :for="'field-' + field.id">
+                {{ field.name }} <span class="required">*</span>
+              </label>
+              <div class="input-container">
+                <i class="fas fa-info-circle"></i>
                 <input
+                  :id="'field-' + field.id"
                   v-model="formData.gameFields[index].value"
                   type="text"
-                  class="form-input"
                   :placeholder="'Nhập ' + field.name"
-                  required
-                />
-                <span class="error-message" v-if="!field.value && errors.gameFields">{{ errors.gameFields }}</span>
-              </div>
-            </div>
-            <div v-else class="no-fields-message">
-              <p>Không có thuộc tính nào cho game này. Vui lòng liên hệ hỗ trợ nếu cần.</p>
-            </div>
-          </div>
-
-          <!-- Bước 3: Upload ảnh -->
-          <div v-if="currentStep === 3" class="step-content">
-            <div class="form-group">
-              <label>Hình ảnh tài khoản</label>
-              <div class="upload-area" @click="triggerFileInput">
-                <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                <p>Tải ảnh lên (nhấp hoặc kéo thả)</p>
-                <input
-                  ref="fileInputRef"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  @change="handleFileChange"
-                  class="file-input"
                 />
               </div>
-            </div>
-            <div class="preview-container" v-if="formData.previewImages.length > 0">
-              <div class="preview-images">
-                <div v-for="(image, index) in formData.previewImages" :key="index" class="preview-item">
-                  <img :src="image" alt="Preview" class="preview-image" />
-                  <button class="remove-btn" @click="removeImage(index)">×</button>
-                </div>
-              </div>
+              <p class="error-message" v-if="!field.value && errors.gameFields">
+                {{ errors.gameFields }}
+              </p>
             </div>
           </div>
 
-          <!-- Bước 4: Xem lại thông tin -->
-          <div v-if="currentStep === 4" class="step-content review-step">
-            <div class="review-card">
-              <div class="review-group">
-                <span class="review-label">Game:</span>
-                <span class="review-value">{{ formData.selectedGame }}</span>
-              </div>
-              <div class="review-group">
-                <span class="review-label">Tên tài khoản:</span>
-                <span class="review-value">{{ formData.accountName }}</span>
-              </div>
-              <div class="review-group">
-                <span class="review-label">Mật khẩu:</span>
-                <span class="review-value">{{ formData.password }}</span>
-              </div>
-              <div class="review-group">
-                <span class="review-label">Giá bán:</span>
-                <span class="review-value">{{ formData.price }} VND</span>
-              </div>
-              <div class="review-group">
-                <span class="review-label">Giá tối thiểu:</span>
-                <span class="review-value">{{ formData.priceMin }} VND</span>
-              </div>
-              <div class="review-group">
-                <span class="review-label">Hình ảnh:</span>
-                <div class="review-images" v-if="formData.previewImages.length > 0">
-                  <img
-                    v-for="(image, index) in formData.previewImages"
-                    :key="index"
-                    :src="image"
-                    alt="Preview"
-                    class="review-image"
-                  />
-                </div>
-                <span v-else class="review-value">Chưa có ảnh</span>
-              </div>
-              <!-- Hiển thị các thuộc tính của game trong phần xem lại -->
-              <div v-for="(field, index) in formData.gameFields" :key="index" class="review-group">
-                <span class="review-label">{{ field.name }}:</span>
-                <span class="review-value">{{ field.value }}</span>
+          <div v-else class="no-fields">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>Không có thuộc tính bổ sung cho game này</p>
+          </div>
+        </div>
+
+        <!-- Step 3: Image Upload -->
+        <div v-if="currentStep === 3" class="step-content image-upload">
+          <h2 class="step-title">Hình Ảnh Tài Khoản</h2>
+
+          <div class="upload-zone" @click="triggerFileInput">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <p class="upload-text">Kéo thả hoặc nhấp để tải ảnh lên</p>
+            <p class="upload-hint">Hình ảnh giúp tăng khả năng bán tài khoản</p>
+            <input
+              ref="fileInputRef"
+              type="file"
+              multiple
+              accept="image/*"
+              @change="handleFileChange"
+              class="file-input"
+            />
+          </div>
+
+          <div v-if="formData.previewImages.length > 0" class="image-preview-container">
+            <div class="image-count">
+              <i class="fas fa-images"></i>
+              <span>{{ formData.previewImages.length }} hình ảnh</span>
+            </div>
+
+            <div class="image-grid">
+              <div v-for="(image, index) in formData.previewImages" :key="index" class="image-item">
+                <img :src="image" alt="Preview" class="preview-img" />
+                <button class="remove-image" @click="removeImage(index)">
+                  <i class="fas fa-times"></i>
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Điều hướng bước -->
-          <div class="step-navigation">
-            <button v-if="currentStep > 1" @click="previousStep" class="nav-btn prev-btn">
-              <i class="fas fa-arrow-left"></i>
-            </button>
-            <button v-if="currentStep < 4" @click="nextStep" class="nav-btn next-btn">
-              <i class="fas fa-arrow-right"></i>
-            </button>
-            <button v-if="currentStep === 4" @click="showWarning" class="nav-btn submit-btn">
-              <i class="fas fa-check"></i>
-            </button>
+        <!-- Step 4: Review -->
+        <div v-if="currentStep === 4" class="step-content review-step">
+          <h2 class="step-title">Xác Nhận Thông Tin</h2>
+
+          <div class="review-data">
+            <div class="review-section">
+              <h3 class="review-section-title">
+                <i class="fas fa-gamepad"></i> Thông tin game
+              </h3>
+              <div class="review-field">
+                <span class="field-name">Game:</span>
+                <span class="field-value">{{ formData.selectedGame }}</span>
+              </div>
+            </div>
+
+            <div class="review-section">
+              <h3 class="review-section-title">
+                <i class="fas fa-user-lock"></i> Thông tin tài khoản
+              </h3>
+              <div class="review-field">
+                <span class="field-name">Tên tài khoản:</span>
+                <span class="field-value">{{ formData.accountName }}</span>
+              </div>
+              <div class="review-field">
+                <span class="field-name">Mật khẩu:</span>
+                <span class="field-value">{{ formData.password }}</span>
+              </div>
+            </div>
+
+            <div class="review-section">
+              <h3 class="review-section-title">
+                <i class="fas fa-tag"></i> Thông tin giá
+              </h3>
+              <div class="review-field">
+                <span class="field-name">Giá bán:</span>
+                <span class="field-value price-value">{{ formData.price?.toLocaleString() }} VNĐ</span>
+              </div>
+              <div class="review-field">
+                <span class="field-name">Giá tối thiểu:</span>
+                <span class="field-value price-value">{{ formData.priceMin?.toLocaleString() }} VNĐ</span>
+              </div>
+            </div>
+
+            <div v-if="formData.gameFields.length > 0" class="review-section">
+              <h3 class="review-section-title">
+                <i class="fas fa-info-circle"></i> Thông tin bổ sung
+              </h3>
+              <div v-for="field in formData.gameFields" :key="field.id" class="review-field">
+                <span class="field-name">{{ field.name }}:</span>
+                <span class="field-value">{{ field.value }}</span>
+              </div>
+            </div>
+
+            <div v-if="formData.previewImages.length > 0" class="review-section">
+              <h3 class="review-section-title">
+                <i class="fas fa-images"></i> Hình ảnh ({{ formData.previewImages.length }})
+              </h3>
+              <div class="review-images">
+                <img
+                  v-for="(image, index) in formData.previewImages"
+                  :key="index"
+                  :src="image"
+                  alt="Preview"
+                  class="review-image"
+                />
+              </div>
+            </div>
           </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="step-controls">
+          <button
+            v-if="currentStep > 1"
+            @click="previousStep"
+            class="btn btn-prev"
+          >
+            <i class="fas fa-arrow-left"></i>
+            <span>Quay lại</span>
+          </button>
+
+          <button
+            v-if="currentStep < 4"
+            @click="nextStep"
+            class="btn btn-next"
+          >
+            <span>Tiếp tục</span>
+            <i class="fas fa-arrow-right"></i>
+          </button>
+
+          <button
+            v-if="currentStep === 4"
+            @click="showWarning"
+            class="btn btn-submit"
+          >
+            <span>Đăng bán</span>
+            <i class="fas fa-check"></i>
+          </button>
         </div>
       </div>
 
-      <!-- Sidebar phải: Đánh giá từ người dùng -->
-      <div class="sidebar sidebar-right">
-        <h3 class="sidebar-title">Đánh giá từ người dùng</h3>
-        <div class="review-list">
-          <div class="review-item">
-            <p>"Giao dịch nhanh chóng và an toàn!" - Nguyễn Văn A</p>
+      <!-- Information cards -->
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-icon">
+            <i class="fas fa-shield-alt"></i>
           </div>
-          <div class="review-item">
-            <p>"Hỗ trợ khách hàng tuyệt vời!" - Trần Thị B</p>
+          <div class="info-content">
+            <h3>Bảo mật tuyệt đối</h3>
+            <p>Thông tin tài khoản của bạn được mã hóa và bảo vệ an toàn</p>
           </div>
-          <div class="review-item">
-            <p>"Tôi rất hài lòng với dịch vụ!" - Lê Văn C</p>
+        </div>
+
+        <div class="info-card">
+          <div class="info-icon">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <div class="info-content">
+            <h3>Giao dịch nhanh chóng</h3>
+            <p>Tài khoản của bạn sẽ được đăng ngay lập tức sau khi xác nhận</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-icon">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div class="info-content">
+            <h3>Phí giao dịch thấp</h3>
+            <p>Chỉ 5% giá trị giao dịch sẽ được trích làm phí dịch vụ</p>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div class="info-content">
+            <h3>Phí giao dịch thấp</h3>
+            <p>Chỉ 5% giá trị giao dịch sẽ được trích làm phí dịch vụ</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Nút dấu hỏi -->
-    <button class="help-btn" @click="toggleGuideModal">
-      <i class="fas fa-question"></i>
-    </button>
-
-    <!-- Modal cảnh báo -->
-    <transition name="fade">
+    <!-- Warning Modal -->
+    <transition name="modal-fade">
       <div v-if="showWarningModal" class="modal-overlay">
-        <div class="modal-content warning-modal">
-          <h3>CẢNH BÁO NGHIÊM KHẮC</h3>
-          <p class="warning-text">
-            TẤT CẢ THÔNG TIN TÀI KHOẢN PHẢI CHÍNH XÁC 100%! NẾU PHÁT HIỆN CỐ Ý ĐĂNG TẢI THÔNG TIN SAI SỰ THẬT, TÀI KHOẢN CỦA BẠN SẼ BỊ KHÓA VĨNH VIỄN KHÔNG CÓ LÝ DO!
-          </p>
-          <div class="confirmation-group">
-            <input type="checkbox" id="confirm" v-model="isConfirmed" />
-            <label for="confirm">Tôi cam kết thông tin chính xác</label>
-          </div>
-          <div class="modal-actions">
-            <button @click="confirmSubmission" class="modal-confirm" :disabled="!isConfirmed">XÁC NHẬN</button>
-            <button @click="showWarningModal = false" class="modal-cancel">HỦY BỎ</button>
+        <div class="modal-container">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3>Xác nhận thông tin</h3>
+              <button @click="showWarningModal = false" class="close-btn">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="warning-box">
+                <div class="warning-icon">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <p>
+                  Tôi cam kết rằng tất cả thông tin tài khoản đã cung cấp là <strong>chính xác 100%</strong>.
+                  Tôi hiểu rằng việc cố ý cung cấp thông tin sai sự thật có thể dẫn đến việc
+                  <strong>khóa vĩnh viễn</strong> tài khoản của tôi.
+                </p>
+              </div>
+              <div class="checkbox-container">
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="isConfirmed" />
+                  <span class="checkbox-text">Tôi xác nhận thông tin là chính xác và đồng ý với các điều khoản</span>
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button @click="showWarningModal = false" class="btn-cancel">Hủy bỏ</button>
+              <button 
+                @click="confirmSubmission" 
+                :disabled="!isConfirmed" 
+                :class="['btn-confirm', {'btn-disabled': !isConfirmed}]"
+              >
+                Xác nhận
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </transition>
 
-    <!-- Modal thành công -->
-    <transition name="fade">
+    <!-- Success Modal -->
+    <transition name="modal-fade">
       <div v-if="showSuccessModal" class="modal-overlay">
-        <div class="modal-content success-modal">
-          <i class="fas fa-check-circle success-icon"></i>
-          <h3>Thành công!</h3>
-          <p>Tài khoản của bạn đã được thêm vào danh sách bán.</p>
-          <button @click="showSuccessModal = false" class="modal-close">Đóng</button>
+        <div class="modal-container">
+          <div class="modal-card success-card">
+            <div class="success-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="modal-body text-center">
+              <h3 class="success-title">Thành công!</h3>
+              <p class="success-message">
+                Tài khoản của bạn đã được đăng thành công và đang được hiển thị cho người mua tiềm năng.
+              </p>
+              <div class="success-info">
+                <div class="info-item">
+                  <i class="fas fa-check"></i>
+                  <span>Thông tin đã được xác nhận</span>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-eye"></i>
+                  <span>Tài khoản đã hiển thị công khai</span>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-bell"></i>
+                  <span>Bạn sẽ nhận thông báo khi có người đặt mua</span>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer center">
+              <button @click="showSuccessModal = false" class="btn-success">Đóng</button>
+            </div>
+          </div>
         </div>
       </div>
     </transition>
 
-    <!-- Modal hướng dẫn -->
-    <transition name="fade">
-      <div v-if="showGuideModal" class="modal-overlay">
-        <div class="modal-content guide-modal">
-          <h3>Hướng Dẫn Đăng Tài Khoản</h3>
-          <p>Chào mừng bạn đến với thế giới giao dịch tài khoản game! Để mọi thứ diễn ra suôn sẻ và an toàn, hãy làm theo các hướng dẫn dưới đây nhé!</p>
-          <h4>1. Bảo vệ thông tin cá nhân</h4>
-          <p>Trước khi đăng bán, hãy kiểm tra kỹ Gmail liên kết với tài khoản game. Đừng để sót thông tin nhạy cảm như số điện thoại hay dữ liệu cá nhân – bảo vệ sự riêng tư của bạn là điều quan trọng nhất!</p>
-          <h4>2. Sử dụng Gmail rác</h4>
-          <p>Người mua có thể hỏi tên Gmail của tài khoản. Hãy dùng Gmail rác – loại không chứa thông tin quan trọng – để giữ an toàn. Tốt nhất là liên kết tài khoản với Gmail dùng một lần trước khi bán.</p>
-          <h4>3. Cung cấp thông tin cho người mua</h4>
-          <p>Giao dịch xong xuôi? Hãy gửi đầy đủ và chính xác thông tin như tên tài khoản, mật khẩu cho người mua. Uy tín của bạn sẽ được củng cố, và chẳng ai thích tranh cãi sau khi deal xong đâu, đúng không?</p>
-          <h4>4. Hướng dẫn đăng tài khoản</h4>
-          <p>Sẵn sàng bán tài khoản chưa? Đây là cách thực hiện đơn giản:</p>
-          <ul>
-            <li><strong>Bước 1:</strong> Chọn game bạn muốn bán từ danh sách.</li>
-            <li><strong>Bước 2:</strong> Điền thông tin: tên tài khoản, mật khẩu, giá bán, giá tối thiểu và các thuộc tính của tài khoản.</li>
-            <li><strong>Bước 3:</strong> Thêm hình ảnh tài khoản (nếu có) để thu hút người mua.</li>
-            <li><strong>Bước 4:</strong> Kiểm tra lại và nhấn "Gửi" – thế là xong!</li>
-          </ul>
-          <p>Có thắc mắc gì không? Đừng ngại liên hệ nhé. Chúc bạn đăng bán thành công và kiếm được kha khá từ tài khoản của mình!</p>
-          <button @click="toggleGuideModal" class="modal-close">Đóng</button>
+    <!-- Guide Modal -->
+    <transition name="modal-fade">
+      <div v-if="showGuideModal" class="modal-overlay guide-modal-overlay">
+        <div class="modal-container guide-modal-container">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3><i class="fas fa-book"></i> Hướng dẫn đăng tài khoản</h3>
+              <button @click="toggleGuideModal" class="close-btn">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body guide-content">
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-shield-alt"></i>
+                  Bảo vệ thông tin cá nhân
+                </h4>
+                <p>
+                  Trước khi đăng bán, hãy kiểm tra kỹ Gmail liên kết với tài khoản game.
+                  Đừng để sót thông tin nhạy cảm như số điện thoại hay dữ liệu cá nhân –
+                  bảo vệ sự riêng tư của bạn là điều quan trọng nhất!
+                </p>
+              </div>
+
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-envelope"></i>
+                  Sử dụng Gmail rác
+                </h4>
+                <p>
+                  Người mua có thể hỏi tên Gmail của tài khoản. Hãy dùng Gmail rác –
+                  loại không chứa thông tin quan trọng – để giữ an toàn. Tốt nhất là liên kết
+                  tài khoản với Gmail dùng một lần trước khi bán.
+                </p>
+              </div>
+
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-exchange-alt"></i>
+                  Cung cấp thông tin cho người mua
+                </h4>
+                <p>
+                  Giao dịch xong xuôi? Hãy gửi đầy đủ và chính xác thông tin như
+                  tên tài khoản, mật khẩu cho người mua. Uy tín của bạn sẽ được củng cố,
+                  và chẳng ai thích tranh cãi sau khi deal xong đâu, đúng không?
+                </p>
+              </div>
+
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-list-ol"></i>
+                  Các bước đăng bán tài khoản
+                </h4>
+                <div class="steps">
+                  <div class="step">
+                    <div class="step-indicator">1</div>
+                    <div class="step-description">
+                      <strong>Chọn game</strong>: Chọn loại game bạn muốn bán tài khoản từ danh sách
+                    </div>
+                  </div>
+
+                  <div class="step">
+                    <div class="step-indicator">2</div>
+                    <div class="step-description">
+                      <strong>Nhập thông tin</strong>: Điền tên đăng nhập, mật khẩu, giá bán và các thuộc tính cụ thể
+                    </div>
+                  </div>
+
+                  <div class="step">
+                    <div class="step-indicator">3</div>
+                    <div class="step-description">
+                      <strong>Tải ảnh lên</strong>: Thêm ảnh chụp màn hình tài khoản mà bạn muốn đăng, nhưng thông tin phải khớp với hình ảnh
+                    </div>
+                  </div>
+
+                  <div class="step">
+                    <div class="step-indicator">4</div>
+                    <div class="step-description">
+                      <strong>Xác nhận</strong>: Kiểm tra lại thông tin và xác nhận để đăng bán
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button @click="toggleGuideModal" class="btn-primary">Đã hiểu</button>
+            </div>
+          </div>
         </div>
       </div>
     </transition>
@@ -570,394 +821,652 @@ const toggleGuideModal = () => {
 </template>
 
 <style scoped>
-/* Tổng thể */
+/* Main Layout & Base Styles */
 .add-account-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
-  font-family: 'Arial', sans-serif;
-  padding: 20px;
+  background-color: #0a0e17;
+  font-family: 'Poppins', sans-serif;
+  color: #e1e7ef;
   position: relative;
+  overflow: hidden;
+  padding: 24px;
 }
 
-/* Bubble Background */
-.bubble-background {
+/* Glass Panels Background */
+.glass-panels {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 0;
+  overflow: hidden;
 }
 
-.bubble {
+.glass-panel {
   position: absolute;
-  border-radius: 50%;
-  opacity: 0.7;
-  animation: bubbleRise 6s infinite ease-in-out;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(5px);
+  border-radius: 30px;
+  box-shadow: 0 0 30px rgba(0, 161, 255, 0.1);
+  transform: rotate(15deg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.5s ease;
 }
 
-.bubble:nth-child(odd) {
-  background: rgba(255, 0, 255, 0.4);
-  width: 10px;
-  height: 10px;
+.panel-1 {
+  width: 50%;
+  height: 60%;
+  top: -10%;
+  left: -5%;
+  background: linear-gradient(45deg, rgba(33, 33, 99, 0.05), rgba(51, 153, 255, 0.05));
+  animation: floatPanel 20s infinite alternate ease-in-out;
 }
 
-.bubble:nth-child(even) {
-  background: rgba(0, 255, 255, 0.4);
-  width: 15px;
-  height: 15px;
+.panel-2 {
+  width: 60%;
+  height: 50%;
+  top: 15%;
+  right: -15%;
+  background: linear-gradient(45deg, rgba(76, 0, 255, 0.05), rgba(0, 204, 255, 0.05));
+  animation: floatPanel 15s infinite alternate-reverse ease-in-out;
 }
 
-.bubble:nth-child(1) { left: 5%; bottom: 5%; animation-duration: 7s; }
-.bubble:nth-child(2) { left: 15%; bottom: 10%; animation-duration: 5s; }
-.bubble:nth-child(3) { left: 25%; bottom: 15%; animation-duration: 6.5s; }
-.bubble:nth-child(4) { left: 35%; bottom: 20%; animation-duration: 5.5s; }
-.bubble:nth-child(5) { left: 45%; bottom: 25%; animation-duration: 6s; }
-.bubble:nth-child(6) { left: 55%; bottom: 30%; animation-duration: 7.5s; }
-.bubble:nth-child(7) { left: 65%; bottom: 35%; animation-duration: 5.8s; }
-.bubble:nth-child(8) { left: 75%; bottom: 40%; animation-duration: 6.2s; }
-.bubble:nth-child(9) { left: 85%; bottom: 45%; animation-duration: 5.7s; }
-.bubble:nth-child(10) { left: 95%; bottom: 50%; animation-duration: 6.8s; }
-.bubble:nth-child(11) { left: 10%; bottom: 55%; animation-duration: 5.9s; }
-.bubble:nth-child(12) { left: 20%; bottom: 60%; animation-duration: 6.3s; }
-.bubble:nth-child(13) { left: 30%; bottom: 65%; animation-duration: 5.6s; }
-.bubble:nth-child(14) { left: 40%; bottom: 70%; animation-duration: 6.1s; }
-.bubble:nth-child(15) { left: 50%; bottom: 75%; animation-duration: 6.4s; }
-.bubble:nth-child(16) { left: 60%; bottom: 80%; animation-duration: 5.5s; }
-.bubble:nth-child(17) { left: 70%; bottom: 85%; animation-duration: 6.7s; }
-.bubble:nth-child(18) { left: 80%; bottom: 90%; animation-duration: 6s; }
-.bubble:nth-child(19) { left: 90%; bottom: 95%; animation-duration: 5.9s; }
-.bubble:nth-child(20) { left: 15%; bottom: 88%; animation-duration: 6.2s; }
-.bubble:nth-child(21) { left: 25%; bottom: 83%; animation-duration: 6.5s; }
-.bubble:nth-child(22) { left: 35%; bottom: 78%; animation-duration: 5.8s; }
-.bubble:nth-child(23) { left: 45%; bottom: 73%; animation-duration: 6.1s; }
-.bubble:nth-child(24) { left: 55%; bottom: 68%; animation-duration: 5.7s; }
-.bubble:nth-child(25) { left: 65%; bottom: 63%; animation-duration: 6.3s; }
-.bubble:nth-child(26) { left: 75%; bottom: 58%; animation-duration: 6s; }
-.bubble:nth-child(27) { left: 85%; bottom: 53%; animation-duration: 5.9s; }
-.bubble:nth-child(28) { left: 95%; bottom: 48%; animation-duration: 6.4s; }
-.bubble:nth-child(29) { left: 5%; bottom: 43%; animation-duration: 6.1s; }
-.bubble:nth-child(30) { left: 15%; bottom: 38%; animation-duration: 5.8s; }
-.bubble:nth-child(31) { left: 25%; bottom: 33%; animation-duration: 7s; }
-.bubble:nth-child(32) { left: 35%; bottom: 28%; animation-duration: 6.5s; }
-.bubble:nth-child(33) { left: 45%; bottom: 23%; animation-duration: 5.9s; }
-.bubble:nth-child(34) { left: 55%; bottom: 18%; animation-duration: 6.2s; }
-.bubble:nth-child(35) { left: 65%; bottom: 13%; animation-duration: 6.8s; }
-.bubble:nth-child(36) { left: 75%; bottom: 8%; animation-duration: 5.6s; }
-.bubble:nth-child(37) { left: 85%; bottom: 3%; animation-duration: 6.3s; }
-.bubble:nth-child(38) { left: 95%; bottom: 7%; animation-duration: 6s; }
-.bubble:nth-child(39) { left: 10%; bottom: 12%; animation-duration: 5.7s; }
-.bubble:nth-child(40) { left: 20%; bottom: 17%; animation-duration: 6.4s; }
-.bubble:nth-child(41) { left: 30%; bottom: 22%; animation-duration: 6.1s; }
-.bubble:nth-child(42) { left: 40%; bottom: 27%; animation-duration: 5.9s; }
-.bubble:nth-child(43) { left: 50%; bottom: 32%; animation-duration: 6.5s; }
-.bubble:nth-child(44) { left: 60%; bottom: 37%; animation-duration: 6.2s; }
-.bubble:nth-child(45) { left: 70%; bottom: 42%; animation-duration: 5.8s; }
-.bubble:nth-child(46) { left: 80%; bottom: 47%; animation-duration: 6.7s; }
-.bubble:nth-child(47) { left: 90%; bottom: 52%; animation-duration: 6s; }
-.bubble:nth-child(48) { left: 5%; bottom: 57%; animation-duration: 5.9s; }
-.bubble:nth-child(49) { left: 15%; bottom: 62%; animation-duration: 6.3s; }
-.bubble:nth-child(50) { left: 25%; bottom: 67%; animation-duration: 6.1s; }
-
-@keyframes bubbleRise {
-  0% { transform: translateY(100vh) scale(0.5); opacity: 0.7; }
-  30% { transform: translateY(70vh) scale(0.8); opacity: 0.9; }
-  60% { transform: translateY(30vh) scale(1.1); opacity: 0.8; }
-  100% { transform: translateY(-50px) scale(0.9); opacity: 0; }
+.panel-3 {
+  width: 40%;
+  height: 40%;
+  bottom: -5%;
+  left: 10%;
+  background: linear-gradient(45deg, rgba(255, 0, 153, 0.05), rgba(102, 0, 255, 0.05));
+  animation: floatPanel 18s infinite alternate ease-in-out;
 }
 
-/* Layout chính */
-.main-layout {
-  display: grid;
-  grid-template-columns: 250px 1fr 250px;
-  gap: 20px;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+.panel-4 {
+  width: 70%;
+  height: 30%;
+  bottom: 10%;
+  right: 5%;
+  background: linear-gradient(45deg, rgba(102, 255, 204, 0.05), rgba(0, 102, 255, 0.05));
+  animation: floatPanel 25s infinite alternate-reverse ease-in-out;
 }
 
-/* Sidebar chung */
-.sidebar {
-  background: linear-gradient(135deg, #0d1b2a 0%, #1a0933 100%);
-  border-radius: 15px;
-  padding: 15px;
-  box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  height: fit-content;
+@keyframes floatPanel {
+  0% {
+    transform: rotate(15deg) translate(0, 0);
+  }
+  50% {
+    transform: rotate(13deg) translate(-15px, 15px);
+  }
+  100% {
+    transform: rotate(16deg) translate(15px, -15px);
+  }
 }
 
-.sidebar-title {
-  font-size: 1.2rem;
-  color: #00ffff;
-  margin-bottom: 15px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-}
-
-/* Sidebar trái: Thống kê giao dịch gần đây */
-.transaction-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.transaction-item {
-  background: rgba(0, 255, 255, 0.1);
-  padding: 10px;
-  border-radius: 10px;
-  color: #e0e0e0;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-}
-
-.transaction-item:hover {
-  background: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 5px 10px rgba(0, 255, 255, 0.2);
-}
-
-/* Sidebar phải: Đánh giá từ người dùng */
-.review-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.review-item {
-  background: rgba(255, 0, 255, 0.1);
-  padding: 10px;
-  border-radius: 10px;
-  color: #e0e0e0;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-}
-
-.review-item:hover {
-  background: rgba(255, 0, 255, 0.2);
-  box-shadow: 0 5px 10px rgba(255, 0, 255, 0.2);
-}
-
-/* Nội dung chính */
-.main-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* Form Card */
-.form-card {
-  background: linear-gradient(135deg, #0d1b2a 0%, #1a0933 100%);
-  border-radius: 15px;
-  padding: 20px;
-  width: 100%;
-  box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  position: relative;
+/* Particles */
+.particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
+  overflow: hidden;
 }
 
-/* Form Header */
-.form-header {
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.particle:nth-child(odd) {
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  box-shadow: 0 0 10px 2px rgba(52, 152, 219, 0.5);
+  animation: floatUp 15s infinite ease-in-out;
+}
+
+.particle:nth-child(even) {
+  background: linear-gradient(45deg, #ff758c, #ff7eb3);
+  box-shadow: 0 0 8px 2px rgba(255, 117, 140, 0.5);
+  animation: floatUp 20s infinite ease-in-out;
+}
+
+.particle:nth-child(3n) {
+  animation-delay: 2s;
+}
+
+.particle:nth-child(3n+1) {
+  animation-delay: 5s;
+}
+
+.particle:nth-child(3n+2) {
+  animation-delay: 9s;
+}
+
+.particle:nth-child(1) { left: 5%; top: 90%; }
+.particle:nth-child(2) { left: 15%; top: 70%; }
+.particle:nth-child(3) { left: 25%; top: 80%; }
+.particle:nth-child(4) { left: 35%; top: 75%; }
+.particle:nth-child(5) { left: 45%; top: 85%; }
+.particle:nth-child(6) { left: 55%; top: 90%; }
+.particle:nth-child(7) { left: 65%; top: 85%; }
+.particle:nth-child(8) { left: 75%; top: 80%; }
+.particle:nth-child(9) { left: 85%; top: 75%; }
+.particle:nth-child(10) { left: 95%; top: 70%; }
+.particle:nth-child(11) { left: 10%; top: 65%; }
+.particle:nth-child(12) { left: 20%; top: 60%; }
+.particle:nth-child(13) { left: 30%; top: 55%; }
+.particle:nth-child(14) { left: 40%; top: 50%; }
+.particle:nth-child(15) { left: 50%; top: 45%; }
+.particle:nth-child(16) { left: 60%; top: 40%; }
+.particle:nth-child(17) { left: 70%; top: 35%; }
+.particle:nth-child(18) { left: 80%; top: 30%; }
+.particle:nth-child(19) { left: 90%; top: 25%; }
+.particle:nth-child(20) { left: 5%; top: 20%; }
+.particle:nth-child(21) { left: 15%; top: 15%; }
+.particle:nth-child(22) { left: 25%; top: 10%; }
+.particle:nth-child(23) { left: 35%; top: 5%; }
+.particle:nth-child(24) { left: 45%; top: 10%; }
+.particle:nth-child(25) { left: 55%; top: 15%; }
+.particle:nth-child(26) { left: 65%; top: 20%; }
+.particle:nth-child(27) { left: 75%; top: 25%; }
+.particle:nth-child(28) { left: 85%; top: 30%; }
+.particle:nth-child(29) { left: 95%; top: 35%; }
+.particle:nth-child(30) { left: 50%; top: 95%; }
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Header */
+.app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 30px;
+  position: relative;
+  z-index: 10;
 }
 
-.step-indicator {
+.logo {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+  color: #e1e7ef;
+  font-weight: 600;
+  font-size: 1.5rem;
 }
 
-.step-indicator span {
-  width: 30px;
-  height: 30px;
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
+.logo i {
+  color: #3498db;
+  font-size: 1.8rem;
+}
+
+.help-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(52, 152, 219, 0.1);
+  border: none;
+  outline: none;
+  padding: 8px 15px;
+  border-radius: 50px;
+  color: #e1e7ef;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.help-button i {
+  color: #3498db;
+}
+
+.help-button:hover {
+  background: rgba(52, 152, 219, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Main Container */
+.main-container {
+  max-width: 1200px;
+  margin: 10px auto;
+  position: relative;
+  z-index: 10;
+}
+
+.progress-bar {
+  z-index: 10;
+  display: flex; /* Sử dụng flexbox để xếp các phần tử theo chiều ngang */
+  flex-direction: row; /* Đảm bảo hướng là ngang (mặc định, nhưng thêm để rõ ràng) */
+  align-items: center; /* Căn giữa các phần tử theo chiều dọc */
+  justify-content: space-between; /* Phân bố đều khoảng cách giữa các bước */
+  max-width: 800px; /* Giới hạn chiều rộng tối đa */
+  margin: 0 auto 40px auto; /* Căn giữa và thêm khoảng cách dưới */
+  padding: 0 20px; /* Khoảng cách lề trái/phải */
+}
+
+/* Progress Step */
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 10000; /* Tăng z-index lên cao hơn modal */
+  min-width: 80px;
+}
+
+/* Step Number */
+.step-number {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  background: #1a2234; /* Màu nền mặc định */
+  border: 2px solid #2c3e50; /* Viền mặc định */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  color: #e1e7ef; /* Màu chữ */
+  transition: all 0.3s ease; /* Hiệu ứng chuyển đổi mượt mà */
+  margin-bottom: 8px; /* Khoảng cách giữa số và nhãn */
 }
 
-.step-indicator span.active {
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  color: #fff;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+/* Step Label */
+.step-label {
+  font-size: 0.875rem; /* Kích thước chữ nhỏ */
+  color: #8896ae; /* Màu chữ mặc định */
+  font-weight: 500;
+  transition: all 0.3s ease; /* Hiệu ứng chuyển đổi */
+  text-align: center;
 }
 
-/* Step Content */
+/* Trạng thái Active cho Progress Step */
+.progress-step.active .step-number {
+  background: linear-gradient(45deg, #3498db, #9b59b6); /* Màu gradient khi active */
+  border-color: #3498db; /* Viền đổi màu */
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.5); /* Hiệu ứng bóng */
+  transform: scale(1.1); /* Phóng to nhẹ */
+}
+
+.progress-step.active .step-label {
+  color: #e1e7ef; /* Màu chữ sáng hơn */
+  font-weight: 600; /* Đậm hơn */
+}
+
+/* Trạng thái Completed cho Progress Step */
+.progress-step.completed .step-number {
+  background: #2ecc71; /* Màu xanh khi hoàn thành */
+  border-color: #2ecc71; /* Viền xanh */
+}
+
+/* Progress Line */
+.progress-line {
+  flex: 1; /* Chiếm toàn bộ không gian còn lại giữa các bước */
+  height: 3px; /* Độ dày đường nối */
+  background: #2c3e50; /* Màu mặc định */
+  position: relative;
+  z-index: 1; /* Nằm dưới các bước */
+  transition: all 0.3s ease; /* Hiệu ứng chuyển đổi */
+}
+
+/* Trạng thái Active cho Progress Line */
+.progress-line.active {
+  background: linear-gradient(to right, #3498db, #9b59b6); /* Gradient khi active */
+  box-shadow: 0 0 10px rgba(52, 152, 219, 0.5); /* Hiệu ứng bóng */
+}
+
+/* Content Card */
+.content-card {
+  background: rgba(26, 34, 52, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  padding: 30px;
+  margin-bottom: 40px;
+  position: relative;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .step-content {
+  animation: fadeIn 0.5s ease-in-out;
+  min-height: 300px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #e1e7ef;
+  margin-bottom: 25px;
+  text-align: center;
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Step Navigation Controls */
+.step-controls {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  animation: slideIn 0.5s ease-in-out;
+  justify-content: space-between;
+  margin-top: 30px;
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  outline: none;
+  font-size: 1rem;
 }
 
-/* Thanh tìm kiếm */
-.search-bar {
-  margin-bottom: 10px;
+.btn-prev {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e1e7ef;
+}
+
+.btn-prev:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-5px);
+}
+
+.btn-next, .btn-submit {
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  color: white;
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.btn-next:hover, .btn-submit:hover {
+  transform: translateX(5px);
+  box-shadow: 0 5px 20px rgba(52, 152, 219, 0.6);
+}
+
+.btn-submit {
+  background: linear-gradient(45deg, #2ecc71, #3498db);
+}
+
+.btn-submit:hover {
+  background: linear-gradient(45deg, #27ae60, #2980b9);
+}
+
+/* Game Selection (Step 1) */
+.search-container {
+  margin-bottom: 20px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50px;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.search-box:focus-within {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3498db;
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+}
+
+.search-box i {
+  color: #8896ae;
+  margin-right: 10px;
+  font-size: 1.1rem;
 }
 
 .search-input {
-  width: 100%;
-  padding: 10px 14px;
-  background: #0d1b2a;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 8px;
-  color: #e0e0e0;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  border-color: #00ffff;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  flex: 1;
+  background: transparent;
+  border: none;
   outline: none;
+  color: #e1e7ef;
+  font-size: 1rem;
 }
 
-/* Bước 1: Danh sách game */
-.game-step {
-  padding: 15px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 10px;
+.search-input::placeholder {
+  color: #8896ae;
 }
 
-.game-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  justify-content: center;
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px;
 }
 
-.game-item {
-  background: #0d1b2a;
+.game-card {
+  background: rgba(26, 34, 52, 0.8);
   border-radius: 12px;
-  padding: 15px;
-  text-align: center;
+  overflow: hidden;
+  transition: all 0.3s ease;
   cursor: pointer;
-  transition: all 0.3s ease;
-  width: 150px;
-  flex: 0 0 150px;
+  border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.game-item:hover {
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  transform: scale(1.05);
-  box-shadow: 0 8px 20px rgba(0, 255, 255, 0.4);
+.game-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  border-color: #3498db;
 }
 
-.game-image {
+.game-img-container {
   width: 100%;
-  height: 90px;
+  height: 100px;
+  overflow: hidden;
+}
+
+.game-img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 10px;
   transition: all 0.3s ease;
 }
 
-.game-item:hover .game-image {
-  filter: brightness(110%);
+.game-card:hover .game-img {
+  transform: scale(1.1);
 }
 
-.game-item p {
-  margin: 0;
-  color: #e0e0e0;
-  font-size: 0.9rem;
+.game-name {
+  padding: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: #e1e7ef;
+}
+
+/* Account Details (Step 2) */
+.game-selected {
+  display: flex;
+  align-items: center;
+  background: rgba(52, 152, 219, 0.1);
+  padding: 12px 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.game-selected .label {
+  font-weight: 600;
+  color: #8896ae;
+  margin-right: 8px;
+}
+
+.game-selected .value {
+  color: #3498db;
   font-weight: 600;
 }
 
-/* Form Group */
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
-  font-size: 0.9rem;
-  color: #e0e0e0;
+  display: block;
+  font-size: 0.95rem;
+  color: #e1e7ef;
+  margin-bottom: 8px;
   font-weight: 500;
 }
 
-.required {
-  color: #ff00ff;
+.form-group .required {
+  color: #e74c3c;
+  margin-left: 4px;
 }
 
-.form-input {
-  padding: 10px 14px;
-  background: #0d1b2a;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 8px;
-  color: #e0e0e0;
-  font-size: 0.9rem;
+.input-container {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 0 15px;
   transition: all 0.3s ease;
+  border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.form-input:focus {
-  border-color: #00ffff;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+.input-container:focus-within {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3498db;
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+}
+
+.input-container i {
+  color: #8896ae;
+  font-size: 1.1rem;
+  margin-right: 10px;
+}
+
+.input-container input {
+  flex: 1;
+  background: transparent;
+  border: none;
   outline: none;
+  color: #e1e7ef;
+  padding: 15px 0;
+  font-size: 1rem;
+}
+
+.input-container input::placeholder {
+  color: #8896ae;
 }
 
 .error-message {
-  color: #ff00ff;
-  font-size: 0.8rem;
-  min-height: 16px;
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: 5px;
+  min-height: 17px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 20px;
 }
 
-.dynamic-fields {
-  margin-top: 15px;
-}
-
-.no-fields-message {
-  color: #e0e0e0;
-  font-size: 0.9rem;
-  text-align: center;
-  padding: 10px;
-  background: rgba(255, 0, 255, 0.1);
-  border-radius: 8px;
-}
-
-.no-fields-message p {
-  margin: 0;
-}
-
-/* Upload Area */
-.upload-area {
+.game-fields {
+  background: rgba(52, 152, 219, 0.05);
+  border-radius: 12px;
   padding: 20px;
-  border: 2px dashed rgba(0, 255, 255, 0.3);
-  border-radius: 10px;
+  margin-top: 25px;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.fields-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #e1e7ef;
+  margin-bottom: 15px;
   text-align: center;
-  cursor: pointer;
-  background: rgba(0, 255, 255, 0.05);
-  transition: all 0.3s ease;
 }
 
-.upload-area:hover {
-  border-color: #00ffff;
-  background: rgba(0, 255, 255, 0.1);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+.no-fields {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background: rgba(52, 152, 219, 0.05);
+  border-radius: 12px;
+  margin-top: 25px;
 }
 
-.upload-icon {
+.no-fields i {
   font-size: 2rem;
-  color: #00ffff;
+  color: #8896ae;
   margin-bottom: 10px;
 }
 
-.upload-area p {
-  margin: 0;
-  color: #e0e0e0;
+.no-fields p {
+  color: #8896ae;
+  text-align: center;
+}
+
+/* Image Upload (Step 3) */
+.upload-zone {
+  border: 2px dashed rgba(52, 152, 219, 0.4);
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(52, 152, 219, 0.05);
+}
+
+.upload-zone:hover {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: #3498db;
+}
+
+.upload-icon {
+  margin-bottom: 15px;
+}
+
+.upload-icon i {
+  font-size: 3rem;
+  color: #3498db;
+}
+
+.upload-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e1e7ef;
+  margin-bottom: 8px;
+}
+
+.upload-hint {
+  color: #8896ae;
   font-size: 0.9rem;
 }
 
@@ -965,459 +1474,737 @@ const toggleGuideModal = () => {
   display: none;
 }
 
-/* Preview Images */
-.preview-container {
-  padding: 10px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 10px;
+.image-preview-container {
+  margin-top: 30px;
+  background: rgba(52, 152, 219, 0.05);
+  border-radius: 15px;
+  padding: 20px;
+  border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.preview-images {
+.image-count {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
-.preview-item {
+.image-count i {
+  color: #3498db;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 15px;
+}
+
+.image-item {
   position: relative;
-  width: 90px;
-  height: 90px;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 100px;
 }
 
-.preview-image {
+.preview-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  transition: all 0.3s ease;
 }
 
-.preview-image:hover {
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
-}
-
-.remove-btn {
+.remove-image {
   position: absolute;
   top: 5px;
   right: 5px;
-  background: #ff00ff;
-  color: #fff;
+  background: rgba(231, 76, 60, 0.8);
   border: none;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.remove-btn:hover {
-  background: #ff66ff;
-  transform: scale(1.1);
-}
-
-/* Xem lại thông tin */
-.review-step {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  padding: 15px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-.review-card {
-  background: #0d1b2a;
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 5px 10px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  transition: all 0.3s ease;
-}
-
-.review-card:hover {
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
-}
-
-.spanTitle {
-  display: flex;
-  justify-content: center;
-}
-
-.review-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.3s ease;
+  color: white;
 }
 
-.review-group:last-child {
+.image-item:hover .remove-image {
+  opacity: 1;
+}
+
+/* Review Step (Step 4) */
+.review-data {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.review-section {
+  background: rgba(26, 34, 52, 0.8);
+  border-radius: 12px;
+  padding: 15px;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.review-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #3498db;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.review-section-title i {
+  font-size: 1.2rem;
+}
+
+.review-field {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.review-field:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
   border-bottom: none;
 }
 
-.review-label {
-  font-size: 0.9rem;
-  color: #e0e0e0;
+.field-name {
+  min-width: 150px;
+  color: #8896ae;
   font-weight: 500;
-  min-width: 100px;
 }
 
-.review-value {
-  font-size: 0.9rem;
-  color: #00ffff;
+.field-value {
+  color: #e1e7ef;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.price-value {
+  color: #2ecc71;
+  font-weight: 600;
 }
 
 .review-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 5px;
 }
 
 .review-image {
-  width: 80px;
+  width: 100%;
   height: 80px;
   object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(52, 152, 219, 0.2);
   transition: all 0.3s ease;
 }
 
 .review-image:hover {
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+  transform: scale(1.05);
+  border-color: #3498db;
 }
 
-/* Điều hướng bước */
-.step-navigation {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
+/* Info Cards */
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
-.nav-btn {
-  width: 35px;
-  height: 35px;
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
-  border: none;
-  border-radius: 50%;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 5px 10px rgba(0, 255, 255, 0.2);
-}
-
-.prev-btn {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-}
-
-.prev-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-}
-
-.next-btn,
-.submit-btn {
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  color: #fff;
-}
-
-.next-btn:hover,
-.submit-btn:hover {
-  background: linear-gradient(135deg, #ff00ff, #00ffff);
-  box-shadow: 0 5px 10px rgba(0, 255, 255, 0.4);
-}
-
-/* Nút dấu hỏi */
-.help-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(45deg, #00ffff, #ff00ff);
-  border: none;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 1.2rem;
-  cursor: pointer;
-  z-index: 1000;
-  animation: pulse 2s infinite;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  transition: all 0.3s ease;
-}
-
-.help-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(0, 255, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); }
-}
-
-/* Modal overlay */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-/* Modal warning */
-.warning-modal {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
+.info-card {
+  background: rgba(26, 34, 52, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
   padding: 20px;
-  border-radius: 12px;
-  width: 350px;
-  max-width: 90%;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(255, 0, 0, 0.5);
-  animation: popIn 0.4s ease-in-out;
-}
-
-.warning-modal h3 {
-  color: #ff0000;
-  font-size: 1.8rem;
-  margin-bottom: 15px;
-  text-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
-  font-weight: bold;
-}
-
-.warning-text {
-  margin-bottom: 15px;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #ffcccc;
-  font-weight: 600;
-}
-
-.confirmation-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 15px;
+  gap: 15px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border-color: #3498db;
+}
+
+.info-icon {
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  color: white;
+  font-size: 1.5rem;
 }
 
-.confirmation-group input[type='checkbox'] {
-  accent-color: #ff0000;
-  width: 18px;
-  height: 18px;
+.info-content {
+  flex: 1;
 }
 
-.confirmation-group label {
+.info-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e1e7ef;
+  margin-bottom: 5px;
+}
+
+.info-content p {
+  color: #8896ae;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Enhanced Modal Styles */
+.modal {
+  background: #1a2234;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.warning-modal, .success-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 30px auto 10px;
+  font-size: 2.5rem;
+  color: white;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-icon.warning {
+  background: linear-gradient(45deg, #e74c3c, #e67e22);
+}
+
+.modal-icon.success {
+  background: linear-gradient(45deg, #2ecc71, #1abc9c);
+}
+
+.modal-content {
+  padding: 20px 30px 30px;
+}
+
+.modal-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #e1e7ef;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.success-title {
+  color: #2ecc71;
+}
+
+.warning-message {
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  border-left: 4px solid #e74c3c;
+  margin-bottom: 20px;
+}
+
+.warning-message p {
+  color: #e1e7ef;
+  line-height: 1.6;
   font-size: 0.95rem;
-  color: #e0e0e0;
-  font-weight: 500;
+  margin: 0;
+}
+
+.success-message {
+  background: rgba(46, 204, 113, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.success-message p {
+  color: #e1e7ef;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin: 0;
+  text-align: center;
+}
+
+.confirmation-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 25px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.confirmation-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #3498db;
+}
+
+.confirmation-checkbox label {
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .modal-actions {
   display: flex;
   gap: 15px;
+  justify-content: space-between;
+}
+
+.modal-actions.center {
   justify-content: center;
 }
 
-.modal-confirm,
-.modal-cancel {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e1e7ef;
 }
 
-.modal-confirm {
-  background: linear-gradient(135deg, #ff0000, #ff6666);
-  color: #fff;
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.modal-confirm:disabled {
+.btn-confirm {
+  background: linear-gradient(45deg, #e74c3c, #e67e22);
+  color: white;
+  box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+}
+
+.btn-confirm:hover {
+  box-shadow: 0 5px 20px rgba(231, 76, 60, 0.6);
+}
+
+.btn-confirm:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.modal-confirm:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ff6666, #ff0000);
-  box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
+.btn-success {
+  background: linear-gradient(45deg, #2ecc71, #1abc9c);
+  color: white;
+  box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+  padding: 12px 30px;
 }
 
-.modal-cancel {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
+.btn-success:hover {
+  box-shadow: 0 5px 20px rgba(46, 204, 113, 0.6);
 }
 
-.modal-cancel:hover {
-  background: rgba(0, 255, 255, 0.2);
-}
-
-/* Modal success */
-.success-modal {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
-  padding: 20px;
-  border-radius: 12px;
-  width: 300px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.3);
+.success-details {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  animation: popIn 0.4s ease-in-out;
+  gap: 12px;
+  margin-bottom: 25px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 10px;
 }
 
-.success-icon {
-  font-size: 2.5rem;
-  color: #00ffff;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+.success-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e1e7ef;
+  font-size: 0.95rem;
 }
 
-.success-modal h3 {
-  color: #00ffff;
-  font-size: 1.5rem;
+.success-detail i {
+  color: #2ecc71;
+  font-size: 1.1rem;
 }
 
-/* Modal guide */
-.guide-modal {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
+/* Modal Animation */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(10, 14, 23, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Tăng z-index lên cao hơn */
   padding: 20px;
+}
+
+/* Specific styles for guide modal overlay */
+.guide-modal-overlay {
+  align-items: flex-start; /* Align to top instead of center */
+  padding-top: 150px; /* Add padding to push modal down */
+}
+
+.modal-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.modal-card {
+  background-color: #1a2234;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: #212a3e;
+  border-bottom: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #e1e7ef;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #8896ae;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #e1e7ef;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-footer.center {
+  justify-content: center;
+}
+
+.warning-box {
+  display: flex;
+  gap: 16px;
+  background-color: rgba(231, 76, 60, 0.1);
+  padding: 16px;
   border-radius: 12px;
-  width: 500px;
-  max-width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  text-align: left;
-  box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  animation: popIn 0.4s ease-in-out;
+  margin-bottom: 20px;
 }
 
-.guide-modal h3 {
-  color: #00ffff;
-  font-size: 1.5rem;
-  margin-bottom: 15px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+.warning-icon {
+  color: #e74c3c;
+  font-size: 24px;
+  flex-shrink: 0;
 }
 
-.guide-modal h4 {
-  color: #ff00ff;
-  font-size: 1.2rem;
-  margin-top: 15px;
+.warning-box p {
+  margin: 0;
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.checkbox-container {
   margin-bottom: 8px;
 }
 
-.guide-modal p {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin-bottom: 10px;
-}
-
-.guide-modal ul {
-  list-style-type: disc;
-  margin-left: 15px;
-  margin-bottom: 15px;
-}
-
-.guide-modal li {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: #e0e0e0;
-}
-
-.guide-modal li strong {
-  color: #00ff00;
-}
-
-.modal-close {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 15px;
-  font-size: 0.9rem;
 }
 
-.modal-close:hover {
-  background: linear-gradient(135deg, #ff00ff, #00ffff);
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #3498db;
+  cursor: pointer;
 }
 
-/* Animation */
-@keyframes popIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+.checkbox-text {
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
-/* Transition fade */
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.5s ease;
+.btn-cancel {
+  padding: 10px 20px;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e1e7ef;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.fade-enter-from,
-.fade-leave-to {
+
+.btn-cancel:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-confirm {
+  padding: 10px 20px;
+  background-color: #e74c3c;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm:hover {
+  background-color: #c0392b;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-disabled:hover {
+  background-color: #e74c3c;
+}
+
+/* Success Modal */
+.success-card {
+  text-align: center;
+  padding-top: 24px;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  background-color: #2ecc71;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 40px;
+  color: white;
+  box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
+}
+
+.success-title {
+  color: #2ecc71;
+  font-size: 1.75rem;
+  margin: 0 0 16px;
+}
+
+.success-message {
+  color: #e1e7ef;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.success-info {
+  background-color: rgba(46, 204, 113, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #e1e7ef;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-item i {
+  color: #2ecc71;
+}
+
+.btn-success {
+  padding: 10px 30px;
+  background-color: #2ecc71;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-success:hover {
+  background-color: #27ae60;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Modal Animation */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: all 0.3s;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
   opacity: 0;
-  transform: translateY(15px);
+  transform: scale(0.95);
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .main-layout {
-    grid-template-columns: 1fr;
-  }
-  .sidebar {
-    display: none;
-  }
+/* Guide Modal Styles */
+.guide-modal-container {
+  max-width: 650px;
 }
 
-@media (max-width: 768px) {
-  .form-card {
-    padding: 15px;
-  }
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  .game-list {
-    justify-content: center;
-  }
-  .game-item {
-    width: 140px;
-    flex: 0 0 140px;
-  }
-  .warning-modal,
-  .success-modal,
-  .guide-modal {
-    width: 90%;
-    padding: 15px;
-  }
-  .guide-modal {
-    max-height: 70vh;
-  }
+.guide-content {
+  max-height: 55vh; /* Giảm chiều cao tối đa để tránh bị tràn */
+  overflow-y: auto;
+  padding-right: 16px;
+  padding-top: 10px; /* Thêm padding-top */
+}
+
+.guide-section {
+  margin-bottom: 24px;
+}
+
+.guide-section:last-child {
+  margin-bottom: 0;
+}
+
+.guide-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  color: #3498db;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.guide-title i {
+  font-size: 1.1rem;
+}
+
+.guide-section p {
+  color: #e1e7ef;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin: 0 0 16px 0;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.step-indicator {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-description {
+  flex: 1;
+  color: #e1e7ef;
+  line-height: 1.5;
+  font-size: 0.95rem;
+  padding-top: 3px;
+}
+
+.step-description strong {
+  color: #3498db;
+}
+
+.btn-primary {
+  padding: 10px 30px;
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #2980b9, #8e44ad);
 }
 </style>
+

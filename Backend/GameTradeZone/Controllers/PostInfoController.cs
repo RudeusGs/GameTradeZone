@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace GameTradeZone.Controllers
 {
@@ -15,14 +17,13 @@ namespace GameTradeZone.Controllers
             _postService = postService;
         }
 
-       
         [HttpPost("create")]
         [Authorize]
-        public async Task<IActionResult> CreatePost([FromForm] string caption, [FromForm] int categoryid ,[FromForm] string content, [FromForm] IFormFile? image)
+        public async Task<IActionResult> CreatePost([FromForm] string caption, [FromForm] int categoryId, [FromForm] string content, [FromForm] List<IFormFile>? images)
         {
             try
             {
-                var post = await _postService.CreatePost(caption,categoryid ,content, image);
+                var post = await _postService.CreatePost(caption, categoryId, content, images);
                 return Response(post);
             }
             catch (Exception e)
@@ -58,7 +59,7 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
-       
+
         [HttpDelete("delete/{id}")]
         [Authorize]
         public async Task<IActionResult> DeletePost(int id)
@@ -78,6 +79,20 @@ namespace GameTradeZone.Controllers
                 }
 
                 return Response(new { Message = "Bài viết đã được xóa!" });
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
+        [HttpGet("by-category/{categoryId}")]
+        public async Task<IActionResult> GetAllPostByCategoryId(int categoryId)
+        {
+            try
+            {
+                var posts = await _postService.GetAllPostByCategoryId(categoryId);
+                return Response(posts);
             }
             catch (Exception e)
             {

@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "admin": "file:",
     "axios": "^1.8.2",
     "dompurify": "^3.2.4",
     "js-cookie": "^3.0.5",
