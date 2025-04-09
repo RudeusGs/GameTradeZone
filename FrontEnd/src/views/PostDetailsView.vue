@@ -75,9 +75,9 @@ const fetchPost = async () => {
   }
 };
 
-// 🟢 Fetch comments list
 const fetchComments = async () => {
   try {
+    console.log("📌 Current Post ID:", postId.value); // Debug postId
     console.log(
       "🔍 Fetching API:",
       `${API_BASE_URL}/PostInfo/comments/${postId.value}`
@@ -85,13 +85,13 @@ const fetchComments = async () => {
     const response = await axios.get<{ result: Comment[] }>(
       `${API_BASE_URL}/PostInfo/comments/${postId.value}`
     );
+    console.log("✅ Comments fetched:", response.data.result); // Log comments
     comments.value = response.data.result;
   } catch (error) {
     console.error("❌ Error fetching comments:", error);
   }
 };
 
-// ❤️ Like the post
 const likePost = async () => {
   if (isLiked.value) return;
 
