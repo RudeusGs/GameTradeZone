@@ -4,8 +4,7 @@ import { useRouter } from 'vue-router';
 import gameApi from '@/api/gameinfor.api';
 import gameAccountApi from '@/api/gameaccount.api';
 import gamefieldApi from '@/api/gamefield.api';
-
-import { userStore } from '@/stores/auth'; // Changed from useAuth to userStore
+import { userStore } from '@/stores/auth';
 
 interface Game {
   id: number;
@@ -39,8 +38,8 @@ interface BuyAccountGameModel {
 }
 
 const router = useRouter();
-const authStore = userStore(); // Use the store instance
-const user = computed(() => authStore.user); // Access user reactively
+const authStore = userStore();
+const user = computed(() => authStore.user);
 
 const selectedGame = ref<string>('All');
 const searchQuery = ref<string>('');
@@ -52,12 +51,14 @@ const accounts = ref<Account[]>([]);
 const services = ref<Service[]>([]);
 
 const showImageModal = ref(false);
-const selectedImages = ref<string[]>([]);
-const showMoreDetails = ref<number[]>([]);
+const selectedAccount = ref<Account | null>(null);
+const currentImageIndex = ref(0);
 
 const showPurchaseModal = ref(false);
 const purchaseStatus = ref<'success' | 'error'>('success');
 const purchaseMessage = ref<string>('');
+
+const showMoreDetails = ref<number[]>([]);
 
 const getFullImageUrls = (imageString: string | null | undefined): string[] => {
   if (!imageString || imageString.trim() === '') {
@@ -275,14 +276,27 @@ const goToLogin = () => {
   router.push('/login');
 };
 
-const openImageModal = (images: string[]) => {
-  selectedImages.value = images;
+const nextImage = () => {
+  if (selectedAccount.value && currentImageIndex.value < selectedAccount.value.images.length - 1) {
+    currentImageIndex.value++;
+  }
+};
+
+const prevImage = () => {
+  if (currentImageIndex.value > 0) {
+    currentImageIndex.value--;
+  }
+};
+
+const openImageModal = (account: Account) => {
+  selectedAccount.value = account;
+  currentImageIndex.value = 0;
   showImageModal.value = true;
 };
 
 const closeImageModal = () => {
   showImageModal.value = false;
-  selectedImages.value = [];
+  selectedAccount.value = null;
 };
 
 const toggleMoreDetails = (accountId: number) => {
@@ -296,7 +310,6 @@ const toggleMoreDetails = (accountId: number) => {
 </script>
 
 <template>
-  <!-- The template remains unchanged -->
   <div class="cosmo-trade-zone">
     <div class="stars-container">
       <div class="stars stars-small"></div>
@@ -310,17 +323,75 @@ const toggleMoreDetails = (accountId: number) => {
     <div class="planet planet-2"></div>
 
     <section class="top-banner">
-      <div class="banner-image">
-        <div class="banner-overlay">
-          <h1 class="banner-title">GameTradeZone</h1>
-          <p class="banner-subtitle">Nền tảng trung gian hàng đầu cho giao dịch tài khoản game</p>
-          <div class="banner-icons">
-            <i class="fas fa-gamepad"></i>
-            <i class="fas fa-users"></i>
-            <i class="fas fa-shield-alt"></i>
+      <div class="banner-particles"></div>
+      <div class="banner-hologram"></div>
+      
+      <div class="banner-content-wrapper">
+        <div class="banner-left">
+          <h1 class="banner-title">
+            <span class="title-line">GAME</span>
+            <span class="title-line">TRADE</span>
+            <span class="title-line highlight">ZONE</span>
+          </h1>
+          <p class="banner-subtitle">Nền tảng giao dịch game an toàn <span class="highlight-text">số 1 Việt Nam</span></p>
+          
+          <div class="banner-stats">
+            <div class="stat-item">
+              <div class="stat-value">10,000+</div>
+              <div class="stat-label">Tài khoản</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">5,000+</div>
+              <div class="stat-label">Người dùng</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">99%</div>
+              <div class="stat-label">Hài lòng</div>
+            </div>
+          </div>
+          
+          <div class="banner-buttons">
+            <button class="banner-btn primary-btn">
+              <i class="fas fa-rocket"></i> Khám phá ngay
+            </button>
+            <button class="banner-btn secondary-btn">
+              <i class="fas fa-info-circle"></i> Tìm hiểu thêm
+            </button>
           </div>
         </div>
+        
+        <div class="banner-right">
+          <div class="floating-cards-container">
+            <div class="floating-card card-1">
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <div class="card-game">VALORANT</div>
+                <div class="card-rank">RADIANT</div>
+                <div class="card-price">2.500.000 VNĐ</div>
+              </div>
+            </div>
+            <div class="floating-card card-2">
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <div class="card-game">LEAGUE OF LEGENDS</div>
+                <div class="card-rank">CHALLENGER</div>
+                <div class="card-price">1.800.000 VNĐ</div>
+              </div>
+            </div>
+            <div class="floating-card card-3">
+              <div class="card-glow"></div>
+              <div class="card-content">
+                <div class="card-game">GENSHIN IMPACT</div>
+                <div class="card-rank">AR 60</div>
+                <div class="card-price">3.200.000 VNĐ</div>
+              </div>
+            </div>
+          </div>
+          <div class="holographic-sphere"></div>
+        </div>
       </div>
+      
+      <div class="banner-bottom-curve"></div>
     </section>
 
     <nav class="game-nav">
@@ -380,12 +451,11 @@ const toggleMoreDetails = (accountId: number) => {
               <img :src="account.images[0]" :alt="account.game" class="card-img">
               <div class="game-badge">{{ account.game }}</div>
               <div v-if="account.status === 'Đã bán'" class="sold-tag">Đã bán</div>
-              <button
-                v-if="account.images.length > 1"
-                @click="openImageModal(account.images)"
-                class="view-more-images"
-              >
-                Xem thêm hình ảnh
+              <!-- Nút xem thêm cải tiến -->
+              <button @click="openImageModal(account)" class="view-more-images">
+                <span class="btn-glow"></span>
+                <i class="fas fa-images"></i>
+                <span>Xem chi tiết</span>
               </button>
             </div>
 
@@ -425,7 +495,7 @@ const toggleMoreDetails = (accountId: number) => {
 
               <div class="card-actions" v-if="!isOwnAccount(account)">
                 <button class="bid-btn" :disabled="account.status === 'Đã bán'">
-                  <i class="fas fa-gavel"></i> Đặt giá
+                  <i class="fas fa-gavel"></i> Trả giá
                 </button>
                 <button class="buy-btn" :disabled="account.status === 'Đã bán'" @click="buyAccount(account.id)">
                   <i class="fas fa-shopping-cart"></i> Mua ngay
@@ -482,19 +552,125 @@ const toggleMoreDetails = (accountId: number) => {
       </div>
     </section>
 
+    <!-- Modal xem hình ảnh cải tiến -->
     <teleport to="body">
-      <div v-if="showImageModal" class="image-modal" @click="closeImageModal">
-        <div class="modal-content" @click.stop>
-          <button class="close-btn" @click="closeImageModal">×</button>
-          <div class="image-carousel">
-            <div class="carousel-container">
-              <img
-                v-for="(image, index) in selectedImages"
-                :key="index"
-                :src="image"
-                :alt="'Hình ' + (index + 1)"
-                class="carousel-image"
-              >
+      <div v-if="showImageModal && selectedAccount" class="game-image-modal" @click="closeImageModal">
+        <div class="game-modal-container" @click.stop>
+          <!-- Header -->
+          <div class="game-modal-header">
+            <div class="game-modal-title">
+              <div class="game-badge-modal">{{ selectedAccount.game }}</div>
+              <h3>GAME SHOWCASE</h3>
+            </div>
+            <button class="game-close-btn" @click="closeImageModal">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <!-- Body -->
+          <div class="game-modal-body">
+            <!-- Gallery Section -->
+            <div class="game-gallery">
+              <div class="game-main-image-wrapper">
+                <div class="game-image-frame">
+                  <img 
+                    :src="selectedAccount.images[currentImageIndex]" 
+                    :alt="'Hình ' + (currentImageIndex + 1)" 
+                    class="game-main-image"
+                  >
+                  <div class="game-image-overlay"></div>
+                  <div class="game-corner top-left"></div>
+                  <div class="game-corner top-right"></div>
+                  <div class="game-corner bottom-left"></div>
+                  <div class="game-corner bottom-right"></div>
+                </div>
+                
+                <button 
+                  v-if="selectedAccount.images.length > 1 && currentImageIndex > 0" 
+                  class="game-nav-btn prev-btn" 
+                  @click.stop="prevImage"
+                >
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button 
+                  v-if="selectedAccount.images.length > 1 && currentImageIndex < selectedAccount.images.length - 1" 
+                  class="game-nav-btn next-btn" 
+                  @click.stop="nextImage"
+                >
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+                
+                <div class="game-image-counter">
+                  <span class="current-index">{{ currentImageIndex + 1 }}</span>
+                  <span class="separator">/</span>
+                  <span class="total-images">{{ selectedAccount.images.length }}</span>
+                </div>
+              </div>
+              
+              <div v-if="selectedAccount.images.length > 1" class="game-thumbnails">
+                <div 
+                  v-for="(image, index) in selectedAccount.images" 
+                  :key="index"
+                  class="game-thumbnail"
+                  :class="{ active: index === currentImageIndex }"
+                  @click.stop="currentImageIndex = index"
+                >
+                  <div class="game-thumb-frame">
+                    <img :src="image" :alt="'Thumbnail ' + (index + 1)">
+                    <div class="game-thumb-overlay"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Account Details -->
+            <div class="game-account-info">
+              <div class="game-info-header">
+                <div class="game-seller-badge">
+                  <i class="fas fa-user-circle"></i>
+                  <span>{{ selectedAccount.seller }}</span>
+                </div>
+                <div class="game-status-badge" :class="{ 'sold-status': selectedAccount.status === 'Đã bán' }">
+                  {{ selectedAccount.status }}
+                </div>
+              </div>
+              
+              <div class="game-price-section">
+                <div class="game-price-box">
+                  <div class="game-price-label">Giá bán</div>
+                  <div class="game-price-value">{{ selectedAccount.price.toLocaleString() }} <span>VNĐ</span></div>
+                </div>
+                <div class="game-price-box min-price">
+                  <div class="game-price-label">Giá tối thiểu</div>
+                  <div class="game-price-value">{{ selectedAccount.priceMin.toLocaleString() }} <span>VNĐ</span></div>
+                </div>
+              </div>
+              
+              <div class="game-fields-container">
+                <div class="game-fields-header">
+                  <i class="fas fa-info-circle"></i>
+                  <span>Thông tin chi tiết</span>
+                </div>
+                <div class="game-fields-grid">
+                  <div v-for="field in selectedAccount.fields" :key="field.fieldName" class="game-field-item">
+                    <div class="field-name">{{ field.fieldName }}</div>
+                    <div class="field-value">{{ field.fieldValue }}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="game-action-buttons" v-if="selectedAccount.status !== 'Đã bán'">
+                <button class="game-action-btn bid-btn" @click.stop>
+                  <i class="fas fa-gavel"></i>
+                  <span>Trả giá</span>
+                  <div class="btn-glow"></div>
+                </button>
+                <button class="game-action-btn buy-btn" @click.stop="buyAccount(selectedAccount.id)">
+                  <i class="fas fa-shopping-cart"></i>
+                  <span>Mua ngay</span>
+                  <div class="btn-glow"></div>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -529,6 +705,7 @@ const toggleMoreDetails = (accountId: number) => {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Open+Sans:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@400;500;700;900&display=swap');
 
 .cosmo-trade-zone {
   font-family: 'Open Sans', sans-serif;
@@ -707,94 +884,413 @@ section {
 .top-banner {
   position: relative;
   width: 100%;
-  height: 400px;
+  height: 650px;
   overflow: hidden;
   z-index: 2;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  background: linear-gradient(135deg, #0a0a20, #16213e);
+  border-bottom: 1px solid rgba(122, 78, 254, 0.3);
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
 }
 
-.banner-image {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.banner-overlay {
+.banner-particles {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(122, 78, 254, 0.15), transparent 20%),
+    radial-gradient(circle at 80% 20%, rgba(0, 224, 170, 0.1), transparent 20%),
+    radial-gradient(circle at 10% 80%, rgba(255, 0, 128, 0.1), transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(255, 102, 0, 0.1), transparent 20%);
+  animation: particleMove 20s ease-in-out infinite alternate;
+}
+
+@keyframes particleMove {
+  0% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+  }
+  100% {
+    background-position: 10% 20%, -10% 10%, 5% -5%, -5% 5%;
+  }
+}
+
+.banner-hologram {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      rgba(122, 78, 254, 0.05) 1px,
+      transparent 3px
+    );
+  opacity: 0.5;
+  animation: hologramScan 8s linear infinite;
+}
+
+@keyframes hologramScan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100%;
+  }
+}
+
+.banner-content-wrapper {
+  position: relative;
+  max-width: 1400px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  text-align: center;
-  padding: 20px;
+  justify-content: space-between;
+  z-index: 3;
+}
+
+.banner-left {
+  flex: 1;
+  max-width: 600px;
+  animation: fadeInLeft 1s ease;
+}
+
+.banner-right {
+  flex: 1;
+  position: relative;
+  height: 500px;
+  animation: fadeInRight 1s ease;
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .banner-title {
-  font-size: 4rem;
-  color: #fff;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-  margin-bottom: 15px;
-  animation: fadeInDown 1s ease;
+  font-size: 5rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  text-shadow: 0 0 20px rgba(122, 78, 254, 0.5);
+}
+
+.title-line {
+  display: block;
+}
+
+.title-line.highlight {
+  background: linear-gradient(to right, #ff00cc, #3333ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  position: relative;
+}
+
+.title-line.highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(to right, #ff00cc, #3333ff);
+  border-radius: 5px;
 }
 
 .banner-subtitle {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: #e1e7ef;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  animation: fadeInUp 1s ease;
+  margin-bottom: 30px;
+  line-height: 1.4;
 }
 
-.banner-icons {
+.highlight-text {
+  color: #00E0AA;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0, 224, 170, 0.5);
+}
+
+.banner-stats {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.stat-item {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(122, 78, 254, 0.2);
+  min-width: 100px;
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-5px);
+  background: rgba(122, 78, 254, 0.1);
+  border-color: rgba(122, 78, 254, 0.5);
+  box-shadow: 0 10px 20px rgba(122, 78, 254, 0.2);
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 5px;
+  background: linear-gradient(to right, #7A4EFE, #00E0AA);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #b0b5c3;
+}
+
+.banner-buttons {
   display: flex;
   gap: 20px;
-  margin-top: 20px;
-  animation: fadeIn 1.5s ease;
 }
 
-.banner-icons i {
-  font-size: 2.5rem;
+.banner-btn {
+  padding: 15px 30px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.primary-btn {
+  background: linear-gradient(to right, #ff00cc, #3333ff);
+  color: white;
+  box-shadow: 0 10px 20px rgba(255, 0, 204, 0.3);
+}
+
+.primary-btn:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(255, 0, 204, 0.5);
+}
+
+.secondary-btn {
+  background: transparent;
+  color: #e1e7ef;
+  border: 2px solid rgba(122, 78, 254, 0.5);
+}
+
+.secondary-btn:hover {
+  background: rgba(122, 78, 254, 0.1);
+  transform: translateY(-5px);
+  border-color: #7A4EFE;
+}
+
+.floating-cards-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.floating-card {
+  position: absolute;
+  width: 220px;
+  height: 300px;
+  background: rgba(10, 10, 32, 0.8);
+  border-radius: 15px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(122, 78, 254, 0.3);
+  backdrop-filter: blur(5px);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.card-1 {
+  top: 50px;
+  left: 0;
+  transform: rotate(-15deg);
+  animation: floatCard1 6s ease-in-out infinite alternate;
+  z-index: 3;
+}
+
+.card-2 {
+  top: 150px;
+  left: 120px;
+  transform: rotate(5deg);
+  animation: floatCard2 7s ease-in-out infinite alternate;
+  z-index: 2;
+}
+
+.card-3 {
+  top: 250px;
+  left: 60px;
+  transform: rotate(-5deg);
+  animation: floatCard3 8s ease-in-out infinite alternate;
+  z-index: 1;
+}
+
+@keyframes floatCard1 {
+  0% {
+    transform: rotate(-15deg) translateY(0);
+  }
+  100% {
+    transform: rotate(-12deg) translateY(-20px);
+  }
+}
+
+@keyframes floatCard2 {
+  0% {
+    transform: rotate(5deg) translateY(0);
+  }
+  100% {
+    transform: rotate(8deg) translateY(-15px);
+  }
+}
+
+@keyframes floatCard3 {
+  0% {
+    transform: rotate(-5deg) translateY(0);
+  }
+  100% {
+    transform: rotate(-8deg) translateY(-25px);
+  }
+}
+
+.card-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 30%, rgba(122, 78, 254, 0.4), transparent 70%);
+  opacity: 0.7;
+  z-index: -1;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 1;
+}
+
+.card-game {
+  font-size: 0.9rem;
+  color: #b0b5c3;
+  font-weight: 600;
+}
+
+.card-rank {
+  font-size: 1.8rem;
+  font-weight: 800;
   color: #fff;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-  transition: transform 0.3s ease;
+  text-shadow: 0 0 10px rgba(122, 78, 254, 0.8);
 }
 
-.banner-icons i:hover {
-  transform: scale(1.2);
+.card-price {
+  margin-top: auto;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #00E0AA;
+  text-shadow: 0 0 10px rgba(0, 224, 170, 0.5);
 }
 
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
+.holographic-sphere {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(122, 78, 254, 0.1), transparent 80%);
+  border: 2px solid rgba(122, 78, 254, 0.3);
+  box-shadow: 0 0 50px rgba(122, 78, 254, 0.5), inset 0 0 50px rgba(122, 78, 254, 0.3);
+  animation: rotateSphere 20s linear infinite;
+}
+
+.holographic-sphere::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    transparent 0deg,
+    rgba(122, 78, 254, 0.5) 60deg,
+    transparent 120deg,
+    rgba(0, 224, 170, 0.5) 180deg,
+    transparent 240deg,
+    rgba(255, 0, 204, 0.5) 300deg,
+    transparent 360deg
+  );
+  opacity: 0.3;
+  animation: rotateSphereGradient 10s linear infinite;
+}
+
+@keyframes rotateSphere {
+  0% {
+    transform: translateY(-50%) rotate(0deg);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  100% {
+    transform: translateY(-50%) rotate(360deg);
   }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+@keyframes rotateSphereGradient {
+  0% {
+    transform: rotate(0deg);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  100% {
+    transform: rotate(-360deg);
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.banner-bottom-curve {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: #050A15;
+  clip-path: ellipse(50% 60% at 50% 100%);
+  z-index: 2;
 }
 
 .game-nav {
@@ -802,6 +1298,9 @@ section {
   position: sticky;
   top: 0;
   z-index: 9;
+  background: rgba(5, 10, 21, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(122, 78, 254, 0.2);
 }
 
 .nav-container {
@@ -1061,31 +1560,54 @@ section {
   text-shadow: 0 0 10px rgba(255, 0, 76, 0.8);
 }
 
+/* Nút xem thêm cải tiến */
 .view-more-images {
   position: absolute;
-  bottom: 10px;
+  bottom: 15px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 5px 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #00ffff;
+  border-radius: 30px;
+  padding: 8px 20px;
+  color: #00ffff;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
-  font-size: 0.8rem;
-  z-index: 10;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  z-index: 5;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.view-more-images i {
+  font-size: 1rem;
+}
+
+.view-more-images .btn-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(0, 255, 255, 0.5), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .view-more-images:hover {
-  background-color: #0056b3;
+  transform: translateX(-50%) translateY(-5px);
+  background: rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
 }
 
-.card-content {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  flex: 1;
+.view-more-images:hover .btn-glow {
+  opacity: 0.3;
+  animation: rotate 10s linear infinite;
 }
 
 .seller-info {
@@ -1182,14 +1704,6 @@ section {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 15px;
-}
-
-.own-account-message {
-  text-align: center;
-  color: #FF004C;
-  font-size: 0.9rem;
-  margin-top: 15px;
-  text-shadow: 0 0 5px rgba(255, 0, 76, 0.3);
 }
 
 .bid-btn, .buy-btn {
@@ -1373,7 +1887,7 @@ section {
   z-index: 2;
 }
 
-.banner-title {
+.promotion-banner .banner-title {
   font-size: 2.5rem;
   font-weight: 900;
   color: #fff;
@@ -1388,7 +1902,7 @@ section {
   margin: 0 auto;
 }
 
-.banner-btn {
+.promotion-banner .banner-btn {
   padding: 15px 40px;
   background: linear-gradient(to right, #7A4EFE, #00E0AA);
   color: white;
@@ -1404,12 +1918,560 @@ section {
   box-shadow: 0 10px 20px rgba(122, 78, 254, 0.4);
 }
 
-.banner-btn:hover {
+.promotion-banner .banner-btn:hover {
   transform: translateY(-5px);
   box-shadow: 0 15px 30px rgba(122, 78, 254, 0.6);
 }
 
-.image-modal, .purchase-modal {
+/* Game Image Modal Styles - Cải tiến Modal Xem Hình Ảnh */
+.game-image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 10, 21, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.game-modal-container {
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  background: rgba(10, 15, 30, 0.9);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: modalFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.game-modal-header {
+  background: linear-gradient(90deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.game-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.game-modal-title h3 {
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.game-badge-modal {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.game-close-btn {
+  background: rgba(255, 0, 76, 0.2);
+  border: 1px solid rgba(255, 0, 76, 0.4);
+  color: #ff4b4b;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.game-close-btn:hover {
+  background: rgba(255, 0, 76, 0.4);
+  transform: rotate(90deg);
+  box-shadow: 0 0 15px rgba(255, 0, 76, 0.5);
+}
+
+.game-modal-body {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  max-height: calc(90vh - 80px);
+}
+
+@media (min-width: 992px) {
+  .game-modal-body {
+    flex-direction: row;
+  }
+}
+
+.game-gallery {
+  flex: 1.5;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.game-main-image-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.game-image-frame {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.game-main-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.game-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 255, 0.05) 0%, 
+    transparent 50%, 
+    rgba(255, 0, 255, 0.05) 100%);
+  pointer-events: none;
+}
+
+.game-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: #00ffff;
+  z-index: 2;
+}
+
+.top-left {
+  top: 0;
+  left: 0;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+
+.top-right {
+  top: 0;
+  right: 0;
+  border-top: 2px solid;
+  border-right: 2px solid;
+}
+
+.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 2px solid;
+  border-left: 2px solid;
+}
+
+.bottom-right {
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid;
+  border-right: 2px solid;
+}
+
+.game-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(0, 255, 255, 0.5);
+  color: #00ffff;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 5;
+  font-size: 1.2rem;
+}
+
+.prev-btn {
+  left: 20px;
+}
+
+.next-btn {
+  right: 20px;
+}
+
+.game-nav-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.game-image-counter {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 30px;
+  padding: 8px 15px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 5;
+}
+
+.current-index {
+  color: #00ffff;
+}
+
+.separator {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.game-thumbnails {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 5px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #00ffff #0a0e17;
+}
+
+.game-thumbnails::-webkit-scrollbar {
+  height: 5px;
+}
+
+.game-thumbnails::-webkit-scrollbar-thumb {
+  background: #00ffff;
+  border-radius: 5px;
+}
+
+.game-thumbnails::-webkit-scrollbar-track {
+  background: rgba(10, 14, 23, 0.5);
+  border-radius: 5px;
+}
+
+.game-thumbnail {
+  flex: 0 0 100px;
+  height: 70px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.game-thumbnail.active {
+  opacity: 1;
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+.game-thumb-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.game-thumbnail.active .game-thumb-frame {
+  border-color: #00ffff;
+}
+
+.game-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.game-thumb-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, 
+    rgba(0, 0, 0, 0.1), 
+    rgba(0, 0, 0, 0.3));
+  pointer-events: none;
+}
+
+.game-account-info {
+  flex: 1;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 1px solid rgba(0, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 991px) {
+  .game-account-info {
+    border-left: none;
+    border-top: 1px solid rgba(0, 255, 255, 0.2);
+  }
+}
+
+.game-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.game-seller-badge {
+  background: rgba(255, 0, 255, 0.1);
+  color: #ff00ff;
+  padding: 8px 15px;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 0, 255, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.game-status-badge {
+  background: rgba(0, 255, 127, 0.1);
+  color: #00ff7f;
+  padding: 8px 15px;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid rgba(0, 255, 127, 0.3);
+}
+
+.game-status-badge.sold-status {
+  background: rgba(255, 75, 75, 0.1);
+  color: #ff4b4b;
+  border-color: rgba(255, 75, 75, 0.3);
+}
+
+.game-price-section {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.game-price-box {
+  flex: 1;
+  min-width: 200px;
+  background: rgba(0, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.game-price-box:hover {
+  background: rgba(0, 255, 255, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border-color: rgba(0, 255, 255, 0.4);
+}
+
+.game-price-box.min-price {
+  background: rgba(255, 0, 255, 0.1);
+  border-color: rgba(255, 0, 255, 0.2);
+}
+
+.game-price-box.min-price:hover {
+  background: rgba(255, 0, 255, 0.15);
+  border-color: rgba(255, 0, 255, 0.4);
+}
+
+.game-price-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 5px;
+}
+
+.game-price-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #00ffff;
+}
+
+.game-price-box.min-price .game-price-value {
+  color: #ff00ff;
+}
+
+.game-price-value span {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.game-fields-container {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.game-fields-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.game-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.game-field-item {
+  background: rgba(0, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.game-field-item:hover {
+  background: rgba(0, 255, 255, 0.1);
+  transform: translateY(-3px);
+  border-color: rgba(0, 255, 255, 0.3);
+}
+
+.field-name {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 5px;
+}
+
+.field-value {
+  font-size: 1rem;
+  color: #ffffff;
+  word-break: break-word;
+}
+
+.game-action-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: auto;
+}
+
+.game-action-btn {
+  flex: 1;
+  position: relative;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.game-action-btn:hover {
+  transform: translateY(-3px);
+}
+
+.bid-btn {
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+}
+
+.bid-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.buy-btn {
+  background: rgba(255, 0, 255, 0.1);
+  color: #ff00ff;
+  border: 1px solid rgba(255, 0, 255, 0.4);
+}
+
+.buy-btn:hover {
+  background: rgba(255, 0, 255, 0.2);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 0, 255, 0.3);
+}
+
+.btn-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-action-btn:hover .btn-glow {
+  opacity: 0.5;
+  animation: rotate 10s linear infinite;
+}
+
+.purchase-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -1419,7 +2481,7 @@ section {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
   backdrop-filter: blur(5px);
 }
 
@@ -1432,135 +2494,6 @@ section {
   border-radius: 15px;
   border: 1px solid rgba(122, 78, 254, 0.3);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.close-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 2rem;
-  cursor: pointer;
-  border: none;
-  background: rgba(255, 0, 76, 0.2);
-  color: #fff;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.close-btn:hover {
-  background: rgba(255, 0, 76, 0.4);
-  transform: rotate(90deg);
-}
-
-.image-carousel {
-  width: 100%;
-  overflow: hidden;
-}
-
-.carousel-container {
-  display: flex;
-  gap: 15px;
-  overflow-x: auto;
-  padding: 10px;
-  scrollbar-width: thin;
-  scrollbar-color: #7A4EFE #0a0e17;
-}
-
-.carousel-container::-webkit-scrollbar {
-  height: 8px;
-}
-
-.carousel-container::-webkit-scrollbar-thumb {
-  background: #7A4EFE;
-  border-radius: 4px;
-}
-
-.carousel-container::-webkit-scrollbar-track {
-  background: #0a0e17;
-}
-
-.carousel-image {
-  width: 300px;
-  height: 200px;
-  object-fit: contain;
-  border-radius: 10px;
-  border: 1px solid rgba(122, 78, 254, 0.2);
-  transition: transform 0.3s ease;
-}
-
-.carousel-image:hover {
-  transform: scale(1.05);
-}
-
-.modal-body {
-  text-align: center;
-  padding: 20px;
-}
-
-.modal-icon {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
-}
-
-.modal-icon.fa-check-circle {
-  color: #00E0AA;
-  text-shadow: 0 0 15px rgba(0, 224, 170, 0.6);
-}
-
-.modal-icon.fa-exclamation-triangle {
-  color: #FF004C;
-  text-shadow: 0 0 15px rgba(255, 0, 76, 0.6);
-}
-
-.modal-title {
-  font-size: 2rem;
-  color: #fff;
-  margin-bottom: 15px;
-  text-shadow: 0 0 10px rgba(122, 78, 254, 0.6);
-}
-
-.modal-message {
-  font-size: 1.2rem;
-  color: #e1e7ef;
-  margin-bottom: 25px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-
-.modal-btn {
-  padding: 12px 30px;
-  background: linear-gradient(to right, #7A4EFE, #00E0AA);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 5px 15px rgba(122, 78, 254, 0.3);
-}
-
-.modal-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(122, 78, 254, 0.5);
-}
-
-.login-btn {
-  background: linear-gradient(to right, #FF004C, #FF4C7A);
-  box-shadow: 0 5px 15px rgba(255, 0, 76, 0.3);
-}
-
-.login-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(255, 0, 76, 0.5);
 }
 
 .animated {
@@ -1579,112 +2512,363 @@ section {
 }
 
 @media (max-width: 1200px) {
+  .banner-title {
+    font-size: 4rem;
+  }
+  
+  .floating-card {
+    width: 180px;
+    height: 250px;
+  }
+  
+  .card-2 {
+    left: 100px;
+  }
+  
+  .holographic-sphere {
+    width: 250px;
+    height: 250px;
+  }
+  
   .card-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  .game-fields-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 992px) {
   .top-banner {
+    height: auto;
+    padding: 80px 0;
+  }
+  
+  .banner-content-wrapper {
+    flex-direction: column;
+    gap: 60px;
+  }
+  
+  .banner-left {
+    max-width: 100%;
+    text-align: center;
+  }
+  
+  .banner-title {
+    font-size: 3.5rem;
+    align-items: center;
+  }
+  
+  .banner-stats {
+    justify-content: center;
+  }
+  
+  .banner-buttons {
+    justify-content: center;
+  }
+  
+  .banner-right {
+    height: 400px;
+    width: 100%;
+  }
+  
+  .floating-cards-container {
+    position: relative;
     height: 350px;
   }
-
-  .banner-title {
-    font-size: 3rem;
+  
+  .card-1 {
+    left: 50%;
+    transform: translateX(-150px) rotate(-15deg);
   }
-
-  .banner-subtitle {
-    font-size: 1.5rem;
+  
+  .card-2 {
+    left: 50%;
+    transform: translateX(-50px) rotate(5deg);
   }
-
-  .section-header h2 {
-    font-size: 2rem;
+  
+  .card-3 {
+    left: 50%;
+    transform: translateX(50px) rotate(-5deg);
   }
-
-  .carousel-image {
-    width: 250px;
-    height: 166px;
+  
+  .holographic-sphere {
+    right: 50%;
+    transform: translate(50%, -50%);
+    width: 200px;
+    height: 200px;
+    opacity: 0.7;
+  }
+  
+  @keyframes floatCard1 {
+    0% {
+      transform: translateX(-150px) rotate(-15deg) translateY(0);
+    }
+    100% {
+      transform: translateX(-150px) rotate(-12deg) translateY(-20px);
+    }
+  }
+  
+  @keyframes floatCard2 {
+    0% {
+      transform: translateX(-50px) rotate(5deg) translateY(0);
+    }
+    100% {
+      transform: translateX(-50px) rotate(8deg) translateY(-15px);
+    }
+  }
+  
+  @keyframes floatCard3 {
+    0% {
+      transform: translateX(50px) rotate(-5deg) translateY(0);
+    }
+    100% {
+      transform: translateX(50px) rotate(-8deg) translateY(-25px);
+    }
+  }
+  
+  @keyframes rotateSphere {
+    0% {
+      transform: translate(50%, -50%) rotate(0deg);
+    }
+    100% {
+      transform: translate(50%, -50%) rotate(360deg);
+    }
+  }
+  
+  .game-action-buttons {
+    flex-direction: column;
   }
 }
 
 @media (max-width: 768px) {
   .top-banner {
-    height: 300px;
+    padding: 60px 0;
   }
-
+  
   .banner-title {
-    font-size: 2.5rem;
+    font-size: 3rem;
   }
-
+  
   .banner-subtitle {
     font-size: 1.2rem;
   }
-
+  
+  .banner-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .banner-buttons {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+  
+  .banner-btn {
+    width: 100%;
+    max-width: 300px;
+    justify-content: center;
+  }
+  
+  .floating-card {
+    width: 150px;
+    height: 220px;
+    padding: 15px;
+  }
+  
+  .card-1 {
+    transform: translateX(-120px) rotate(-15deg);
+  }
+  
+  .card-3 {
+    transform: translateX(20px) rotate(-5deg);
+  }
+  
+  .card-rank {
+    font-size: 1.5rem;
+  }
+  
+  .card-price {
+    font-size: 1rem;
+  }
+  
+  @keyframes floatCard1 {
+    0% {
+      transform: translateX(-120px) rotate(-15deg) translateY(0);
+    }
+    100% {
+      transform: translateX(-120px) rotate(-12deg) translateY(-20px);
+    }
+  }
+  
+  @keyframes floatCard3 {
+    0% {
+      transform: translateX(20px) rotate(-5deg) translateY(0);
+    }
+    100% {
+      transform: translateX(20px) rotate(-8deg) translateY(-25px);
+    }
+  }
+  
   .card-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
-
-  .carousel-image {
-    width: 200px;
-    height: 133px;
+  
+  .section-header h2 {
+    font-size: 1.7rem;
+  }
+  
+  .section-desc {
+    font-size: 1rem;
+  }
+  
+  .promotion-banner .banner-btn {
+    padding: 12px 30px;
+    font-size: 1rem;
+  }
+  
+  .game-image-frame {
+    padding-top: 75%; /* 4:3 Aspect Ratio for mobile */
+  }
+  
+  .game-thumbnail {
+    flex: 0 0 80px;
+    height: 60px;
+  }
+  
+  .game-nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .game-price-section {
+    flex-direction: column;
+  }
+  
+  .game-action-buttons {
+    flex-direction: column;
   }
 }
 
 @media (max-width: 576px) {
-  .top-banner {
-    height: 250px;
-  }
-
   .banner-title {
-    font-size: 2rem;
+    font-size: 2.5rem;
   }
-
+  
   .banner-subtitle {
     font-size: 1rem;
   }
-
-  .banner-icons i {
-    font-size: 2rem;
+  
+  .stat-item {
+    min-width: 80px;
+    padding: 10px;
   }
-
-  .card-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .section-header h2 {
-    font-size: 1.7rem;
-  }
-
-  .section-desc {
-    font-size: 1rem;
-  }
-
-  .banner-btn {
-    padding: 12px 30px;
-    font-size: 1rem;
-  }
-
-  .carousel-image {
-    width: 150px;
-    height: 100px;
-  }
-
-  .modal-title {
+  
+  .stat-value {
     font-size: 1.5rem;
   }
-
-  .modal-message {
-    font-size: 1rem;
+  
+  .stat-label {
+    font-size: 0.8rem;
   }
-
-  .modal-btn, .login-btn {
-    padding: 10px 20px;
+  
+  .floating-card {
+    width: 120px;
+    height: 180px;
+    padding: 10px;
+  }
+  
+  .card-game {
+    font-size: 0.7rem;
+  }
+  
+  .card-rank {
+    font-size: 1.2rem;
+  }
+  
+  .card-price {
     font-size: 0.9rem;
   }
+  
+  .card-1 {
+    transform: translateX(-90px) rotate(-15deg);
+  }
+  
+  .card-2 {
+    transform: translateX(-30px) rotate(5deg);
+  }
+  
+  .card-3 {
+    transform: translateX(30px) rotate(-5deg);
+  }
+  
+  .holographic-sphere {
+    width: 150px;
+    height: 150px;
+  }
+  
+  @keyframes floatCard1 {
+    0% {
+      transform: translateX(-90px) rotate(-15deg) translateY(0);
+    }
+    100% {
+      transform: translateX(-90px) rotate(-12deg) translateY(-20px);
+    }
+  }
+  
+  @keyframes floatCard2 {
+    0% {
+      transform: translateX(-30px) rotate(5deg) translateY(0);
+    }
+    100% {
+      transform: translateX(-30px) rotate(8deg) translateY(-15px);
+    }
+  }
+  
+  @keyframes floatCard3 {
+    0% {
+      transform: translateX(30px) rotate(-5deg) translateY(0);
+    }
+    100% {
+      transform: translateX(30px) rotate(-8deg) translateY(-25px);
+    }
+  }
+  
+  .game-modal-title h3 {
+    font-size: 1.2rem;
+  }
+  
+  .game-badge-modal {
+    font-size: 0.8rem;
+    padding: 4px 10px;
+  }
+  
+  .game-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+  
+  .game-image-counter {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+  }
+  
+  .game-fields-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
-  .modal-actions {
-    flex-direction: column;
-    gap: 10px;
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>
+
