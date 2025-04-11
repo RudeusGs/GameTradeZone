@@ -484,14 +484,26 @@ onMounted(() => {
 /* Sidebar */
 .sidebar {
   width: 260px;
-  background: rgba(13, 27, 42, 0.9); /* Darker semi-transparent teal */
+  background: rgba(13, 27, 42, 0.9);
   padding: 30px 0;
-  border-right: 1px solid rgba(0, 179, 224, 0.2); /* Cyan border */
+  border-right: 1px solid rgba(0, 179, 224, 0.2);
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
   height: 100vh;
+  position: relative;
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px; /* Độ dày viền đáy */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient viền đáy */
+  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5); /* Hiệu ứng glow */
 }
 
 .sidebar-logo {
@@ -595,7 +607,7 @@ onMounted(() => {
   justify-content: center;
   transition: all 0.2s ease;
   box-shadow: 0 0 10px rgba(255, 0, 255, 0.5); /* Magenta glow */
-  margin-bottom: 10px; /* Khoảng cách với nút bên dưới */
+  margin-top: 10px; /* Thêm khoảng cách phía trên */
 }
 
 .my-posts-btn i {
@@ -1108,7 +1120,24 @@ onMounted(() => {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
+  overflow-y: hidden; /* Bỏ thanh cuộn như yêu cầu trước */
+  position: relative;
+}
+
+.stats-sidebar::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px; /* Độ dày viền đáy */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient viền đáy */
+  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5); /* Hiệu ứng glow */
+}
+
+/* Đảm bảo nội dung trong stats-sidebar không bị cắt */
+.stats-sidebar > * {
+  flex-shrink: 0; /* Ngăn các phần tử co lại */
 }
 
 /* User card */
