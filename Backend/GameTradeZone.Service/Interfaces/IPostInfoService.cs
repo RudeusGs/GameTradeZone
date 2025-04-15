@@ -13,10 +13,11 @@ namespace GameTradeZone.Service.Interfaces
     {
         Task<PostInfo> CreatePost(string caption, int categoryId, string content, List<IFormFile>? images);
         Task<List<PostInfo>> GetAllPosts();
-        Task<bool> DeletePost(int postId, int userId);
+        Task<bool> DeletePost(int postId);
         Task<PostInfo> GetPostById(int postId);
         Task<List<PostInfo>> GetAllPostByCategoryId(int categoryId);
         Task<List<PostInfo>> GetAllPostsByUserId(int userId);
         Task<PostInfo> UpdatePost(int postId, string caption, int categoryId, string content, List<IFormFile>? images);
+   
     }
 }

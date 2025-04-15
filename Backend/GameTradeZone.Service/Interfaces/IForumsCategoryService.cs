@@ -14,5 +14,6 @@ namespace GameTradeZone.Service.Interfaces
        public Task<ForumsCategory> CreateCategory(ForumsCategoryModel model);
        public Task<List<ForumsCategory>> GetAllCategories();
        public Task<ApiResult> DeleteCategory(int Id);
+       public Task<ApiResult> GetAllCategoryStat();
     }
 }

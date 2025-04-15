@@ -9,7 +9,8 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> Add(AddAccountGameModel model);
         Task<ApiResult> Update(UpdateAccountGameModel model);
         Task<ApiResult> Delete(int id);
-        Task<ApiResult> Buy(BuyAccountGameModel model);// mua luôn không cần đồng ý
+        Task<ApiResult> Buy(BuyAccountGameModel model);
+        Task<ApiResult> GetAllUserDataStat();
         Task<ApiResult> GetAllByUserID(int UserId);
         Task<ApiResult> GetInforUser(int id);
 

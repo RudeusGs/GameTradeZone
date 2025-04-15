@@ -54,5 +54,18 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [HttpGet("getallstat")]
+        public async Task<IActionResult> GetAllCategoryStat()
+        {
+            try
+            {
+                var result = await _forumsCategoryService.GetAllCategoryStat();
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }

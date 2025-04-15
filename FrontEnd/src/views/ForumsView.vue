@@ -96,6 +96,31 @@ const fetchCategories = async () => {
   }
 };
 
+const userStats = ref({
+  totalUsers: 0,
+  newUsersToday: 0,
+  newUsersByDay: [],
+});
+
+const fetchUserStats = async () => {
+  try {
+    const API_USER_STATS_URL = `${API_BASE_URL}/AccountGame/Get-All-User-Data-Stat`;
+    const response = await axios.get(API_USER_STATS_URL);
+
+    // Kiểm tra dữ liệu trả về
+    console.log("Dữ liệu thống kê:", response.data);
+
+    // Gán dữ liệu đúng vào userStats
+    const stats = response.data.result?.data || {};
+    userStats.value = {
+      totalUsers: stats.totalUsers || 0,
+      newUsersToday: stats.newUsersToday || 0,
+      newUsersByDay: stats.newUsersByDay || [],
+    };
+  } catch (error) {
+    console.error("Lỗi khi lấy thống kê người dùng:", error);
+  }
+};
 // Fetch posts by category or all posts
 const fetchPosts = async (categoryId: number | null = null) => {
   try {
@@ -177,6 +202,7 @@ const goToPost = (postId: number) => {
 onMounted(() => {
   fetchCategories();
   fetchPosts();
+  fetchUserStats();
 });
 </script>
 
@@ -404,7 +430,7 @@ onMounted(() => {
           <li>
             <i class="fas fa-users"></i>
             <span class="stat-label">Thành viên online:</span>
-            <span class="stat-value highlight">150</span>
+            <span class="stat-value highlight">0</span>
           </li>
           <li>
             <i class="fas fa-comments"></i>
@@ -414,7 +440,12 @@ onMounted(() => {
           <li>
             <i class="fas fa-user-friends"></i>
             <span class="stat-label">Tổng thành viên:</span>
-            <span class="stat-value">5,678</span>
+            <span class="stat-value">{{ userStats.totalUsers }}</span>
+          </li>
+          <li>
+            <i class="fas fa-user-plus"></i>
+            <span class="stat-label">Thành viên mới hôm nay:</span>
+            <span class="stat-value">{{ userStats.newUsersToday }}</span>
           </li>
         </ul>
       </div>
