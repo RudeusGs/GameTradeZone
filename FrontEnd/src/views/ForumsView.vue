@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
+import axios from "axios"; // Keep axios for user stats or replace if needed
+import forumApi from "../api/forums"; // Import forum API
+import forumCategoryApi from "../api/forumcategory"; // Import category API
 
 // Router setup
 const router = useRouter();
@@ -44,7 +46,7 @@ interface ForumPost {
   views: number;
 }
 
-// API URL
+// API URL (can be removed if baseApi handles it)
 const API_BASE_URL = "https://localhost:7232/api";
 
 // State
@@ -55,14 +57,15 @@ const selectedCategory = ref<number | null>(null);
 const currentPage = ref(1);
 const postsPerPage = 10;
 
-// Fetch forum categories
+// Fetch forum categories using forumCategoryApi
 const fetchCategories = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/forumscategory/getall`);
+    const response = await forumCategoryApi.getAllCategories();
+    // Assuming the API returns data in response.data.result
     categories.value = response.data.result;
   } catch (error) {
     console.error("Lỗi khi lấy danh mục:", error);
-    // Fallback data
+    // Fallback data remains the same
     categories.value = [
       {
         id: 1,
@@ -96,15 +99,46 @@ const fetchCategories = async () => {
   }
 };
 
-// Fetch posts by category or all posts
+const userStats = ref({
+  totalUsers: 0,
+  newUsersToday: 0,
+  newUsersByDay: [],
+});
+
+const fetchUserStats = async () => {
+  try {
+    // Keep using axios or create a dedicated user stats API module
+    const API_USER_STATS_URL = `${API_BASE_URL}/AccountGame/Get-All-User-Data-Stat`;
+    const response = await axios.get(API_USER_STATS_URL);
+
+    // Kiểm tra dữ liệu trả về
+    console.log("Dữ liệu thống kê:", response.data);
+
+    // Gán dữ liệu đúng vào userStats
+    const stats = response.data.result?.data || {};
+    userStats.value = {
+      totalUsers: stats.totalUsers || 0,
+      newUsersToday: stats.newUsersToday || 0,
+      newUsersByDay: stats.newUsersByDay || [],
+    };
+  } catch (error) {
+    console.error("Lỗi khi lấy thống kê người dùng:", error);
+  }
+};
+
+// Fetch posts using forumApi
 const fetchPosts = async (categoryId: number | null = null) => {
   try {
-    const url = categoryId
-      ? `${API_BASE_URL}/posts/by-category/${categoryId}`
-      : `${API_BASE_URL}/posts/latest`;
-    console.log("Gọi API:", url);
-    const response = await axios.get(url);
+    let response;
+    if (categoryId) {
+      console.log("Gọi API: getPostsByCategory", categoryId);
+      response = await forumApi.getPostsByCategory(String(categoryId)); // Ensure categoryId is string if required
+    } else {
+      console.log("Gọi API: getLatestPosts");
+      response = await forumApi.getLatestPosts();
+    }
     console.log("Dữ liệu trả về:", response.data);
+    // Assuming the API returns data in response.data.result
     posts.value = response.data.result.map((post: PostResponse) => ({
       id: post.id,
       caption: post.caption,
@@ -118,6 +152,7 @@ const fetchPosts = async (categoryId: number | null = null) => {
     }));
   } catch (error) {
     console.error("Lỗi khi lấy bài viết:", error);
+    posts.value = []; // Clear posts on error or handle appropriately
   }
 };
 
@@ -177,6 +212,7 @@ const goToPost = (postId: number) => {
 onMounted(() => {
   fetchCategories();
   fetchPosts();
+  fetchUserStats();
 });
 </script>
 
@@ -404,7 +440,7 @@ onMounted(() => {
           <li>
             <i class="fas fa-users"></i>
             <span class="stat-label">Thành viên online:</span>
-            <span class="stat-value highlight">150</span>
+            <span class="stat-value highlight">0</span>
           </li>
           <li>
             <i class="fas fa-comments"></i>
@@ -414,7 +450,12 @@ onMounted(() => {
           <li>
             <i class="fas fa-user-friends"></i>
             <span class="stat-label">Tổng thành viên:</span>
-            <span class="stat-value">5,678</span>
+            <span class="stat-value">{{ userStats.totalUsers }}</span>
+          </li>
+          <li>
+            <i class="fas fa-user-plus"></i>
+            <span class="stat-label">Thành viên mới hôm nay:</span>
+            <span class="stat-value">{{ userStats.newUsersToday }}</span>
           </li>
         </ul>
       </div>
@@ -484,14 +525,26 @@ onMounted(() => {
 /* Sidebar */
 .sidebar {
   width: 260px;
-  background: rgba(13, 27, 42, 0.9); /* Darker semi-transparent teal */
+  background: rgba(13, 27, 42, 0.9);
   padding: 30px 0;
-  border-right: 1px solid rgba(0, 179, 224, 0.2); /* Cyan border */
+  border-right: 1px solid rgba(0, 179, 224, 0.2);
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
   height: 100vh;
+  position: relative;
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px; /* Độ dày viền đáy */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient viền đáy */
+  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5); /* Hiệu ứng glow */
 }
 
 .sidebar-logo {
@@ -595,7 +648,7 @@ onMounted(() => {
   justify-content: center;
   transition: all 0.2s ease;
   box-shadow: 0 0 10px rgba(255, 0, 255, 0.5); /* Magenta glow */
-  margin-bottom: 10px; /* Khoảng cách với nút bên dưới */
+  margin-top: 10px; /* Thêm khoảng cách phía trên */
 }
 
 .my-posts-btn i {
@@ -1108,7 +1161,24 @@ onMounted(() => {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
+  overflow-y: hidden; /* Bỏ thanh cuộn như yêu cầu trước */
+  position: relative;
+}
+
+.stats-sidebar::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px; /* Độ dày viền đáy */
+  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient viền đáy */
+  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5); /* Hiệu ứng glow */
+}
+
+/* Đảm bảo nội dung trong stats-sidebar không bị cắt */
+.stats-sidebar > * {
+  flex-shrink: 0; /* Ngăn các phần tử co lại */
 }
 
 /* User card */

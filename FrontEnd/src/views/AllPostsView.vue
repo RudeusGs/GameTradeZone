@@ -18,9 +18,17 @@ interface Post {
   views: number;
   imageUrls: string[]; // Thay imageUrl thành imageUrls để hỗ trợ nhiều hình ảnh
 }
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+  postCount: number;
+  iconClass: string | null;
+}
 
 const posts = ref<Post[]>([]);
 const loading = ref(false);
+const categories = ref<Category[]>([]);
 const error = ref<string | null>(null);
 const editingPost = ref<Post | null>(null); // State để lưu bài viết đang chỉnh sửa
 const updatedCaption = ref(""); // Caption mới
@@ -32,6 +40,24 @@ const existingImageUrls = ref<string[]>([]); // Danh sách URL hình ảnh hiệ
 // Lấy thông tin người dùng từ store
 const store = userStore();
 const userId = store.user?.id;
+
+const fetchCategories = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/forumscategory/getall`);
+    if (response.data && response.data.result) {
+      categories.value = response.data.result;
+    } else {
+      console.warn("Không thể tải danh sách danh mục.");
+    }
+  } catch (err) {
+    console.error("Lỗi khi fetch categories:", err);
+  }
+};
+
+const getCategoryName = (categoryId: string): string => {
+  const category = categories.value.find((c) => c.id === categoryId);
+  return category ? category.name : "Không xác định";
+};
 
 // Fetch posts của người dùng hiện tại
 const fetchUserPosts = async () => {
@@ -183,6 +209,7 @@ const updatePost = async () => {
 // Load dữ liệu khi component được mount
 onMounted(() => {
   fetchUserPosts();
+  fetchCategories();
 });
 </script>
 
@@ -246,11 +273,16 @@ onMounted(() => {
           ></textarea>
 
           <label>Danh mục</label>
-          <input
-            v-model="updatedCategoryId"
-            type="number"
-            placeholder="ID danh mục"
-          />
+          <select v-model="updatedCategoryId" class="category-select">
+            <option value="" disabled>-- Chọn danh mục --</option>
+            <option
+              v-for="category in categories"
+              :key="category.id"
+              :value="category.id"
+            >
+              {{ category.name }}
+            </option>
+          </select>
 
           <label>Hình ảnh hiện có</label>
           <div v-if="existingImageUrls.length" class="existing-images">
@@ -444,6 +476,16 @@ onMounted(() => {
 .edit-form textarea {
   min-height: 100px;
   resize: vertical;
+}
+
+.category-select {
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2300f2fe' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
 }
 
 .existing-images {

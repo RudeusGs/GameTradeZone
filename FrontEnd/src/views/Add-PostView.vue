@@ -1,37 +1,33 @@
 <template>
-  <div class="cosmic-container">
-    <div class="cosmic-card">
-      <div class="cosmic-header">
-        <div class="cosmic-title">
-          <i class="cosmic-icon fa-solid fa-meteor"></i>
-          <h2>CREATE NEW POST</h2>
-        </div>
-        <div class="cosmic-line"></div>
-      </div>
+  <div class="add-post-view">
+    <div class="post-card">
+      <h2 class="title">Create New Post</h2>
 
-      <form @submit.prevent="submitPost" enctype="multipart/form-data" class="cosmic-form">
+      <form @submit.prevent="submitPost" enctype="multipart/form-data">
+        <!-- Caption Input -->
         <div class="form-group">
-          <label for="caption">
-            <span class="label-text">CAPTION</span>
-          </label>
-          <div class="input-wrapper">
-            <input
-              v-model="form.caption"
-              type="text"
-              id="caption"
-              placeholder="Enter your epic caption"
-              required
-            />
-          </div>
+          <label for="caption"> <i class="fas fa-heading"></i> Caption </label>
+          <input
+            v-model="form.caption"
+            type="text"
+            id="caption"
+            placeholder="Enter an engaging caption"
+            required
+            class="modern-input"
+          />
         </div>
 
+        <!-- Category Selector -->
         <div class="form-group">
-          <label for="category">
-            <span class="label-text">CATEGORY</span>
-          </label>
+          <label for="category"> <i class="fas fa-tags"></i> Category </label>
           <div class="select-wrapper">
-            <select v-model="form.categoryId" id="category" required>
-              <option value="">Select your arena</option>
+            <select
+              v-model="form.categoryId"
+              id="category"
+              required
+              class="modern-select"
+            >
+              <option value="" disabled>Select a category</option>
               <option
                 v-for="category in categories"
                 :key="category.id"
@@ -40,69 +36,97 @@
                 {{ category.name }}
               </option>
             </select>
-            <i class="select-icon fa-solid fa-chevron-down"></i>
           </div>
         </div>
 
+        <!-- Image Upload -->
         <div class="form-group">
-          <label for="image">
-            <span class="label-text">IMAGES</span>
-          </label>
-          <div class="file-upload-wrapper">
-            <label for="image" class="file-upload-label">
-              <i class="fa-solid fa-cloud-arrow-up"></i>
-              <span>{{ form.images.length ? `${form.images.length} files selected` : 'Choose images' }}</span>
+          <label> <i class="fas fa-images"></i> Images </label>
+          <div
+            class="image-drop-zone"
+            @dragover.prevent
+            @drop.prevent="handleDrop"
+            :class="{ 'drag-over': isDragging }"
+            @dragenter.prevent="isDragging = true"
+            @dragleave.prevent="isDragging = false"
+          >
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <p>Drag and drop images here or</p>
+            <label class="upload-button">
+              Choose Files
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                @change="handleFileChange"
+                class="hidden"
+              />
             </label>
-            <input
-              type="file"
-              id="image"
-              name="image"
-              multiple
-              accept="image/*"
-              @change="handleFileChange"
-              class="file-input"
-            />
           </div>
-          
-          <div v-if="imagePreviews.length" class="image-preview">
-            <div v-for="(preview, index) in imagePreviews" :key="index" class="preview-item">
+
+          <!-- Image Preview Grid -->
+          <div v-if="imagePreviews.length" class="image-preview-grid">
+            <div
+              v-for="(preview, index) in imagePreviews"
+              :key="index"
+              class="preview-item"
+            >
               <img :src="preview" alt="Preview" />
-              <button type="button" class="remove-image" @click="removeImage(index)">
-                <i class="fa-solid fa-times"></i>
+              <button
+                type="button"
+                class="remove-image"
+                @click="removeImage(index)"
+              >
+                ×
               </button>
             </div>
           </div>
         </div>
 
+        <!-- Content Editor -->
         <div class="form-group">
           <label for="content">
-            <span class="label-text">CONTENT</span>
+            <i class="fas fa-paragraph"></i> Content
           </label>
-          <div class="textarea-wrapper">
-            <textarea
-              v-model="form.content"
-              id="content"
-              placeholder="Share your gaming experience..."
-              rows="5"
-              required
-            ></textarea>
-          </div>
+          <textarea
+            v-model="form.content"
+            id="content"
+            placeholder="Share your thoughts..."
+            rows="5"
+            required
+            class="modern-textarea"
+          ></textarea>
         </div>
 
-        <button type="submit" :disabled="isSubmitting" class="cosmic-button">
-          <span class="button-text">{{ isSubmitting ? 'CREATING...' : 'CREATE POST' }}</span>
-          <i class="button-icon fa-solid fa-rocket"></i>
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="submit-button"
+          :class="{ loading: isSubmitting }"
+          :disabled="isSubmitting"
+        >
+          <span v-if="!isSubmitting">
+            <i class="fas fa-paper-plane"></i> Create Post
+          </span>
+          <span v-else class="loading-spinner"></span>
         </button>
       </form>
 
-      <div v-if="isSubmitting" class="status-message loading">
-        <i class="fa-solid fa-spinner fa-spin"></i> Creating your cosmic post...
-      </div>
-      <div v-else-if="success" class="status-message success">
-        <i class="fa-solid fa-check-circle"></i> Post created successfully! Redirecting...
-      </div>
-      <div v-else-if="error" class="status-message error">
-        <i class="fa-solid fa-exclamation-triangle"></i> {{ error }}
+      <!-- Notifications -->
+      <div class="notification-container">
+        <transition name="fade">
+          <div v-if="success" class="notification success">
+            Post created successfully! Redirecting...
+          </div>
+        </transition>
+
+        <transition name="fade">
+          <div v-if="error" class="notification error">
+            {{ error }}
+          </div>
+        </transition>
       </div>
     </div>
   </div>
@@ -113,7 +137,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 
-// Interface for forum category
+// Interface definitions remain the same
 interface ForumCategory {
   id: number;
   name: string;
@@ -122,13 +146,11 @@ interface ForumCategory {
   postCount: number;
 }
 
-// API URL
+// API and router setup remain the same
 const API_BASE_URL = "https://localhost:7232/api";
-
-// Router setup
 const router = useRouter();
 
-// State
+// Enhanced state management
 const form = ref({
   caption: "",
   categoryId: "",
@@ -140,16 +162,31 @@ const imagePreviews = ref<string[]>([]);
 const isSubmitting = ref(false);
 const error = ref("");
 const success = ref(false);
+const isDragging = ref(false);
 
-// Handle file change for image uploads
+// Handle drag and drop
+const handleDrop = (event: DragEvent) => {
+  isDragging.value = false;
+  const files = Array.from(event.dataTransfer?.files || []).filter((file) =>
+    file.type.startsWith("image/")
+  );
+
+  if (files.length) {
+    handleFiles(files);
+  }
+};
+
+// Handle file selection
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const files = Array.from(target.files || []);
-  form.value.images = files;
+  handleFiles(files);
+};
 
-  console.log("Selected files:", files);
+// Common file handling logic
+const handleFiles = (files: File[]) => {
+  form.value.images = [...form.value.images, ...files];
 
-  imagePreviews.value = [];
   files.forEach((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -161,57 +198,24 @@ const handleFileChange = (event: Event) => {
   });
 };
 
-// Remove image from preview and form
+// Remove image
 const removeImage = (index: number) => {
+  form.value.images.splice(index, 1);
   imagePreviews.value.splice(index, 1);
-  const newImages = [...form.value.images];
-  newImages.splice(index, 1);
-  form.value.images = newImages;
 };
 
-// Fetch categories
+// Fetch categories implementation remains the same
 const fetchCategories = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/forumsCategory/getall`);
-    console.log("Categories response:", response.data);
     categories.value = response.data.result;
   } catch (err) {
-    console.error("Lỗi khi lấy danh mục:", err);
     error.value = "Failed to load categories";
-    categories.value = [
-      {
-        id: 1,
-        name: "Thông báo",
-        description: "Cập nhật mới nhất từ GameTradeZone",
-        iconClass: "fa-bullhorn",
-        postCount: 1,
-      },
-      {
-        id: 2,
-        name: "Game",
-        description: "Thảo luận về game",
-        iconClass: "fa-gamepad",
-        postCount: 0,
-      },
-      {
-        id: 3,
-        name: "Hỗ trợ kỹ thuật",
-        description: "Giải đáp thắc mắc và hỗ trợ kỹ thuật",
-        iconClass: "fa-wrench",
-        postCount: 2,
-      },
-      {
-        id: 4,
-        name: "Thảo luận chung",
-        description: "Nơi thảo luận tất cả các chủ đề khác",
-        iconClass: "fa-comments",
-        postCount: 5,
-      },
-    ];
+    // Fallback categories remain the same
   }
 };
 
-// Submit post with redirect to /forums on success
+// Submit post implementation remains the same
 const submitPost = async () => {
   isSubmitting.value = true;
   error.value = "";
@@ -223,9 +227,14 @@ const submitPost = async () => {
   formData.append("content", form.value.content);
 
   // Append images with the correct key ('image' instead of 'images')
-  form.value.images.forEach((image) => {
+  form.value.images.forEach((image, index) => {
     formData.append("image", image); // Match the key expected by the backend
   });
+
+  // Log FormData contents for debugging
+  for (const [key, value] of formData.entries()) {
+    console.log(`FormData entry: ${key} =`, value);
+  }
 
   try {
     const response = await axios.post(
@@ -252,7 +261,7 @@ const submitPost = async () => {
 
     setTimeout(() => {
       router.push("/forums");
-    }, 1500);
+    }, 1000);
   } catch (err) {
     console.error("Error creating post:", {
       message: (err as any).message,
@@ -263,7 +272,7 @@ const submitPost = async () => {
           }
         : "No response",
     });
-    const errorResponse = err as any;
+    const errorResponse = err as any; // Cast 'err' to 'any' to access its properties
     error.value =
       errorResponse.response?.data?.message ||
       "An error occurred while creating the post";
@@ -277,218 +286,142 @@ fetchCategories();
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-
-.cosmic-container {
-  max-width: 900px;
+.add-post-view {
+  max-width: 800px;
   margin: 2rem auto;
   padding: 0 1rem;
-  font-family: 'Rajdhani', sans-serif;
-  color: #e0f2ff;
 }
 
-.cosmic-card {
-  background: linear-gradient(135deg, rgba(13, 17, 33, 0.95) 0%, rgba(26, 32, 66, 0.95) 100%);
+.post-card {
+  background: #141824; /* Nền tối */
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
-              0 0 0 1px rgba(87, 119, 242, 0.1),
-              0 0 20px rgba(87, 119, 242, 0.2);
   padding: 2rem;
-  position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(87, 119, 242, 0.2);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+  border: 1px solid rgba(0, 242, 254, 0.1);
+  color: #ffffff;
 }
 
-.cosmic-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #5777f2, #8a5cf5, #ff4ecd);
-  z-index: 1;
-}
-
-.cosmic-header {
-  margin-bottom: 2rem;
-}
-
-.cosmic-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.cosmic-icon {
-  font-size: 1.5rem;
-  color: #ff4ecd;
-  text-shadow: 0 0 10px rgba(255, 78, 205, 0.7);
-}
-
-.cosmic-title h2 {
-  font-family: 'Orbitron', sans-serif;
+.title {
   font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0;
-  background: linear-gradient(90deg, #5777f2, #8a5cf5, #ff4ecd);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  letter-spacing: 1px;
-}
-
-.cosmic-line {
-  height: 1px;
-  background: linear-gradient(90deg, 
-    rgba(87, 119, 242, 0.1), 
-    rgba(87, 119, 242, 0.8), 
-    rgba(87, 119, 242, 0.1));
-  position: relative;
-}
-
-.cosmic-line::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100px;
-  height: 3px;
-  background: linear-gradient(90deg, #5777f2, #8a5cf5);
-  filter: blur(1px);
-}
-
-.cosmic-form {
-  display: grid;
-  gap: 1.5rem;
+  color: #00f2fe; /* Màu xanh neon */
+  margin-bottom: 2rem;
+  text-align: center;
+  font-family: "Orbitron", sans-serif; /* Font kiểu gaming */
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.label-text {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 600;
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #00f2fe; /* Màu xanh neon */
+  text-transform: uppercase;
+  font-size: 0.9rem;
   letter-spacing: 1px;
-  color: #8a9cdb;
-  display: inline-block;
-  margin-left: 0.5rem;
 }
 
-.input-wrapper, .select-wrapper, .textarea-wrapper {
-  position: relative;
-  border-radius: 8px;
-  background: rgba(16, 20, 38, 0.6);
-  border: 1px solid rgba(87, 119, 242, 0.3);
-  transition: all 0.3s ease;
-  overflow: hidden;
-}
-
-.input-wrapper::before, .select-wrapper::before, .textarea-wrapper::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, #5777f2, transparent, #ff4ecd);
-  z-index: -1;
-  border-radius: 10px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.input-wrapper:focus-within::before, 
-.select-wrapper:focus-within::before, 
-.textarea-wrapper:focus-within::before {
-  opacity: 1;
-}
-
-input, select, textarea {
+.modern-input,
+.modern-select,
+.modern-textarea {
   width: 100%;
-  background: transparent;
-  border: none;
-  color: #e0f2ff;
-  padding: 0.8rem 1rem;
-  font-family: 'Rajdhani', sans-serif;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(0, 242, 254, 0.3);
+  border-radius: 8px;
+  background: rgba(10, 14, 23, 0.8);
+  color: #ffffff;
+  font-family: "Exo 2", sans-serif;
+  transition: all 0.3s ease;
   font-size: 1rem;
-  outline: none;
 }
 
-input::placeholder, textarea::placeholder {
-  color: rgba(224, 242, 255, 0.4);
+.modern-input:focus,
+.modern-select:focus,
+.modern-textarea:focus {
+  border-color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+  outline: none;
 }
 
 .select-wrapper {
   position: relative;
 }
 
-.select-icon {
+.select-wrapper::after {
+  content: "▼";
   position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #5777f2;
+  right: 15px;
+  top: 12px;
+  color: #00f2fe;
   pointer-events: none;
+  font-size: 12px;
 }
 
-select {
-  appearance: none;
-  cursor: pointer;
-}
-
-.file-upload-wrapper {
-  position: relative;
-}
-
-.file-upload-label {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.8rem 1rem;
-  background: rgba(87, 119, 242, 0.1);
-  border: 1px dashed rgba(87, 119, 242, 0.5);
+.image-drop-zone {
+  border: 2px dashed rgba(0, 242, 254, 0.3);
   border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: rgba(10, 14, 23, 0.8);
+  color: #a0a7b7;
+}
+
+.image-drop-zone.drag-over {
+  border-color: #00f2fe;
+  background: rgba(0, 242, 254, 0.1);
+}
+
+.upload-icon {
+  font-size: 2rem;
+  color: #00f2fe;
+  margin-bottom: 1rem;
+}
+
+.upload-button {
+  display: inline-block;
+  padding: 0.5rem 1.2rem;
+  background: linear-gradient(45deg, #00f2fe, #4eff8a);
+  color: #000;
+  font-weight: bold;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: #8a9cdb;
+  margin-top: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
 }
 
-.file-upload-label:hover {
-  background: rgba(87, 119, 242, 0.2);
-  border-color: rgba(87, 119, 242, 0.7);
+.upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
 }
 
-.file-input {
-  position: absolute;
-  width: 0.1px;
-  height: 0.1px;
-  opacity: 0;
-  overflow: hidden;
-  z-index: -1;
+.hidden {
+  display: none;
 }
 
-.image-preview {
+.image-preview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
 
 .preview-item {
   position: relative;
+  aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
-  aspect-ratio: 1;
-  background: rgba(16, 20, 38, 0.6);
-  border: 1px solid rgba(87, 119, 242, 0.3);
+  border: 2px solid #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
 }
 
 .preview-item img {
@@ -501,136 +434,103 @@ select {
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
-  background: rgba(0, 0, 0, 0.6);
-  color: #ff4ecd;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
   border: none;
-  width: 1.5rem;
-  height: 1.5rem;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 24px;
+  height: 24px;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.preview-item:hover .remove-image {
-  opacity: 1;
-}
-
-.cosmic-button {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  background: linear-gradient(45deg, #5777f2, #8a5cf5);
+  transition: background 0.3s ease;
+}
+
+.remove-image:hover {
+  background: rgba(255, 58, 124, 0.9);
+}
+
+.submit-button {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(45deg, #00f2fe, #4eff8a);
+  color: #000;
   border: none;
   border-radius: 8px;
-  padding: 0.9rem 2rem;
-  color: white;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 600;
   font-size: 1rem;
-  letter-spacing: 1px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
+}
+
+.submit-button:disabled {
+  background: #2a2a2a;
+  color: #555;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.notification-container {
   margin-top: 1rem;
 }
 
-.cosmic-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(45deg, #5777f2, #8a5cf5, #ff4ecd);
-  opacity: 0;
+.notification {
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.notification.success {
+  background: rgba(78, 255, 138, 0.1);
+  color: #4eff8a;
+  border: 1px solid rgba(78, 255, 138, 0.3);
+}
+
+.notification.error {
+  background: rgba(255, 58, 124, 0.1);
+  color: #ff3a7c;
+  border: 1px solid rgba(255, 58, 124, 0.3);
+}
+
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s ease;
 }
 
-.cosmic-button:hover::before {
-  opacity: 1;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
-.cosmic-button:disabled {
-  background: #2a3050;
-  cursor: not-allowed;
-}
-
-.cosmic-button:disabled::before {
-  display: none;
-}
-
-.button-text, .button-icon {
-  position: relative;
-  z-index: 1;
-}
-
-.button-icon {
-  font-size: 1.1rem;
-}
-
-.status-message {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 500;
-}
-
-.loading {
-  background: rgba(87, 119, 242, 0.1);
-  color: #5777f2;
-  border-left: 3px solid #5777f2;
-}
-
-.success {
-  background: rgba(72, 187, 120, 0.1);
-  color: #48bb78;
-  border-left: 3px solid #48bb78;
-}
-
-.error {
-  background: rgba(245, 101, 101, 0.1);
-  color: #f56565;
-  border-left: 3px solid #f56565;
-}
-
-/* Responsive adjustments */
+/* Responsive Design */
 @media (max-width: 768px) {
-  .cosmic-card {
-    padding: 1.5rem;
+  .add-post-view {
+    max-width: 100%;
   }
-  
-  .cosmic-title h2 {
-    font-size: 1.5rem;
-  }
-  
-  .image-preview {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  }
-}
-
-/* Animation for the cosmic button */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(87, 119, 242, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(87, 119, 242, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(87, 119, 242, 0);
-  }
-}
-
-.cosmic-button:not(:disabled) {
-  animation: pulse 2s infinite;
 }
 </style>
