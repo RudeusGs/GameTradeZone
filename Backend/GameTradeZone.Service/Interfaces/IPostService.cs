@@ -14,5 +14,9 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> LikePost(int postId);
         Task<ApiResult> Comment(int postId, string content);
         Task<List<CommentData>> GetAllCommentsInPost(int postId);
+        Task<ApiResult> DeleteComment(int commentId);
+        Task<ApiResult> EditComment(int commentId, string content);
+        Task<ApiResult> UnlikePost(int postId);
+
     }
 }

@@ -99,5 +99,34 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+
+        [HttpGet("by-user/{userId}")]
+        public async Task<IActionResult> GetAllPostByUserId(int userId)
+        {
+            try
+            {
+                var posts = await _postService.GetAllPostsByUserId(userId);
+                return Response(posts);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
+        [HttpPost("update/{postId}")]
+        [Authorize]
+        public async Task<IActionResult> UpdatePost(int postId, [FromForm] string caption, [FromForm] int categoryId, [FromForm] string content, [FromForm] List<IFormFile>? images)
+        {
+            try
+            {
+                var post = await _postService.UpdatePost(postId, caption, categoryId, content, images);
+                return Response(post);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }

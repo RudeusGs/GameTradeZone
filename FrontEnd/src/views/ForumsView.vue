@@ -212,6 +212,11 @@ onMounted(() => {
             <i class="fas fa-plus-circle"></i> Tạo bài viết mới
           </button>
         </router-link>
+        <router-link to="/all-posts">
+          <button class="my-posts-btn">
+            <i class="fas fa-user-posts"></i> Bài viết của tôi
+          </button>
+        </router-link>
       </div>
     </aside>
 
@@ -569,6 +574,38 @@ onMounted(() => {
 .new-post-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 204, 255, 0.7);
+}
+
+.my-posts-btn {
+  width: 100%;
+  background: linear-gradient(
+    45deg,
+    #ff00ff,
+    #00b3e0
+  ); /* Gradient ngược lại để phân biệt */
+  color: #f8f8f8;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 15px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.5); /* Magenta glow */
+  margin-bottom: 10px; /* Khoảng cách với nút bên dưới */
+}
+
+.my-posts-btn i {
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+.my-posts-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 0, 255, 0.7);
 }
 
 /* Main content */
