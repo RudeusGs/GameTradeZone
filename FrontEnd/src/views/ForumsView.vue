@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
+import axios from "axios"; // Keep axios for user stats or replace if needed
+import forumApi from "../api/forums"; // Import forum API
+import forumCategoryApi from "../api/forumcategory"; // Import category API
 
 // Router setup
 const router = useRouter();
@@ -44,7 +46,7 @@ interface ForumPost {
   views: number;
 }
 
-// API URL
+// API URL (can be removed if baseApi handles it)
 const API_BASE_URL = "https://localhost:7232/api";
 
 // State
@@ -55,14 +57,15 @@ const selectedCategory = ref<number | null>(null);
 const currentPage = ref(1);
 const postsPerPage = 10;
 
-// Fetch forum categories
+// Fetch forum categories using forumCategoryApi
 const fetchCategories = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/forumscategory/getall`);
+    const response = await forumCategoryApi.getAllCategories();
+    // Assuming the API returns data in response.data.result
     categories.value = response.data.result;
   } catch (error) {
     console.error("Lỗi khi lấy danh mục:", error);
-    // Fallback data
+    // Fallback data remains the same
     categories.value = [
       {
         id: 1,
@@ -104,6 +107,7 @@ const userStats = ref({
 
 const fetchUserStats = async () => {
   try {
+    // Keep using axios or create a dedicated user stats API module
     const API_USER_STATS_URL = `${API_BASE_URL}/AccountGame/Get-All-User-Data-Stat`;
     const response = await axios.get(API_USER_STATS_URL);
 
@@ -121,15 +125,20 @@ const fetchUserStats = async () => {
     console.error("Lỗi khi lấy thống kê người dùng:", error);
   }
 };
-// Fetch posts by category or all posts
+
+// Fetch posts using forumApi
 const fetchPosts = async (categoryId: number | null = null) => {
   try {
-    const url = categoryId
-      ? `${API_BASE_URL}/posts/by-category/${categoryId}`
-      : `${API_BASE_URL}/posts/latest`;
-    console.log("Gọi API:", url);
-    const response = await axios.get(url);
+    let response;
+    if (categoryId) {
+      console.log("Gọi API: getPostsByCategory", categoryId);
+      response = await forumApi.getPostsByCategory(String(categoryId)); // Ensure categoryId is string if required
+    } else {
+      console.log("Gọi API: getLatestPosts");
+      response = await forumApi.getLatestPosts();
+    }
     console.log("Dữ liệu trả về:", response.data);
+    // Assuming the API returns data in response.data.result
     posts.value = response.data.result.map((post: PostResponse) => ({
       id: post.id,
       caption: post.caption,
@@ -143,6 +152,7 @@ const fetchPosts = async (categoryId: number | null = null) => {
     }));
   } catch (error) {
     console.error("Lỗi khi lấy bài viết:", error);
+    posts.value = []; // Clear posts on error or handle appropriately
   }
 };
 

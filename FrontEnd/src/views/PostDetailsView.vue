@@ -143,38 +143,6 @@ onMounted(() => {
 
 <template>
   <div class="neon-theme">
-    <!-- Header -->
-    <header class="site-header">
-      <div class="logo">
-        <router-link to="/" class="logo-link">
-          <span class="logo-text"
-            >GTZ<span class="logo-separator">·</span>G</span
-          >
-        </router-link>
-      </div>
-      <div class="header-actions">
-        <button class="neon-btn blue">
-          <span class="btn-icon">🔄</span>
-          <span class="btn-text">Nạp Tiền</span>
-        </button>
-        <button class="neon-btn green">
-          <span class="btn-icon">+</span>
-          <span class="btn-text">Thêm</span>
-        </button>
-        <button class="neon-btn icon-only">
-          <span class="btn-icon">📅</span>
-        </button>
-        <button class="neon-btn icon-only">
-          <span class="btn-icon">🔔</span>
-        </button>
-        <div class="user-menu">
-          <span class="user-avatar">N</span>
-          <span class="user-name">Nguyễn Văn A</span>
-          <span class="dropdown-icon">▼</span>
-        </div>
-      </div>
-    </header>
-
     <div class="layout">
       <!-- Sidebar -->
       <div class="sidebar">
