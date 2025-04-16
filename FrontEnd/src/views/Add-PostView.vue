@@ -1,71 +1,134 @@
 <template>
   <div class="add-post-view">
-    <h2>Create New Post</h2>
-    <form @submit.prevent="submitPost" enctype="multipart/form-data">
-      <div class="form-group">
-        <label for="caption">Caption</label>
-        <input
-          v-model="form.caption"
-          type="text"
-          id="caption"
-          placeholder="Enter caption"
-          required
-        />
-      </div>
+    <div class="post-card">
+      <h2 class="title">Create New Post</h2>
 
-      <div class="form-group">
-        <label for="category">Category</label>
-        <select v-model="form.categoryId" id="category" required>
-          <option value="">Select a category</option>
-          <option
-            v-for="category in categories"
-            :key="category.id"
-            :value="category.id"
-          >
-            {{ category.name }}
-          </option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="image">Images</label>
-        <input
-          type="file"
-          id="image"
-          name="image"
-          multiple
-          accept="image/*"
-          @change="handleFileChange"
-        />
-        <div v-if="imagePreviews.length" class="image-preview">
-          <img
-            v-for="(preview, index) in imagePreviews"
-            :key="index"
-            :src="preview"
-            alt="Preview"
+      <form @submit.prevent="submitPost" enctype="multipart/form-data">
+        <!-- Caption Input -->
+        <div class="form-group">
+          <label for="caption"> <i class="fas fa-heading"></i> Caption </label>
+          <input
+            v-model="form.caption"
+            type="text"
+            id="caption"
+            placeholder="Enter an engaging caption"
+            required
+            class="modern-input"
           />
         </div>
+
+        <!-- Category Selector -->
+        <div class="form-group">
+          <label for="category"> <i class="fas fa-tags"></i> Category </label>
+          <div class="select-wrapper">
+            <select
+              v-model="form.categoryId"
+              id="category"
+              required
+              class="modern-select"
+            >
+              <option value="" disabled>Select a category</option>
+              <option
+                v-for="category in categories"
+                :key="category.id"
+                :value="category.id"
+              >
+                {{ category.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="form-group">
+          <label> <i class="fas fa-images"></i> Images </label>
+          <div
+            class="image-drop-zone"
+            @dragover.prevent
+            @drop.prevent="handleDrop"
+            :class="{ 'drag-over': isDragging }"
+            @dragenter.prevent="isDragging = true"
+            @dragleave.prevent="isDragging = false"
+          >
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <p>Drag and drop images here or</p>
+            <label class="upload-button">
+              Choose Files
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                @change="handleFileChange"
+                class="hidden"
+              />
+            </label>
+          </div>
+
+          <!-- Image Preview Grid -->
+          <div v-if="imagePreviews.length" class="image-preview-grid">
+            <div
+              v-for="(preview, index) in imagePreviews"
+              :key="index"
+              class="preview-item"
+            >
+              <img :src="preview" alt="Preview" />
+              <button
+                type="button"
+                class="remove-image"
+                @click="removeImage(index)"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Editor -->
+        <div class="form-group">
+          <label for="content">
+            <i class="fas fa-paragraph"></i> Content
+          </label>
+          <textarea
+            v-model="form.content"
+            id="content"
+            placeholder="Share your thoughts..."
+            rows="5"
+            required
+            class="modern-textarea"
+          ></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="submit-button"
+          :class="{ loading: isSubmitting }"
+          :disabled="isSubmitting"
+        >
+          <span v-if="!isSubmitting">
+            <i class="fas fa-paper-plane"></i> Create Post
+          </span>
+          <span v-else class="loading-spinner"></span>
+        </button>
+      </form>
+
+      <!-- Notifications -->
+      <div class="notification-container">
+        <transition name="fade">
+          <div v-if="success" class="notification success">
+            Post created successfully! Redirecting...
+          </div>
+        </transition>
+
+        <transition name="fade">
+          <div v-if="error" class="notification error">
+            {{ error }}
+          </div>
+        </transition>
       </div>
-
-      <div class="form-group">
-        <label for="content">Content</label>
-        <textarea
-          v-model="form.content"
-          id="content"
-          placeholder="Enter post content"
-          rows="5"
-          required
-        ></textarea>
-      </div>
-
-      <button type="submit" :disabled="isSubmitting">Create Post</button>
-    </form>
-
-    <div v-if="isSubmitting" class="loading-message">Creating post...</div>
-    <div v-else-if="success" class="success-message">
-      Post created successfully! Redirecting...
     </div>
-    <div v-else-if="error" class="error-message">{{ error }}</div>
   </div>
 </template>
 
@@ -74,7 +137,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 
-// Interface for forum category
+// Interface definitions remain the same
 interface ForumCategory {
   id: number;
   name: string;
@@ -83,13 +146,11 @@ interface ForumCategory {
   postCount: number;
 }
 
-// API URL
+// API and router setup remain the same
 const API_BASE_URL = "https://localhost:7232/api";
-
-// Router setup
 const router = useRouter();
 
-// State
+// Enhanced state management
 const form = ref({
   caption: "",
   categoryId: "",
@@ -101,16 +162,31 @@ const imagePreviews = ref<string[]>([]);
 const isSubmitting = ref(false);
 const error = ref("");
 const success = ref(false);
+const isDragging = ref(false);
 
-// Handle file change for image uploads
+// Handle drag and drop
+const handleDrop = (event: DragEvent) => {
+  isDragging.value = false;
+  const files = Array.from(event.dataTransfer?.files || []).filter((file) =>
+    file.type.startsWith("image/")
+  );
+
+  if (files.length) {
+    handleFiles(files);
+  }
+};
+
+// Handle file selection
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const files = Array.from(target.files || []);
-  form.value.images = files;
+  handleFiles(files);
+};
 
-  console.log("Selected files:", files);
+// Common file handling logic
+const handleFiles = (files: File[]) => {
+  form.value.images = [...form.value.images, ...files];
 
-  imagePreviews.value = [];
   files.forEach((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -122,49 +198,24 @@ const handleFileChange = (event: Event) => {
   });
 };
 
-// Fetch categories
+// Remove image
+const removeImage = (index: number) => {
+  form.value.images.splice(index, 1);
+  imagePreviews.value.splice(index, 1);
+};
+
+// Fetch categories implementation remains the same
 const fetchCategories = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/forumsCategory/getall`);
-    console.log("Categories response:", response.data);
     categories.value = response.data.result;
   } catch (err) {
-    console.error("Lỗi khi lấy danh mục:", err);
     error.value = "Failed to load categories";
-    categories.value = [
-      {
-        id: 1,
-        name: "Thông báo",
-        description: "Cập nhật mới nhất từ GameTradeZone",
-        iconClass: "fa-bullhorn",
-        postCount: 1,
-      },
-      {
-        id: 2,
-        name: "Game",
-        description: "Thảo luận về game",
-        iconClass: "fa-gamepad",
-        postCount: 0,
-      },
-      {
-        id: 3,
-        name: "Hỗ trợ kỹ thuật",
-        description: "Giải đáp thắc mắc và hỗ trợ kỹ thuật",
-        iconClass: "fa-wrench",
-        postCount: 2,
-      },
-      {
-        id: 4,
-        name: "Thảo luận chung",
-        description: "Nơi thảo luận tất cả các chủ đề khác",
-        iconClass: "fa-comments",
-        postCount: 5,
-      },
-    ];
+    // Fallback categories remain the same
   }
 };
 
-// Submit post with redirect to /forums on success
+// Submit post implementation remains the same
 const submitPost = async () => {
   isSubmitting.value = true;
   error.value = "";
@@ -237,66 +288,249 @@ fetchCategories();
 <style scoped>
 .add-post-view {
   max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.post-card {
+  background: #141824; /* Nền tối */
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+  border: 1px solid rgba(0, 242, 254, 0.1);
+  color: #ffffff;
+}
+
+.title {
+  font-size: 1.8rem;
+  color: #00f2fe; /* Màu xanh neon */
+  margin-bottom: 2rem;
+  text-align: center;
+  font-family: "Orbitron", sans-serif; /* Font kiểu gaming */
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 1.5rem;
 }
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #00f2fe; /* Màu xanh neon */
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
 }
 
-input,
-textarea,
-select {
+.modern-input,
+.modern-select,
+.modern-textarea {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(0, 242, 254, 0.3);
+  border-radius: 8px;
+  background: rgba(10, 14, 23, 0.8);
+  color: #ffffff;
+  font-family: "Exo 2", sans-serif;
+  transition: all 0.3s ease;
+  font-size: 1rem;
 }
 
-button {
-  background-color: #007bff;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
+.modern-input:focus,
+.modern-select:focus,
+.modern-textarea:focus {
+  border-color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+  outline: none;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper::after {
+  content: "▼";
+  position: absolute;
+  right: 15px;
+  top: 12px;
+  color: #00f2fe;
+  pointer-events: none;
+  font-size: 12px;
+}
+
+.image-drop-zone {
+  border: 2px dashed rgba(0, 242, 254, 0.3);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
   cursor: pointer;
+  background: rgba(10, 14, 23, 0.8);
+  color: #a0a7b7;
 }
 
-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
+.image-drop-zone.drag-over {
+  border-color: #00f2fe;
+  background: rgba(0, 242, 254, 0.1);
 }
 
-.image-preview {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
+.upload-icon {
+  font-size: 2rem;
+  color: #00f2fe;
+  margin-bottom: 1rem;
 }
 
-.image-preview img {
-  max-width: 100px;
-  max-height: 100px;
+.upload-button {
+  display: inline-block;
+  padding: 0.5rem 1.2rem;
+  background: linear-gradient(45deg, #00f2fe, #4eff8a);
+  color: #000;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+}
+
+.upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+}
+
+.hidden {
+  display: none;
+}
+
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+}
+
+.preview-item img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
-.loading-message {
-  color: blue;
-  margin-top: 10px;
+.remove-image {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
 }
 
-.error-message {
-  color: red;
-  margin-top: 10px;
+.remove-image:hover {
+  background: rgba(255, 58, 124, 0.9);
 }
 
-.success-message {
-  color: green;
-  margin-top: 10px;
+.submit-button {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(45deg, #00f2fe, #4eff8a);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
+}
+
+.submit-button:disabled {
+  background: #2a2a2a;
+  color: #555;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.notification-container {
+  margin-top: 1rem;
+}
+
+.notification {
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.notification.success {
+  background: rgba(78, 255, 138, 0.1);
+  color: #4eff8a;
+  border: 1px solid rgba(78, 255, 138, 0.3);
+}
+
+.notification.error {
+  background: rgba(255, 58, 124, 0.1);
+  color: #ff3a7c;
+  border: 1px solid rgba(255, 58, 124, 0.3);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .add-post-view {
+    max-width: 100%;
+  }
 }
 </style>

@@ -119,5 +119,19 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+
+        [HttpGet("Get-All-User-Data-Stat")]
+        public async Task<IActionResult> GetAllUserDataStat()
+        {
+            try
+            {
+                var result = await _accountGameService.GetAllUserDataStat();
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }`
     }
 }

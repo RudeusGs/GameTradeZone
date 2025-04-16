@@ -1,5 +1,6 @@
 ﻿using GameTradeZone.Domain.Entities;
 using GameTradeZone.Infrastructure.Persistence;
+using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -16,32 +17,21 @@ namespace GameTradeZone.Service.Services
         private readonly DataContext _context;
         private readonly CloudinaryService _cloudinaryService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUserService _userService;
 
-        public PostInfoService(DataContext context, CloudinaryService cloudinaryService, IHttpContextAccessor httpContextAccessor)
+        public PostInfoService(DataContext context, CloudinaryService cloudinaryService, IHttpContextAccessor httpContextAccessor, IUserService userService)
         {
             _context = context;
             _cloudinaryService = cloudinaryService;
             _httpContextAccessor = httpContextAccessor;
+            _userService = userService;
 
-        }
-
-        private int? GetCurrentUserId()
-        {
-            var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Name)
-                       ?? _httpContextAccessor.HttpContext?.User.FindFirst("unique_name");
-
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
-                return null; 
-            return userId;
         }
 
         public async Task<PostInfo> CreatePost(string caption, int categoryId, string content, List<IFormFile>? images)
         {
-            var userId = GetCurrentUserId();
-            if (userId == null)
-                throw new UnauthorizedAccessException("User is not logged in");
-
-            string imageUrls = null;
+            var userId = _userService.UserId;
+            string? imageUrls = null;
             if (images != null && images.Count > 1)
             {
                 var uploadedImages = await _cloudinaryService.UploadMutilImage(images);
@@ -58,7 +48,7 @@ namespace GameTradeZone.Service.Services
 
             var post = new PostInfo
             {
-                UserId = userId.Value,
+                UserId = userId,
                 Caption = caption,
                 CategoryId = categoryId,
                 Content = content,
@@ -81,8 +71,9 @@ namespace GameTradeZone.Service.Services
             return await _context.PostInfos.Include(p => p.User).ToListAsync();
         }
 
-        public async Task<bool> DeletePost(int postId, int userId)
+        public async Task<bool> DeletePost(int postId)
         {
+            var userId = _userService.UserId;
             var post = await _context.PostInfos.FirstOrDefaultAsync(p => p.Id == postId && p.UserId == userId);
 
             if (post == null)
@@ -125,10 +116,7 @@ namespace GameTradeZone.Service.Services
 
         public async Task<PostInfo> UpdatePost(int postId, string caption, int categoryId, string content, List<IFormFile>? images)
         {
-            var userId = GetCurrentUserId();
-            if (userId == null)
-                throw new UnauthorizedAccessException("User is not logged in");
-
+            var userId = _userService.UserId;
             var post = await _context.PostInfos.FirstOrDefaultAsync(p => p.Id == postId && p.UserId == userId);
             if (post == null)
                 throw new KeyNotFoundException($"Post with ID {postId} not found or you do not have permission to update it.");
@@ -148,7 +136,7 @@ namespace GameTradeZone.Service.Services
                     }
                 }
 
-                string imageUrls = null;
+                string? imageUrls = null;
                 if (images.Count > 1)
                 {
                     var uploadedImages = await _cloudinaryService.UploadMutilImage(images);

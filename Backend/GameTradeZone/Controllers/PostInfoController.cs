@@ -66,13 +66,7 @@ namespace GameTradeZone.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (userIdClaim == null)
-                {
-                    return Response(new { Message = "Người dùng chưa đăng nhập!" });
-                }
-                var userId = int.Parse(userIdClaim);
-                var success = await _postService.DeletePost(id, userId);
+                var success = await _postService.DeletePost(id);
                 if (!success)
                 {
                     return Response(new { Message = "Không thể xóa bài viết!" });

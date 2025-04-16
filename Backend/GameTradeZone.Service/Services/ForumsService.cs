@@ -55,5 +55,19 @@ namespace GameTradeZone.Service.Services
         {
             return await _context.ForumsCategories.ToListAsync();
         }
+
+        public async Task<ApiResult> GetAllCategoryStat()
+        {
+            var categoryStats = await _context.ForumsCategories
+          .Select(category => new
+          {
+              CategoryId = category.Id,
+              CategoryName = category.Name,
+              PostCount = category.PostCount
+          })
+          .ToListAsync();
+
+            return new ApiResult(categoryStats);
+        }
     }
 }

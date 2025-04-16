@@ -236,6 +236,17 @@ namespace GameTradeZone.Service.Services
                 return new ApiResult { Message = $"Error: {ex.Message}" };
             }
         }
+          
+        public async Task<ApiResult> GetAllUserDataStat()
+        {
+            var totalUsers = await _dataContext.Users.CountAsync();
+            var newUsersByDay = await _dataContext.Users
+                .GroupBy(u => u.CreatedDate.HasValue ? u.CreatedDate.Value.Date : DateTime.MinValue.Date)
+                .Select(g => new { Date = g.Key, Count = g.Count() })
+                .ToListAsync();
+            var newUsersToday = newUsersByDay.FirstOrDefault(x => x.Date == DateTime.Now.Date);
+            return new ApiResult(new { TotalUsers = totalUsers, NewUsersByDay = newUsersByDay ,NewUsersToday = newUsersToday });
+        }
 
     }
 }
