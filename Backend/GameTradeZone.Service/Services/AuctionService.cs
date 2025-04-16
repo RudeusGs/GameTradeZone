@@ -53,6 +53,7 @@ namespace GameTradeZone.Service.Services
                     CurrentPrice = model.StartPrice,
                     CreatedDate = DateTime.Now,
                     UpdatedDate = DateTime.Now,
+                    IsApproved = true,
                 };
                 await _dataContext.Auctions.AddAsync(newAuction);
                 await _dataContext.SaveChangesAsync();
@@ -232,12 +233,6 @@ namespace GameTradeZone.Service.Services
             }
         }
 
-        public Task<ApiResult> EndAuction(int id)
-        {
-
-            throw new NotImplementedException();
-        }
-
         public async Task<ApiResult> GetAllAuction()
         {
             var Auctions = await _dataContext.Auctions.Where(x => x.DeleteDate == null).ToListAsync();
@@ -307,6 +302,9 @@ namespace GameTradeZone.Service.Services
 
                 if (model.IsApproved.HasValue)
                     auction.IsApproved = model.IsApproved.Value;
+
+                if (model.EndDatetime.HasValue)
+                    auction.EndDateTime = model.EndDatetime.Value;
 
                 if (model.WinnerId.HasValue)
                     auction.WinnerId = model.WinnerId.Value;
@@ -406,6 +404,31 @@ namespace GameTradeZone.Service.Services
                 return new ApiResult { Message = ex.Message };
             }
             throw new NotImplementedException();
+        }
+
+        public async Task<ApiResult> EndAuction(int id, int WinnerId, DateTime EndDatetime)
+        {
+            var auction = await _dataContext.Auctions.FirstOrDefaultAsync(x => x.Id == id);
+            if (auction == null)
+            {
+                return new ApiResult { Message = "Không tìm thấy phiên đấu giá này!" };
+            }
+            var updateAuctionModel = new UpdateAuctionModel
+            {
+                Id = id,
+                WinnerId = WinnerId,
+                EndDatetime = EndDatetime,
+                EndStatus = true,
+            };
+            try
+            {
+                await UpdateAuction(updateAuctionModel);
+                return new ApiResult { Data = auction };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult { Message = ex.Message };
+            }
         }
     }
 }

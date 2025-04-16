@@ -84,9 +84,10 @@ const router = createRouter({
       component: ListAuctionView,
     },
     {
-      path: "/detail-auction",
-      name: "detail-auction",
+      path: '/auction/:id', // Thêm :id để nhận tham số động
+      name: 'detail-auction',
       component: DetailAuctionView,
+      props: true, // Chuyển đổi tham số thành props
     },
     {
       path: "/add-post",

@@ -18,6 +18,7 @@ namespace GameTradeZone.Service.Models.Auction
 
         public string? TimeToEnd { get; set; } 
         public bool? EndStatus { get; set; }
+        public DateTime? EndDatetime { get; set; }  
         public bool? IsApproved { get; set; } 
         public int? WinnerId { get; set; } 
     }

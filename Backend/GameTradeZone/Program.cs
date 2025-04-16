@@ -9,6 +9,7 @@ using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Services.Clients;
 using GameTradeZone.Service.Services;
 using GameTradeZone.Service.WebSoketHUB;
+using GameTradeZone.Service.Hubs;
 
 namespace GameTradeZone
 {
@@ -112,6 +113,7 @@ namespace GameTradeZone
             app.UseRouting();
             app.UseCors("AllowAnyCorsPolicy");
             app.MapHub<TransactionHub>("/transactionHub");
+            app.MapHub<AuctionHub>("/auctionHub");
             app.UseAuthorization();
             app.MapControllers();
             app.Run();
