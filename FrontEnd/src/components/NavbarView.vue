@@ -199,7 +199,7 @@
               </div>
               <div class="menu-item" @click="goToSettings">
                 <i class="fas fa-cog"></i>
-                <span>Tài khoản</span>
+                <span>Giao dịch tài khoản</span>
               </div>
               <div class="menu-divider"></div>
               <div class="menu-item logout" @click="logout">
@@ -243,6 +243,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import authenticateApi from "@/api/authenticate.api";
+import userApi from "@/api/websiteaccount.api";
 import { userStore } from "@/stores/auth.ts";
 
 export default {
@@ -262,11 +263,12 @@ export default {
     const modalActionText = ref("Đăng nhập");
     const modalAction = ref(() => {});
     const searchQuery = ref("");
+    const balance = ref(0);
 
     const isLoggedIn = computed(() => !!store.user);
     const fullName = computed(() => store.user?.fullName || "");
-    const balance = computed(() => store.user?.balance || 0);
-    
+    const userId = computed(() => store.user?.id || 0);
+
     const formatCurrency = (amount) => {
       return new Intl.NumberFormat("vi-VN", {
         style: "currency",
@@ -274,26 +276,66 @@ export default {
       }).format(amount);
     };
 
+    const fetchUserBalance = async () => {
+      if (!isLoggedIn.value || !userId.value) return;
+      try {
+        const response = await userApi.getById(userId.value);
+        const userData = response.data.result.data;
+        balance.value = userData.balance || 0;
+        store.user = userData;
+        localStorage.setItem("user", JSON.stringify(userData));
+      } catch (error) {
+        console.error("Failed to fetch user balance:", error);
+        showCustomModal(
+          "Lỗi",
+          "Không thể tải thông tin số dư. Vui lòng thử lại sau.",
+          "Đóng",
+          closeModal
+        );
+      }
+    };
+
     onMounted(() => {
       store.init();
+      fetchUserBalance(); // Fetch balance when component mounts
       document.addEventListener("click", handleClickOutside);
     });
 
     const toggleAddMenu = () => {
       isAddMenuOpen.value = !isAddMenuOpen.value;
+      if (isAddMenuOpen.value) {
+        isUserMenuOpen.value = false;
+        isNotificationOpen.value = false;
+        isAccountMenuOpen.value = false;
+      }
     };
 
     const toggleNotifications = () => {
       isNotificationOpen.value = !isNotificationOpen.value;
-      if (isNotificationOpen.value) notifications.value = 0;
+      if (isNotificationOpen.value) {
+        notifications.value = 0;
+        isUserMenuOpen.value = false;
+        isAddMenuOpen.value = false;
+        isAccountMenuOpen.value = false;
+      }
     };
 
     const toggleUserMenu = () => {
       isUserMenuOpen.value = !isUserMenuOpen.value;
+      if (isUserMenuOpen.value) {
+        isNotificationOpen.value = false;
+        isAddMenuOpen.value = false;
+        isAccountMenuOpen.value = false;
+      }
     };
 
     const toggleAccountMenu = () => {
       isAccountMenuOpen.value = !isAccountMenuOpen.value;
+      if (isAccountMenuOpen.value) {
+        isNotificationOpen.value = false;
+        isAddMenuOpen.value = false;
+        isUserMenuOpen.value = false;
+      }
     };
 
     const toggleSlidePanel = () => {
@@ -324,6 +366,7 @@ export default {
       try {
         await authenticateApi.logout();
         store.logout();
+        balance.value = 0; // Reset balance on logout
         closeAllMenus();
         router.push("/login");
       } catch (error) {
@@ -382,11 +425,7 @@ export default {
 
     const handleClickOutside = (event) => {
       if (event.target.closest(".menu-toggle")) return;
-      if (
-        event.target.closest(".dropdown-menu") ||
-        event.target.closest(".slide-panel")
-      )
-        return;
+      if (event.target.closest(".dropdown-menu") || event.target.closest(".slide-panel")) return;
       closeAllMenus();
     };
 
@@ -880,7 +919,7 @@ a {
 /* Dropdown Menus */
 .dropdown-container {
   position: relative;
-  z-index: 1100; /* Tăng z-index để đảm bảo hiển thị trên các phần tử khác */
+  z-index: 1100;
 }
 
 .dropdown-menu {
@@ -894,7 +933,9 @@ a {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 255, 255, 0.2);
   border: 1px solid rgba(0, 255, 255, 0.2);
   backdrop-filter: blur(10px);
-  z-index: 1101; /* Đảm bảo z-index cao hơn container */
+  z-index: 1101;
+  display: flex;
+  flex-direction: column;
 }
 
 .dropdown-menu::before {
@@ -935,6 +976,7 @@ a {
   color: #e0e0e0;
   transition: all 0.3s ease;
   cursor: pointer;
+  width: 100%;
 }
 
 .menu-item i {
@@ -954,6 +996,7 @@ a {
   height: 1px;
   background: rgba(0, 255, 255, 0.1);
   margin: 5px 0;
+  width: 100%;
 }
 
 .menu-item.logout {
@@ -972,8 +1015,8 @@ a {
 .user-info {
   display: flex;
   align-items: center;
-  flex-direction: row;
   gap: 10px;
+  width: 100%;
 }
 
 .user-details {
@@ -1275,45 +1318,6 @@ a {
   .cosmo-icon {
     width: 30px;
     height: 30px;
-    margin: 0 5px;
   }
-  
-  .avatar-circle {
-    width: 25px;
-    height: 25px;
-    font-size: 0.8rem;
-  }
-  
-  .dropdown-menu {
-    min-width: 180px;
-  }
-  
-  .menu-item {
-    padding: 10px;
-  }
-  
-  .modal-content {
-    max-width: 90%;
-  }
-  
-  .modal-title {
-    font-size: 1.3rem;
-  }
-  
-  .modal-message {
-    font-size: 1rem;
-  }
-  
-  .modal-btn {
-    padding: 8px 15px;
-    font-size: 0.9rem;
-  }
-}
-
-/* Đảm bảo menu toggle hoạt động đúng */
-.menu-toggle {
-  cursor: pointer;
-  user-select: none;
-  z-index: 1102; /* Tăng z-index cho menu toggle */
 }
 </style>

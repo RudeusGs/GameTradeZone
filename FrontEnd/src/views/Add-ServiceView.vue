@@ -1,31 +1,43 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import serviceApi from '@/api/service.api'; // API để thêm dịch vụ
+import gameApi from '@/api/gameinfor.api'; // API để lấy danh sách game
 
-// Danh sách game mẫu (cho GameInforID)
-const gameOptions = ref([
-  { id: 1, name: 'Valorant', image: 'https://via.placeholder.com/150?text=Valorant' },
-  { id: 2, name: 'Genshin Impact', image: 'https://via.placeholder.com/150?text=Genshin+Impact' },
-  { id: 3, name: 'League of Legends', image: 'https://via.placeholder.com/150?text=LoL' },
-]);
+// Danh sách game từ API
+const gameOptions = ref<any[]>([]);
 
-// Dữ liệu form dịch vụ
+// Thanh tìm kiếm
+const searchQuery = ref<string>('');
+
+// Dữ liệu form để thêm dịch vụ
 const formData = ref({
   selectedGameId: null as number | null,
+  selectedGame: '',
   serviceName: '',
-  createrId: '', // Tên người dùng
   description: '',
   servicePrice: null as number | null,
-  serviceTime: null as string | null, // Chuỗi dạng "HH:MM:SS" cho TimeSpan
-  file: null as File | null,
-  previewImage: '' as string,
+  serviceTime: '',
+  files: [] as File[],
+  previewImages: [] as string[],
 });
 
-// Step hiện tại (1: chọn game, 2: nhập thông tin, 3: upload ảnh, 4: xem lại)
+// Thông báo lỗi
+const errors = ref({
+  selectedGameId: '',
+  serviceName: '',
+  description: '',
+  servicePrice: '',
+  serviceTime: '',
+});
+
+// Step hiện tại
 const currentStep = ref(1);
 
-// Modal thông báo
+// Trạng thái các modal
 const showWarningModal = ref(false);
 const showSuccessModal = ref(false);
+const showGuideModal = ref(false);
+const showErrorModal = ref(false); // Modal lỗi khi submit thất bại
 
 // Trạng thái xác nhận radio
 const isConfirmed = ref(false);
@@ -33,34 +45,134 @@ const isConfirmed = ref(false);
 // Tham chiếu đến input file
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
+// Hàm lấy URL hình ảnh đầy đủ
+const getFullImageUrl = (imageString: string | null | undefined): string => {
+  if (!imageString || imageString.trim() === '') return 'https://via.placeholder.com/150';
+  const baseUrl = 'https://localhost:7232/';
+  const images = imageString.split(';').filter(img => img.trim() !== '');
+  return images.length > 0 ? `${baseUrl}${images[0]}` : 'https://via.placeholder.com/150';
+};
+
+// Lọc danh sách game dựa trên tìm kiếm
+const filteredGames = computed(() => {
+  if (!searchQuery.value) return gameOptions.value;
+  return gameOptions.value.filter((game) =>
+    game.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+// Lấy danh sách game khi component được mounted
+onMounted(async () => {
+  try {
+    const response = await gameApi.getAll();
+    if (response.data?.result?.data) {
+      gameOptions.value = response.data.result.data.map((game: any, index: number) => ({
+        id: game.id || index + 1,
+        name: game.gameName,
+        image: getFullImageUrl(game.image),
+      }));
+    } else {
+      gameOptions.value = [
+        { id: 1, name: 'Valorant', image: getFullImageUrl('ValorantImageString') },
+        { id: 2, name: 'Genshin Impact', image: getFullImageUrl('GenshinImageString') },
+        { id: 3, name: 'League of Legends', image: getFullImageUrl('LoLImageString') },
+      ];
+    }
+  } catch (error) {
+    console.error('Failed to fetch game list:', error);
+    gameOptions.value = [
+      { id: 1, name: 'Valorant', image: getFullImageUrl('ValorantImageString') },
+      { id: 2, name: 'Genshin Impact', image: getFullImageUrl('GenshinImageString') },
+      { id: 3, name: 'League of Legends', image: getFullImageUrl('LoLImageString') },
+    ];
+  }
+});
+
 // Chọn game và chuyển bước
-const selectGame = (gameId: number) => {
-  formData.value.selectedGameId = gameId;
+const selectGame = (game: any) => {
+  formData.value.selectedGameId = game.id;
+  formData.value.selectedGame = game.name;
   currentStep.value = 2;
 };
 
 // Quay lại bước trước
 const previousStep = () => {
   if (currentStep.value > 1) currentStep.value--;
+  errors.value = {
+    selectedGameId: '',
+    serviceName: '',
+    description: '',
+    servicePrice: '',
+    serviceTime: '',
+  };
+};
+
+// Validate form trước khi submit
+const validateStep2 = () => {
+  let isValid = true;
+  errors.value = {
+    selectedGameId: '',
+    serviceName: '',
+    description: '',
+    servicePrice: '',
+    serviceTime: '',
+  };
+
+  if (!formData.value.selectedGameId) {
+    errors.value.selectedGameId = 'Vui lòng chọn game';
+    isValid = false;
+  }
+  if (!formData.value.serviceName) {
+    errors.value.serviceName = 'Tên dịch vụ không được để trống';
+    isValid = false;
+  }
+  if (!formData.value.description) {
+    errors.value.description = 'Mô tả không được để trống';
+    isValid = false;
+  }
+  if (formData.value.servicePrice === null || formData.value.servicePrice <= 0) {
+    errors.value.servicePrice = 'Giá dịch vụ phải lớn hơn 0';
+    isValid = false;
+  }
+  if (!formData.value.serviceTime) {
+    errors.value.serviceTime = 'Thời gian dịch vụ không được để trống';
+    isValid = false;
+  }
+
+  return isValid;
 };
 
 // Tiếp tục bước sau
 const nextStep = () => {
-  if (currentStep.value < 4) currentStep.value++;
+  if (currentStep.value === 1) {
+    if (formData.value.selectedGameId) {
+      currentStep.value++;
+    } else {
+      errors.value.selectedGameId = 'Vui lòng chọn game';
+    }
+  } else if (currentStep.value === 2) {
+    if (validateStep2()) {
+      currentStep.value++;
+    }
+  } else if (currentStep.value < 4) {
+    currentStep.value++;
+  }
 };
 
 // Xử lý khi chọn file
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const files = target.files;
-  if (files && files.length > 0) {
-    const file = files[0];
-    formData.value.file = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) formData.value.previewImage = e.target.result as string;
-    };
-    reader.readAsDataURL(file);
+  if (files) {
+    const newFiles = Array.from(files);
+    formData.value.files = [...formData.value.files, ...newFiles];
+    newFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) formData.value.previewImages.push(e.target.result as string);
+      };
+      reader.readAsDataURL(file);
+    });
     target.value = '';
   }
 };
@@ -71,194 +183,583 @@ const triggerFileInput = () => {
 };
 
 // Xóa ảnh preview
-const removeImage = () => {
-  formData.value.file = null;
-  formData.value.previewImage = '';
+const removeImage = (index: number) => {
+  formData.value.files.splice(index, 1);
+  formData.value.previewImages.splice(index, 1);
 };
 
-// Submit form
-const submitForm = () => {
-  showWarningModal.value = true;
-};
-
-// Xác nhận trong modal cảnh báo
-const confirmSubmission = () => {
-  if (isConfirmed.value) {
-    console.log('Service Data:', formData.value);
-    showWarningModal.value = false;
-    showSuccessModal.value = true;
-    isConfirmed.value = false;
-    currentStep.value = 1;
-    formData.value = {
-      selectedGameId: null,
-      serviceName: '',
-      createrId: '',
-      description: '',
-      servicePrice: null,
-      serviceTime: null,
-      file: null,
-      previewImage: '',
-    };
+// Hiển thị modal cảnh báo trước khi submit
+const showWarning = () => {
+  if (validateStep2()) {
+    showWarningModal.value = true;
+  } else {
+    alert('Vui lòng điền đầy đủ thông tin');
   }
 };
 
-// Format TimeSpan cho hiển thị
-const formatTimeSpan = (time: string | null) => {
-  if (!time) return 'Chưa xác định';
-  const [hours, minutes, seconds] = time.split(':').map(Number);
-  return `${hours}h ${minutes}m ${seconds}s`;
+// Submit form sau khi xác nhận
+const confirmSubmission = async () => {
+  if (isConfirmed.value) {
+    showWarningModal.value = false;
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('GameInforID', formData.value.selectedGameId!.toString());
+      formDataToSend.append('ServiceName', formData.value.serviceName);
+      formDataToSend.append('Decription', formData.value.description); // Lưu ý typo: "Decription" thay vì "Description"
+      formDataToSend.append('ServicePrice', formData.value.servicePrice!.toString());
+      formDataToSend.append('ServiceTime', formData.value.serviceTime);
+      formData.value.files.forEach((file) => {
+        formDataToSend.append('Files', file);
+      });
+
+      const response = await serviceApi.add(formDataToSend);
+
+      if (response.data?.result?.isSuccess) {
+        showSuccessModal.value = true;
+        resetForm();
+      } else {
+        showErrorModal.value = true;
+      }
+    } catch (error) {
+      console.error('Error adding service:', error);
+      showErrorModal.value = true;
+    }
+  } else {
+    alert('Bạn cần cam kết thông tin chính xác trước khi gửi!');
+  }
+};
+
+// Reset form sau khi thành công
+const resetForm = () => {
+  formData.value = {
+    selectedGameId: null,
+    selectedGame: '',
+    serviceName: '',
+    description: '',
+    servicePrice: null,
+    serviceTime: '',
+    files: [],
+    previewImages: [],
+  };
+  currentStep.value = 1;
+  searchQuery.value = '';
+};
+
+// Mở/đóng modal hướng dẫn
+const toggleGuideModal = () => {
+  showGuideModal.value = !showGuideModal.value;
 };
 </script>
 
 <template>
-  <div class="add-service-container">
-    <!-- Bubble Background -->
-    <div class="bubble-background">
-      <div v-for="i in 50" :key="i" class="bubble"></div>
+  <div class="add-account-container">
+    <!-- Glass Panel Background -->
+    <div class="glass-panels">
+      <div class="glass-panel panel-1"></div>
+      <div class="glass-panel panel-2"></div>
+      <div class="glass-panel panel-3"></div>
+      <div class="glass-panel panel-4"></div>
     </div>
 
-    <!-- Form thêm dịch vụ -->
-    <div class="form-card">
-      <div class="form-header">
-        <h2 class="form-title">Thêm dịch vụ game</h2>
-        <div class="step-indicator">
-          <span :class="{ active: currentStep === 1 }">1</span>
-          <span :class="{ active: currentStep === 2 }">2</span>
-          <span :class="{ active: currentStep === 3 }">3</span>
-          <span :class="{ active: currentStep === 4 }">4</span>
-        </div>
-      </div>
-      <p class="form-subtitle">Bước {{ currentStep }}: {{ currentStep === 1 ? 'Chọn game' : currentStep === 2 ? 'Nhập thông tin' : currentStep === 3 ? 'Tải ảnh' : 'Xem lại' }}</p>
+    <!-- Animated Particles -->
+    <div class="particles">
+      <div v-for="i in 30" :key="i" class="particle"></div>
+    </div>
 
-      <!-- Bước 1: Chọn game -->
-      <div v-if="currentStep === 1" class="step-content game-step">
-        <div class="game-list">
-          <div v-for="game in gameOptions" :key="game.id" class="game-item" @click="selectGame(game.id)">
-            <img :src="game.image" alt="Game Image" class="game-image" />
-            <p>{{ game.name }}</p>
-          </div>
-        </div>
-      </div>
+    <!-- Header -->
+    <header class="app-header">
+      <button class="help-button" @click="toggleGuideModal">
+        <i class="fas fa-question-circle"></i>
+        <span>Hướng dẫn</span>
+      </button>
+    </header>
 
-      <!-- Bước 2: Nhập thông tin -->
-      <div v-if="currentStep === 2" class="step-content">
-        <div class="form-group">
-          <label>Tên dịch vụ</label>
-          <input v-model="formData.serviceName" type="text" class="form-input" placeholder="Tên dịch vụ" required />
+    <!-- Main Container -->
+    <div class="main-container">
+      <!-- Progress Steps -->
+      <div class="progress-bar">
+        <div class="progress-step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+          <div class="step-number">1</div>
+          <div class="step-label">Chọn Game</div>
         </div>
-        <div class="form-group">
-          <label>Tên người tạo</label>
-          <input v-model="formData.createrId" type="text" class="form-input" placeholder="Tên người dùng" required />
+        <div class="progress-line" :class="{ active: currentStep > 1 }"></div>
+        <div class="progress-step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+          <div class="step-number">2</div>
+          <div class="step-label">Thông Tin</div>
         </div>
-        <div class="form-group">
-          <label>Mô tả</label>
-          <textarea v-model="formData.description" class="form-input" placeholder="Mô tả dịch vụ" rows="3" required></textarea>
+        <div class="progress-line" :class="{ active: currentStep > 2 }"></div>
+        <div class="progress-step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
+          <div class="step-number">3</div>
+          <div class="step-label">Hình Ảnh</div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Giá dịch vụ (VND)</label>
-            <input v-model.number="formData.servicePrice" type="number" class="form-input" placeholder="Giá dịch vụ" min="0" step="1000" required />
-          </div>
-          <div class="form-group">
-            <label>Thời gian ước tính (HH:MM:SS)</label>
-            <input v-model="formData.serviceTime" type="text" class="form-input" placeholder="VD: 01:30:00" pattern="^[0-2][0-9]:[0-5][0-9]:[0-5][0-9]$" required />
-          </div>
+        <div class="progress-line" :class="{ active: currentStep > 3 }"></div>
+        <div class="progress-step" :class="{ active: currentStep >= 4 }">
+          <div class="step-number">4</div>
+          <div class="step-label">Xác Nhận</div>
         </div>
       </div>
 
-      <!-- Bước 3: Upload ảnh -->
-      <div v-if="currentStep === 3" class="step-content">
-        <div class="form-group">
-          <label>Hình ảnh dịch vụ</label>
-          <div class="upload-area" @click="triggerFileInput">
-            <i class="fas fa-cloud-upload-alt upload-icon"></i>
-            <p>Tải ảnh lên (nhấp hoặc kéo thả)</p>
-            <input ref="fileInputRef" type="file" accept="image/*" @change="handleFileChange" class="file-input" />
+      <!-- Content Card -->
+      <div class="content-card">
+        <!-- Step 1: Game Selection -->
+        <div v-if="currentStep === 1" class="step-content game-selection">
+          <h2 class="step-title">Chọn Game Cần Cung Cấp Dịch Vụ</h2>
+          <div class="search-container">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Tìm tên game..."
+                class="search-input"
+              />
+            </div>
           </div>
-        </div>
-        <div class="preview-container" v-if="formData.previewImage">
-          <div class="preview-images">
-            <div class="preview-item">
-              <img :src="formData.previewImage" alt="Preview" class="preview-image" />
-              <button class="remove-btn" @click="removeImage">×</button>
+
+          <div class="game-grid">
+            <div
+              v-for="game in filteredGames"
+              :key="game.id"
+              class="game-card"
+              @click="selectGame(game)"
+            >
+              <div class="game-img-container">
+                <img :src="game.image" :alt="game.name" class="game-img" />
+              </div>
+              <div class="game-name">{{ game.name }}</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Bước 4: Xem lại thông tin -->
-      <div v-if="currentStep === 4" class="step-content review-step">
-        <div class="review-card">
-          <div class="review-group">
-            <span class="review-label">Game:</span>
-            <span class="review-value">{{ gameOptions.find(g => g.id === formData.selectedGameId)?.name || 'Chưa chọn' }}</span>
-          </div>
-          <div class="review-group">
-            <span class="review-label">Tên dịch vụ:</span>
-            <span class="review-value">{{ formData.serviceName }}</span>
-          </div>
-          <div class="review-group">
-            <span class="review-label">Mô tả:</span>
-            <span class="review-value">{{ formData.description }}</span>
-          </div>
-          <div class="review-group">
-            <span class="review-label">Giá dịch vụ:</span>
-            <span class="review-value">{{ formData.servicePrice }} VND</span>
-          </div>
-          <div class="review-group">
-            <span class="review-label">Thời gian ước tính:</span>
-            <span class="review-value">{{ formatTimeSpan(formData.serviceTime) }}</span>
-          </div>
-          <div class="review-group">
-            <span class="review-label">Hình ảnh:</span>
-            <div class="review-images" v-if="formData.previewImage">
-              <img :src="formData.previewImage" alt="Preview" class="review-image" />
+        <!-- Step 2: Service Details -->
+        <div v-if="currentStep === 2" class="step-content service-details">
+          <h2 class="step-title">Thông Tin Dịch Vụ</h2>
+          <p class="game-selected">
+            <span class="label">Game đã chọn:</span>
+            <span class="value">{{ formData.selectedGame }}</span>
+          </p>
+
+          <div class="form-group">
+            <label for="serviceName">
+              Tên dịch vụ <span class="required">*</span>
+            </label>
+            <div class="input-container">
+              <i class="fas fa-concierge-bell"></i>
+              <input
+                id="serviceName"
+                v-model="formData.serviceName"
+                type="text"
+                placeholder="Nhập tên dịch vụ"
+              />
             </div>
-            <span v-else class="review-value">Chưa có ảnh</span>
+            <p class="error-message" v-if="errors.serviceName">{{ errors.serviceName }}</p>
           </div>
+
+          <div class="form-group">
+            <label for="description">
+              Mô tả <span class="required">*</span>
+            </label>
+            <div class="input-container">
+              <i class="fas fa-info-circle"></i>
+              <textarea
+                id="description"
+                v-model="formData.description"
+                placeholder="Nhập mô tả dịch vụ"
+                rows="4"
+              ></textarea>
+            </div>
+            <p class="error-message" v-if="errors.description">{{ errors.description }}</p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="servicePrice">
+                Giá dịch vụ (VNĐ) <span class="required">*</span>
+              </label>
+              <div class="input-container">
+                <i class="fas fa-tag"></i>
+                <input
+                  id="servicePrice"
+                  v-model.number="formData.servicePrice"
+                  type="number"
+                  placeholder="Nhập giá dịch vụ"
+                  min="0"
+                  step="1000"
+                />
+              </div>
+              <p class="error-message" v-if="errors.servicePrice">{{ errors.servicePrice }}</p>
+            </div>
+
+            <div class="form-group">
+              <label for="serviceTime">
+                Thời gian dịch vụ <span class="required">*</span>
+              </label>
+              <div class="input-container">
+                <i class="fas fa-clock"></i>
+                <input
+                  id="serviceTime"
+                  v-model="formData.serviceTime"
+                  type="text"
+                  placeholder="Nhập thời gian (ví dụ: 02:30:00)"
+                />
+              </div>
+              <p class="error-message" v-if="errors.serviceTime">{{ errors.serviceTime }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Image Upload -->
+        <div v-if="currentStep === 3" class="step-content image-upload">
+          <h2 class="step-title">Hình Ảnh Dịch Vụ</h2>
+
+          <div class="upload-zone" @click="triggerFileInput">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <p class="upload-text">Kéo thả hoặc nhấp để tải ảnh lên</p>
+            <p class="upload-hint">Hình ảnh giúp tăng khả năng thuê dịch vụ</p>
+            <input
+              ref="fileInputRef"
+              type="file"
+              multiple
+              accept="image/*"
+              @change="handleFileChange"
+              class="file-input"
+            />
+          </div>
+
+          <div v-if="formData.previewImages.length > 0" class="image-preview-container">
+            <div class="image-count">
+              <i class="fas fa-images"></i>
+              <span>{{ formData.previewImages.length }} hình ảnh</span>
+            </div>
+
+            <div class="image-grid">
+              <div v-for="(image, index) in formData.previewImages" :key="index" class="image-item">
+                <img :src="image" alt="Preview" class="preview-img" />
+                <button class="remove-image" @click="removeImage(index)">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Review -->
+        <div v-if="currentStep === 4" class="step-content review-step">
+          <h2 class="step-title">Xác Nhận Thông Tin</h2>
+
+          <div class="review-data">
+            <div class="review-section">
+              <h3 class="review-section-title">
+                <i class="fas fa-gamepad"></i> Thông tin game
+              </h3>
+              <div class="review-field">
+                <span class="field-name">Game:</span>
+                <span class="field-value">{{ formData.selectedGame }}</span>
+              </div>
+            </div>
+
+            <div class="review-section">
+              <h3 class="review-section-title">
+                <i class="fas fa-concierge-bell"></i> Thông tin dịch vụ
+              </h3>
+              <div class="review-field">
+                <span class="field-name">Tên dịch vụ:</span>
+                <span class="field-value">{{ formData.serviceName }}</span>
+              </div>
+              <div class="review-field">
+                <span class="field-name">Mô tả:</span>
+                <span class="field-value">{{ formData.description }}</span>
+              </div>
+              <div class="review-field">
+                <span class="field-name">Giá dịch vụ:</span>
+                <span class="field-value price-value">{{ formData.servicePrice?.toLocaleString() }} VNĐ</span>
+              </div>
+              <div class="review-field">
+                <span class="field-name">Thời gian dịch vụ:</span>
+                <span class="field-value">{{ formData.serviceTime }}</span>
+              </div>
+            </div>
+
+            <div v-if="formData.previewImages.length > 0" class="review-section">
+              <h3 class="review-section-title">
+                <i class="fas fa-images"></i> Hình ảnh ({{ formData.previewImages.length }})
+              </h3>
+              <div class="review-images">
+                <img
+                  v-for="(image, index) in formData.previewImages"
+                  :key="index"
+                  :src="image"
+                  alt="Preview"
+                  class="review-image"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="step-controls">
+          <button
+            v-if="currentStep > 1"
+            @click="previousStep"
+            class="btn btn-prev"
+          >
+            <i class="fas fa-arrow-left"></i>
+            <span>Quay lại</span>
+          </button>
+
+          <button
+            v-if="currentStep < 4"
+            @click="nextStep"
+            class="btn btn-next"
+          >
+            <span>Tiếp tục</span>
+            <i class="fas fa-arrow-right"></i>
+          </button>
+
+          <button
+            v-if="currentStep === 4"
+            @click="showWarning"
+            class="btn btn-submit"
+          >
+            <span>Đăng dịch vụ</span>
+            <i class="fas fa-check"></i>
+          </button>
         </div>
       </div>
 
-      <!-- Điều hướng bước -->
-      <div class="step-navigation">
-        <button v-if="currentStep > 1" @click="previousStep" class="nav-btn prev-btn">
-          <i class="fas fa-arrow-left"></i>
-        </button>
-        <button v-if="currentStep < 4" @click="nextStep" class="nav-btn next-btn">
-          <i class="fas fa-arrow-right"></i>
-        </button>
-        <button v-if="currentStep === 4" @click="submitForm" class="nav-btn submit-btn">
-          <i class="fas fa-check"></i>
-        </button>
+      <!-- Information cards -->
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div class="info-content">
+            <h3>Bảo mật tuyệt đối</h3>
+            <p>Thông tin dịch vụ của bạn được mã hóa và bảo vệ an toàn</p>
+          </div>
+        </div>
+        
+        <div class="info-card">
+          <div class="info-icon">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <div class="info-content">
+            <h3>Giao dịch nhanh chóng</h3>
+            <p>Dịch vụ của bạn sẽ được đăng ngay lập tức sau khi xác nhận</p>
+          </div>
+        </div>
+        
+        <div class="info-card">
+          <div class="info-icon">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div class="info-content">
+            <h3>Phí giao dịch thấp</h3>
+            <p>Chỉ 5% giá trị giao dịch sẽ được trích làm phí dịch vụ</p>
+          </div>
+        </div>
+        
+        <div class="info-card">
+          <div class="info-icon">
+            <i class="fas fa-headset"></i>
+          </div>
+          <div class="info-content">
+            <h3>Hỗ trợ 24/7</h3>
+            <p>Đội ngũ hỗ trợ luôn sẵn sàng giải đáp mọi thắc mắc của bạn</p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Modal cảnh báo -->
-    <transition name="fade">
+    <!-- Warning Modal -->
+    <transition name="modal-fade">
       <div v-if="showWarningModal" class="modal-overlay">
-        <div class="modal-content warning-modal">
-          <h3>Cảnh báo quan trọng</h3>
-          <p>Chúng tôi yêu cầu bạn cung cấp thông tin chính xác. Mọi hành vi cố ý đăng tải sai lệch sẽ dẫn đến khóa tài khoản vĩnh viễn.</p>
-          <div class="confirmation-group">
-            <input type="radio" id="confirm" v-model="isConfirmed" :value="true" />
-            <label for="confirm">Tôi cam kết thông tin chính xác</label>
-          </div>
-          <div class="modal-actions">
-            <button @click="confirmSubmission" class="modal-confirm" :disabled="!isConfirmed">Xác nhận</button>
-            <button @click="showWarningModal = false" class="modal-cancel">Hủy bỏ</button>
+        <div class="modal-container">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3>Xác nhận thông tin</h3>
+              <button @click="showWarningModal = false" class="close-btn">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="warning-box">
+                <div class="warning-icon">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <p>
+                  Tôi cam kết rằng tất cả thông tin dịch vụ đã cung cấp là <strong>chính xác 100%</strong>.
+                  Tôi hiểu rằng việc cố ý cung cấp thông tin sai sự thật có thể dẫn đến việc
+                  <strong>khóa vĩnh viễn</strong> tài khoản của tôi.
+                </p>
+              </div>
+              <div class="checkbox-container">
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="isConfirmed" />
+                  <span class="checkbox-text">Tôi xác nhận thông tin là chính xác và đồng ý với các điều khoản</span>
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button @click="showWarningModal = false" class="btn-cancel">Hủy bỏ</button>
+              <button 
+                @click="confirmSubmission" 
+                :disabled="!isConfirmed" 
+                :class="['btn-confirm', {'btn-disabled': !isConfirmed}]"
+              >
+                Xác nhận
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </transition>
 
-    <!-- Modal thành công -->
-    <transition name="fade">
+    <!-- Success Modal -->
+    <transition name="modal-fade">
       <div v-if="showSuccessModal" class="modal-overlay">
-        <div class="modal-content success-modal">
-          <i class="fas fa-check-circle success-icon"></i>
-          <h3>Thành công!</h3>
-          <p>Dịch vụ của bạn đã được thêm vào hệ thống.</p>
-          <button @click="showSuccessModal = false" class="modal-close">Đóng</button>
+        <div class="modal-container">
+          <div class="modal-card success-card">
+            <div class="success-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="modal-body text-center">
+              <h3 class="success-title">Thành công!</h3>
+              <p class="success-message">
+                Dịch vụ của bạn đã được đăng thành công và đang được hiển thị cho người dùng tiềm năng.
+              </p>
+              <div class="success-info">
+                <div class="info-item">
+                  <i class="fas fa-check"></i>
+                  <span>Thông tin đã được xác nhận</span>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-eye"></i>
+                  <span>Dịch vụ đã hiển thị công khai</span>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-bell"></i>
+                  <span>Bạn sẽ nhận thông báo khi có người thuê dịch vụ</span>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer center">
+              <button @click="showSuccessModal = false" class="btn-success">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Error Modal -->
+    <transition name="modal-fade">
+      <div v-if="showErrorModal" class="modal-overlay">
+        <div class="modal-container">
+          <div class="modal-card success-card">
+            <div class="success-icon" style="background-color: #e74c3c;">
+              <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="modal-body text-center">
+              <h3 class="success-title" style="color: #e74c3c;">Thất bại!</h3>
+              <p class="success-message">
+                Đã xảy ra lỗi khi đăng dịch vụ. Vui lòng kiểm tra lại thông tin và thử lại.
+              </p>
+            </div>
+            <div class="modal-footer center">
+              <button @click="showErrorModal = false" class="btn-success" style="background-color: #e74c3c;">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Guide Modal -->
+    <transition name="modal-fade">
+      <div v-if="showGuideModal" class="modal-overlay guide-modal-overlay">
+        <div class="modal-container guide-modal-container">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h3><i class="fas fa-book"></i> Hướng dẫn đăng dịch vụ</h3>
+              <button @click="toggleGuideModal" class="close-btn">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-body guide-content">
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-shield-alt"></i>
+                  Bảo vệ thông tin cá nhân
+                </h4>
+                <p>
+                  Trước khi đăng dịch vụ, hãy đảm bảo rằng bạn không chia sẻ thông tin nhạy cảm như thông tin tài khoản cá nhân hoặc dữ liệu riêng tư.
+                </p>
+              </div>
+
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-envelope"></i>
+                  Sử dụng thông tin chính xác
+                </h4>
+                <p>
+                  Hãy đảm bảo rằng tất cả thông tin dịch vụ bạn cung cấp là chính xác và không gian lận.
+                  Điều này giúp xây dựng uy tín và tăng khả năng được thuê dịch vụ.
+                </p>
+              </div>
+
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-exchange-alt"></i>
+                  Cung cấp dịch vụ chất lượng
+                </h4>
+                <p>
+                  Khi có người thuê dịch vụ của bạn, hãy đảm bảo cung cấp dịch vụ đúng như mô tả và
+                  trong thời gian đã cam kết. Chất lượng dịch vụ tốt sẽ giúp bạn nhận được nhiều đánh giá tích cực.
+                </p>
+              </div>
+
+              <div class="guide-section">
+                <h4 class="guide-title">
+                  <i class="fas fa-list-ol"></i>
+                  Các bước đăng dịch vụ
+                </h4>
+                <div class="steps">
+                  <div class="step">
+                    <div class="step-indicator">1</div>
+                    <div class="step-description">
+                      <strong>Chọn game</strong>: Chọn loại game bạn muốn cung cấp dịch vụ từ danh sách
+                    </div>
+                  </div>
+
+                  <div class="step">
+                    <div class="step-indicator">2</div>
+                    <div class="step-description">
+                      <strong>Nhập thông tin</strong>: Điền tên dịch vụ, mô tả, giá và thời gian thực hiện
+                    </div>
+                  </div>
+
+                  <div class="step">
+                    <div class="step-indicator">3</div>
+                    <div class="step-description">
+                      <strong>Tải ảnh lên</strong>: Thêm ảnh minh họa cho dịch vụ để tăng độ tin cậy
+                    </div>
+                  </div>
+
+                  <div class="step">
+                    <div class="step-indicator">4</div>
+                    <div class="step-description">
+                      <strong>Xác nhận</strong>: Kiểm tra lại thông tin và xác nhận để đăng dịch vụ
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button @click="toggleGuideModal" class="btn-primary">Đã hiểu</button>
+            </div>
+          </div>
         </div>
       </div>
     </transition>
@@ -266,629 +767,1225 @@ const formatTimeSpan = (time: string | null) => {
 </template>
 
 <style scoped>
-/* Tổng thể */
-.add-service-container {
+/* Main Layout & Base Styles */
+.add-account-container {
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
-  font-family: 'Arial', sans-serif;
-  padding: 40px;
+  background-color: #0a0e17;
+  font-family: 'Poppins', sans-serif;
+  color: #e1e7ef;
   position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+/* Glass Panels Background */
+.glass-panels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
   overflow: hidden;
 }
 
-/* Bubble Background */
-.bubble-background {
+.glass-panel {
   position: absolute;
-  inset: 0;
-  z-index: 0;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(5px);
+  border-radius: 30px;
+  box-shadow: 0 0 30px rgba(0, 161, 255, 0.1);
+  transform: rotate(15deg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.5s ease;
 }
 
-.bubble {
+.panel-1 {
+  width: 50%;
+  height: 60%;
+  top: -10%;
+  left: -5%;
+  background: linear-gradient(45deg, rgba(33, 33, 99, 0.05), rgba(51, 153, 255, 0.05));
+  animation: floatPanel 20s infinite alternate ease-in-out;
+}
+
+.panel-2 {
+  width: 60%;
+  height: 50%;
+  top: 15%;
+  right: -15%;
+  background: linear-gradient(45deg, rgba(76, 0, 255, 0.05), rgba(0, 204, 255, 0.05));
+  animation: floatPanel 15s infinite alternate-reverse ease-in-out;
+}
+
+.panel-3 {
+  width: 40%;
+  height: 40%;
+  bottom: -5%;
+  left: 10%;
+  background: linear-gradient(45deg, rgba(255, 0, 153, 0.05), rgba(102, 0, 255, 0.05));
+  animation: floatPanel 18s infinite alternate ease-in-out;
+}
+
+.panel-4 {
+  width: 70%;
+  height: 30%;
+  bottom: 10%;
+  right: 5%;
+  background: linear-gradient(45deg, rgba(102, 255, 204, 0.05), rgba(0, 102, 255, 0.05));
+  animation: floatPanel 25s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes floatPanel {
+  0% {
+    transform: rotate(15deg) translate(0, 0);
+  }
+  50% {
+    transform: rotate(13deg) translate(-15px, 15px);
+  }
+  100% {
+    transform: rotate(16deg) translate(15px, -15px);
+  }
+}
+
+/* Particles */
+.particles {
   position: absolute;
-  border-radius: 50%;
-  opacity: 0.7;
-  animation: bubbleRise 6s infinite ease-in-out;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-}
-
-.bubble:nth-child(odd) {
-  background: rgba(255, 0, 255, 0.4);
-  width: 15px;
-  height: 15px;
-}
-
-.bubble:nth-child(even) {
-  background: rgba(0, 255, 255, 0.4);
-  width: 25px;
-  height: 25px;
-}
-
-.bubble:nth-child(1) { left: 5%; bottom: 5%; animation-duration: 7s; }
-.bubble:nth-child(2) { left: 15%; bottom: 10%; animation-duration: 5s; }
-.bubble:nth-child(3) { left: 25%; bottom: 15%; animation-duration: 6.5s; }
-.bubble:nth-child(4) { left: 35%; bottom: 20%; animation-duration: 5.5s; }
-.bubble:nth-child(5) { left: 45%; bottom: 25%; animation-duration: 6s; }
-.bubble:nth-child(6) { left: 55%; bottom: 30%; animation-duration: 7.5s; }
-.bubble:nth-child(7) { left: 65%; bottom: 35%; animation-duration: 5.8s; }
-.bubble:nth-child(8) { left: 75%; bottom: 40%; animation-duration: 6.2s; }
-.bubble:nth-child(9) { left: 85%; bottom: 45%; animation-duration: 5.7s; }
-.bubble:nth-child(10) { left: 95%; bottom: 50%; animation-duration: 6.8s; }
-.bubble:nth-child(11) { left: 10%; bottom: 55%; animation-duration: 5.9s; }
-.bubble:nth-child(12) { left: 20%; bottom: 60%; animation-duration: 6.3s; }
-.bubble:nth-child(13) { left: 30%; bottom: 65%; animation-duration: 5.6s; }
-.bubble:nth-child(14) { left: 40%; bottom: 70%; animation-duration: 6.1s; }
-.bubble:nth-child(15) { left: 50%; bottom: 75%; animation-duration: 6.4s; }
-.bubble:nth-child(16) { left: 60%; bottom: 80%; animation-duration: 5.5s; }
-.bubble:nth-child(17) { left: 70%; bottom: 85%; animation-duration: 6.7s; }
-.bubble:nth-child(18) { left: 80%; bottom: 90%; animation-duration: 6s; }
-.bubble:nth-child(19) { left: 90%; bottom: 95%; animation-duration: 5.9s; }
-.bubble:nth-child(20) { left: 15%; bottom: 88%; animation-duration: 6.2s; }
-.bubble:nth-child(21) { left: 25%; bottom: 83%; animation-duration: 6.5s; }
-.bubble:nth-child(22) { left: 35%; bottom: 78%; animation-duration: 5.8s; }
-.bubble:nth-child(23) { left: 45%; bottom: 73%; animation-duration: 6.1s; }
-.bubble:nth-child(24) { left: 55%; bottom: 68%; animation-duration: 5.7s; }
-.bubble:nth-child(25) { left: 65%; bottom: 63%; animation-duration: 6.3s; }
-.bubble:nth-child(26) { left: 75%; bottom: 58%; animation-duration: 6s; }
-.bubble:nth-child(27) { left: 85%; bottom: 53%; animation-duration: 5.9s; }
-.bubble:nth-child(28) { left: 95%; bottom: 48%; animation-duration: 6.4s; }
-.bubble:nth-child(29) { left: 5%; bottom: 43%; animation-duration: 6.1s; }
-.bubble:nth-child(30) { left: 15%; bottom: 38%; animation-duration: 5.8s; }
-.bubble:nth-child(31) { left: 25%; bottom: 33%; animation-duration: 7s; }
-.bubble:nth-child(32) { left: 35%; bottom: 28%; animation-duration: 6.5s; }
-.bubble:nth-child(33) { left: 45%; bottom: 23%; animation-duration: 5.9s; }
-.bubble:nth-child(34) { left: 55%; bottom: 18%; animation-duration: 6.2s; }
-.bubble:nth-child(35) { left: 65%; bottom: 13%; animation-duration: 6.8s; }
-.bubble:nth-child(36) { left: 75%; bottom: 8%; animation-duration: 5.6s; }
-.bubble:nth-child(37) { left: 85%; bottom: 3%; animation-duration: 6.3s; }
-.bubble:nth-child(38) { left: 95%; bottom: 7%; animation-duration: 6s; }
-.bubble:nth-child(39) { left: 10%; bottom: 12%; animation-duration: 5.7s; }
-.bubble:nth-child(40) { left: 20%; bottom: 17%; animation-duration: 6.4s; }
-.bubble:nth-child(41) { left: 30%; bottom: 22%; animation-duration: 6.1s; }
-.bubble:nth-child(42) { left: 40%; bottom: 27%; animation-duration: 5.9s; }
-.bubble:nth-child(43) { left: 50%; bottom: 32%; animation-duration: 6.5s; }
-.bubble:nth-child(44) { left: 60%; bottom: 37%; animation-duration: 6.2s; }
-.bubble:nth-child(45) { left: 70%; bottom: 42%; animation-duration: 5.8s; }
-.bubble:nth-child(46) { left: 80%; bottom: 47%; animation-duration: 6.7s; }
-.bubble:nth-child(47) { left: 90%; bottom: 52%; animation-duration: 6s; }
-.bubble:nth-child(48) { left: 5%; bottom: 57%; animation-duration: 5.9s; }
-.bubble:nth-child(49) { left: 15%; bottom: 62%; animation-duration: 6.3s; }
-.bubble:nth-child(50) { left: 25%; bottom: 67%; animation-duration: 6.1s; }
-
-@keyframes bubbleRise {
-  0% { transform: translateY(100vh) scale(0.5); opacity: 0.7; }
-  30% { transform: translateY(70vh) scale(0.8); opacity: 0.9; }
-  60% { transform: translateY(30vh) scale(1.1); opacity: 0.8; }
-  100% { transform: translateY(-50px) scale(0.9); opacity: 0; }
-}
-
-/* Form Card */
-.form-card {
-  background: linear-gradient(135deg, #0d1b2a 0%, #1a0933 100%);
-  border-radius: 20px;
-  padding: 40px;
-  width: 100%;
-  max-width: 900px;
-  box-shadow: 0 15px 50px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
+  overflow: hidden;
 }
 
-/* Form Header */
-.form-header {
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.particle:nth-child(odd) {
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  box-shadow: 0 0 10px 2px rgba(52, 152, 219, 0.5);
+  animation: floatUp 15s infinite ease-in-out;
+}
+
+.particle:nth-child(even) {
+  background: linear-gradient(45deg, #ff758c, #ff7eb3);
+  box-shadow: 0 0 8px 2px rgba(255, 117, 140, 0.5);
+  animation: floatUp 20s infinite ease-in-out;
+}
+
+.particle:nth-child(3n) {
+  animation-delay: 2s;
+}
+
+.particle:nth-child(3n+1) {
+  animation-delay: 5s;
+}
+
+.particle:nth-child(3n+2) {
+  animation-delay: 9s;
+}
+
+.particle:nth-child(1) { left: 5%; top: 90%; }
+.particle:nth-child(2) { left: 15%; top: 70%; }
+.particle:nth-child(3) { left: 25%; top: 80%; }
+.particle:nth-child(4) { left: 35%; top: 75%; }
+.particle:nth-child(5) { left: 45%; top: 85%; }
+.particle:nth-child(6) { left: 55%; top: 90%; }
+.particle:nth-child(7) { left: 65%; top: 85%; }
+.particle:nth-child(8) { left: 75%; top: 80%; }
+.particle:nth-child(9) { left: 85%; top: 75%; }
+.particle:nth-child(10) { left: 95%; top: 70%; }
+.particle:nth-child(11) { left: 10%; top: 65%; }
+.particle:nth-child(12) { left: 20%; top: 60%; }
+.particle:nth-child(13) { left: 30%; top: 55%; }
+.particle:nth-child(14) { left: 40%; top: 50%; }
+.particle:nth-child(15) { left: 50%; top: 45%; }
+.particle:nth-child(16) { left: 60%; top: 40%; }
+.particle:nth-child(17) { left: 70%; top: 35%; }
+.particle:nth-child(18) { left: 80%; top: 30%; }
+.particle:nth-child(19) { left: 90%; top: 25%; }
+.particle:nth-child(20) { left: 5%; top: 20%; }
+.particle:nth-child(21) { left: 15%; top: 15%; }
+.particle:nth-child(22) { left: 25%; top: 10%; }
+.particle:nth-child(23) { left: 35%; top: 5%; }
+.particle:nth-child(24) { left: 45%; top: 10%; }
+.particle:nth-child(25) { left: 55%; top: 15%; }
+.particle:nth-child(26) { left: 65%; top: 20%; }
+.particle:nth-child(27) { left: 75%; top: 25%; }
+.particle:nth-child(28) { left: 85%; top: 30%; }
+.particle:nth-child(29) { left: 95%; top: 35%; }
+.particle:nth-child(30) { left: 50%; top: 95%; }
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Header */
+.app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
+  margin-bottom: 30px;
+  position: relative;
+  z-index: 10;
 }
 
-.form-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #00ffff;
-  margin: 0;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-}
-
-.step-indicator {
-  display: flex;
-  gap: 12px;
-}
-
-.step-indicator span {
-  width: 35px;
-  height: 35px;
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
-  border-radius: 50%;
+.logo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  transition: all 0.3s ease;
+  gap: 10px;
+  color: #e1e7ef;
+  font-weight: 600;
+  font-size: 1.5rem;
 }
 
-.step-indicator span.active {
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  color: #fff;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+.logo i {
+  color: #3498db;
+  font-size: 1.8rem;
 }
 
-.form-subtitle {
-  font-size: 1.1rem;
-  color: #e0e0e0;
-  text-align: center;
-  margin-bottom: 35px;
-  font-style: italic;
-}
-
-/* Step Content */
-.step-content {
+.help-button {
   display: flex;
-  flex-direction: column;
-  gap: 25px;
-  animation: slideIn 0.5s ease-in-out;
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Bước 1: Danh sách game */
-.game-step {
-  padding: 20px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 12px;
-}
-
-.game-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 25px;
-}
-
-.game-item {
-  background: #0d1b2a;
-  border-radius: 16px;
-  padding: 20px;
-  text-align: center;
+  align-items: center;
+  gap: 8px;
+  background: rgba(52, 152, 219, 0.1);
+  border: none;
+  outline: none;
+  padding: 8px 15px;
+  border-radius: 50px;
+  color: #e1e7ef;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.game-item:hover {
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  transform: scale(1.05);
-  box-shadow: 0 10px 25px rgba(0, 255, 255, 0.4);
+.help-button i {
+  color: #3498db;
 }
 
-.game-image {
+.help-button:hover {
+  background: rgba(52, 152, 219, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Main Container */
+.main-container {
+  max-width: 1200px;
+  margin: 10px auto;
+  position: relative;
+  z-index: 10;
+}
+
+.progress-bar {
+  z-index: 10;
+  display: flex; /* Sử dụng flexbox để xếp các phần tử theo chiều ngang */
+  flex-direction: row; /* Đảm bảo hướng là ngang (mặc định, nhưng thêm để rõ ràng) */
+  align-items: center; /* Căn giữa các phần tử theo chiều dọc */
+  justify-content: space-between; /* Phân bố đều khoảng cách giữa các bước */
+  max-width: 800px; /* Giới hạn chiều rộng tối đa */
+  margin: 0 auto 40px auto; /* Căn giữa và thêm khoảng cách dưới */
+  padding: 0 20px; /* Khoảng cách lề trái/phải */
+}
+
+/* Progress Step */
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 10000; /* Tăng z-index lên cao hơn */
+  min-width: 80px;
+}
+
+/* Step Number */
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1a2234; /* Màu nền mặc định */
+  border: 2px solid #2c3e50; /* Viền mặc định */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #e1e7ef; /* Màu chữ */
+  transition: all 0.3s ease; /* Hiệu ứng chuyển đổi mượt mà */
+  margin-bottom: 8px; /* Khoảng cách giữa số và nhãn */
+}
+
+/* Step Label */
+.step-label {
+  font-size: 0.875rem; /* Kích thước chữ nhỏ */
+  color: #8896ae; /* Màu chữ mặc định */
+  font-weight: 500;
+  transition: all 0.3s ease; /* Hiệu ứng chuyển đổi */
+  text-align: center;
+}
+
+/* Trạng thái Active cho Progress Step */
+.progress-step.active .step-number {
+  background: linear-gradient(45deg, #3498db, #9b59b6); /* Màu gradient khi active */
+  border-color: #3498db; /* Viền đổi màu */
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.5); /* Hiệu ứng bóng */
+  transform: scale(1.1); /* Phóng to nhẹ */
+}
+
+.progress-step.active .step-label {
+  color: #e1e7ef; /* Màu chữ sáng hơn */
+  font-weight: 600; /* Đậm hơn */
+}
+
+/* Trạng thái Completed cho Progress Step */
+.progress-step.completed .step-number {
+  background: #2ecc71; /* Màu xanh khi hoàn thành */
+  border-color: #2ecc71; /* Viền xanh */
+}
+
+/* Progress Line */
+.progress-line {
+  flex: 1; /* Chiếm toàn bộ không gian còn lại giữa các bước */
+  height: 3px; /* Độ dày đường nối */
+  background: #2c3e50; /* Màu mặc định */
+  position: relative;
+  z-index: 1; /* Nằm dưới các bước */
+  transition: all 0.3s ease; /* Hiệu ứng chuyển đổi */
+}
+
+/* Trạng thái Active cho Progress Line */
+.progress-line.active {
+  background: linear-gradient(to right, #3498db, #9b59b6); /* Gradient khi active */
+  box-shadow: 0 0 10px rgba(52, 152, 219, 0.5); /* Hiệu ứng bóng */
+}
+
+/* Content Card */
+.content-card {
+  background: rgba(26, 34, 52, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  padding: 30px;
+  margin-bottom: 40px;
+  position: relative;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.step-content {
+  animation: fadeIn 0.5s ease-in-out;
+  min-height: 300px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #e1e7ef;
+  margin-bottom: 25px;
+  text-align: center;
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Step Navigation Controls */
+.step-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+.btn-prev {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e1e7ef;
+}
+
+.btn-prev:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-5px);
+}
+
+.btn-next, .btn-submit {
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  color: white;
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.btn-next:hover, .btn-submit:hover {
+  transform: translateX(5px);
+  box-shadow: 0 5px 20px rgba(52, 152, 219, 0.6);
+}
+
+.btn-submit {
+  background: linear-gradient(45deg, #2ecc71, #3498db);
+}
+
+.btn-submit:hover {
+  background: linear-gradient(45deg, #27ae60, #2980b9);
+}
+
+/* Game Selection (Step 1) */
+.search-container {
+  margin-bottom: 20px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50px;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.search-box:focus-within {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3498db;
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+}
+
+.search-box i {
+  color: #8896ae;
+  margin-right: 10px;
+  font-size: 1.1rem;
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e1e7ef;
+  font-size: 1rem;
+}
+
+.search-input::placeholder {
+  color: #8896ae;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px;
+}
+
+.game-card {
+  background: rgba(26, 34, 52, 0.8);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.game-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  border-color: #3498db;
+}
+
+.game-img-container {
   width: 100%;
-  height: 120px;
+  height: 100px;
+  overflow: hidden;
+}
+
+.game-img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 10px;
-  margin-bottom: 15px;
   transition: all 0.3s ease;
 }
 
-.game-item:hover .game-image {
-  filter: brightness(110%);
+.game-card:hover .game-img {
+  transform: scale(1.1);
 }
 
-.game-item p {
-  margin: 0;
-  color: #e0e0e0;
-  font-size: 1.1rem;
+.game-name {
+  padding: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: #e1e7ef;
+}
+
+/* Service Details (Step 2) */
+.game-selected {
+  display: flex;
+  align-items: center;
+  background: rgba(52, 152, 219, 0.1);
+  padding: 12px 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.game-selected .label {
+  font-weight: 600;
+  color: #8896ae;
+  margin-right: 8px;
+}
+
+.game-selected .value {
+  color: #3498db;
   font-weight: 600;
 }
 
-/* Form Group */
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
-  font-size: 1rem;
-  color: #e0e0e0;
+  display: block;
+  font-size: 0.95rem;
+  color: #e1e7ef;
+  margin-bottom: 8px;
   font-weight: 500;
 }
 
-.form-input {
-  padding: 14px 18px;
-  background: #0d1b2a;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 10px;
-  color: #e0e0e0;
-  font-size: 1rem;
-  transition: all 0.3s ease;
+.form-group .required {
+  color: #e74c3c;
+  margin-left: 4px;
 }
 
-.form-input:focus {
-  border-color: #00ffff;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+.input-container {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 0 15px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.input-container:focus-within {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3498db;
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+}
+
+.input-container i {
+  color: #8896ae;
+  font-size: 1.1rem;
+  margin-right: 10px;
+}
+
+.input-container input, .input-container textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
   outline: none;
+  color: #e1e7ef;
+  padding: 15px 0;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.input-container textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.input-container input::placeholder, .input-container textarea::placeholder {
+  color: #8896ae;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: 5px;
+  min-height: 17px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 25px;
+  gap: 20px;
 }
 
-/* Upload Area */
-.upload-area {
-  padding: 35px;
-  border: 2px dashed rgba(0, 255, 255, 0.3);
-  border-radius: 14px;
+/* Image Upload (Step 3) */
+.upload-zone {
+  border: 2px dashed rgba(52, 152, 219, 0.4);
+  border-radius: 15px;
+  padding: 30px;
   text-align: center;
   cursor: pointer;
-  background: rgba(0, 255, 255, 0.05);
   transition: all 0.3s ease;
+  background: rgba(52, 152, 219, 0.05);
 }
 
-.upload-area:hover {
-  border-color: #00ffff;
-  background: rgba(0, 255, 255, 0.1);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+.upload-zone:hover {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: #3498db;
 }
 
 .upload-icon {
-  font-size: 2.5rem;
-  color: #00ffff;
   margin-bottom: 15px;
 }
 
-.upload-area p {
-  margin: 0;
-  color: #e0e0e0;
-  font-size: 1rem;
+.upload-icon i {
+  font-size: 3rem;
+  color: #3498db;
+}
+
+.upload-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e1e7ef;
+  margin-bottom: 8px;
+}
+
+.upload-hint {
+  color: #8896ae;
+  font-size: 0.9rem;
 }
 
 .file-input {
   display: none;
 }
 
-/* Preview Images */
-.preview-container {
-  padding: 15px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 12px;
+.image-preview-container {
+  margin-top: 30px;
+  background: rgba(52, 152, 219, 0.05);
+  border-radius: 15px;
+  padding: 20px;
+  border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.preview-images {
+.image-count {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.image-count i {
+  color: #3498db;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 15px;
 }
 
-.preview-item {
+.image-item {
   position: relative;
-  width: 120px;
-  height: 120px;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 100px;
 }
 
-.preview-image {
+.preview-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  transition: all 0.3s ease;
 }
 
-.preview-image:hover {
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-}
-
-.remove-btn {
+.remove-image {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #ff00ff;
-  color: #fff;
+  top: 5px;
+  right: 5px;
+  background: rgba(231, 76, 60, 0.8);
   border: none;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  opacity: 0;
   transition: all 0.3s ease;
+  color: white;
 }
 
-.remove-btn:hover {
-  background: #ff66ff;
-  transform: scale(1.1);
+.image-item:hover .remove-image {
+  opacity: 1;
 }
 
-/* Xem lại thông tin */
-.review-step {
+/* Review Step (Step 4) */
+.review-data {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 20px;
-  background: rgba(0, 255, 255, 0.1);
+}
+
+.review-section {
+  background: rgba(26, 34, 52, 0.8);
   border-radius: 12px;
+  padding: 15px;
+  border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.review-card {
-  background: #0d1b2a;
-  padding: 25px;
-  border-radius: 16px;
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  transition: all 0.3s ease;
-}
-
-.review-card:hover {
-  box-shadow: 0 8px 20px rgba(0, 255, 255, 0.3);
-}
-
-.review-group {
+.review-section-title {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #3498db;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.review-group:last-child {
+.review-section-title i {
+  font-size: 1.2rem;
+}
+
+.review-field {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.review-field:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
   border-bottom: none;
 }
 
-.review-label {
-  font-size: 1.1rem;
-  color: #e0e0e0;
+.field-name {
+  min-width: 150px;
+  color: #8896ae;
   font-weight: 500;
-  min-width: 130px;
 }
 
-.review-value {
-  font-size: 1.1rem;
-  color: #00ffff;
+.field-value {
+  color: #e1e7ef;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.price-value {
+  color: #2ecc71;
+  font-weight: 600;
 }
 
 .review-images {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 10px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 10px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 10px;
+  margin-top: 5px;
 }
 
 .review-image {
-  width: 100px;
-  height: 100px;
+  width: 100%;
+  height: 80px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border: 1px solid rgba(52, 152, 219, 0.2);
   transition: all 0.3s ease;
 }
 
 .review-image:hover {
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  transform: scale(1.05);
+  border-color: #3498db;
 }
 
-/* Điều hướng bước (icon lùi/tiến) */
-.step-navigation {
+/* Info Cards */
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.info-card {
+  background: rgba(26, 34, 52, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 20px;
   display: flex;
-  justify-content: space-between;
-  margin-top: 40px;
+  align-items: center;
+  gap: 15px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.nav-btn {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
-  border: none;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border-color: #3498db;
+}
+
+.info-icon {
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  font-size: 1.5rem;
 }
 
-.nav-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
+.info-content {
+  flex: 1;
 }
 
-.prev-btn {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
+.info-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e1e7ef;
+  margin-bottom: 5px;
 }
 
-.prev-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
+.info-content p {
+  color: #8896ae;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
-.next-btn,
-.submit-btn {
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  color: #fff;
-}
-
-.next-btn:hover,
-.submit-btn:hover {
-  background: linear-gradient(135deg, #ff00ff, #00ffff);
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
-}
-
-/* Modal overlay */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(10, 14, 23, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Tăng z-index lên cao hơn */
+  padding: 20px;
+}
+
+/* Specific styles for guide modal overlay */
+.guide-modal-overlay {
+  align-items: flex-start; /* Align to top instead of center */
+  padding-top: 150px; /* Add padding to push modal down */
+}
+
+.modal-container {
   width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
-/* Modal warning */
-.warning-modal {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
-  padding: 35px;
+.modal-card {
+  background-color: #1a2234;
   border-radius: 16px;
-  width: 450px;
-  max-width: 90%;
-  text-align: center;
-  box-shadow: 0 15px 40px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  animation: popIn 0.4s ease-in-out;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.warning-modal h3 {
-  color: #ff00ff;
-  font-size: 1.8rem;
-  margin-bottom: 20px;
-  text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
-}
-
-.warning-modal p {
-  margin-bottom: 25px;
-  font-size: 1.1rem;
-  line-height: 1.6;
-}
-
-.confirmation-group {
+.modal-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 25px;
-  justify-content: center;
+  padding: 20px 24px;
+  background-color: #212a3e;
+  border-bottom: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-.confirmation-group input[type="radio"] {
-  accent-color: #00ffff;
-  width: 20px;
-  height: 20px;
+.modal-header h3 {
+  margin: 0;
+  color: #e1e7ef;
+  font-size: 1.25rem;
+  font-weight:152,219,0.2;
 }
 
-.confirmation-group label {
-  font-size: 1rem;
-  color: #e0e0e0;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-}
-
-.modal-confirm,
-.modal-cancel {
-  padding: 12px 25px;
-  border-radius: 10px;
+.modal-header h3 {
+  margin: 0;
+  color: #e1e7ef;
+  font-size: 1.25rem;
   font-weight: 600;
-  cursor: pointer;
+}
+
+.close-btn {
+  background: none;
   border: none;
-  transition: all 0.3s ease;
+  color: #8896ae;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-.modal-confirm {
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  color: #fff;
+.close-btn:hover {
+  color: #e1e7ef;
 }
 
-.modal-confirm:disabled {
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.modal-footer.center {
+  justify-content: center;
+}
+
+.warning-box {
+  display: flex;
+  gap: 16px;
+  background-color: rgba(231, 76, 60, 0.1);
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.warning-icon {
+  color: #e74c3c;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.warning-box p {
+  margin: 0;
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.checkbox-container {
+  margin-bottom: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #3498db;
+  cursor: pointer;
+}
+
+.checkbox-text {
+  color: #e1e7ef;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e1e7ef;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-confirm {
+  padding: 10px 20px;
+  background-color: #e74c3c;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm:hover {
+  background-color: #c0392b;
+}
+
+.btn-disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.modal-confirm:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ff00ff, #00ffff);
-  box-shadow: 0 8px 20px rgba(0, 255, 255, 0.4);
+.btn-disabled:hover {
+  background-color: #e74c3c;
 }
 
-.modal-cancel {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
-}
-
-.modal-cancel:hover {
-  background: rgba(0, 255, 255, 0.2);
-}
-
-/* Modal success */
-.success-modal {
-  background: linear-gradient(135deg, #0d1b2a, #1a0933);
-  color: #e0e0e0;
-  padding: 35px;
-  border-radius: 16px;
-  width: 400px;
+/* Success Modal */
+.success-card {
   text-align: center;
-  box-shadow: 0 15px 40px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  animation: popIn 0.4s ease-in-out;
+  padding-top: 24px;
 }
 
 .success-icon {
-  font-size: 3rem;
-  color: #00ffff;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  width: 80px;
+  height: 80px;
+  background-color: #2ecc71;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 40px;
+  color: white;
+  box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
 }
 
-.success-modal h3 {
-  color: #00ffff;
-  font-size: 1.8rem;
+.success-title {
+  color: #2ecc71;
+  font-size: 1.75rem;
+  margin: 0 0 16px;
 }
 
-.modal-close {
-  padding: 12px 25px;
-  background: linear-gradient(135deg, #00ffff, #ff00ff);
-  color: #fff;
+.success-message {
+  color: #e1e7ef;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.success-info {
+  background-color: rgba(46, 204, 113, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #e1e7ef;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-item i {
+  color: #2ecc71;
+}
+
+.btn-success {
+  padding: 10px 30px;
+  background-color: #2ecc71;
   border: none;
-  border-radius: 10px;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
-.modal-close:hover {
-  background: linear-gradient(135deg, #ff00ff, #00ffff);
-  box-shadow: 0 8px 20px rgba(0, 255, 255, 0.4);
+.btn-success:hover {
+  background-color: #27ae60;
 }
 
-/* Animation */
-@keyframes popIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+.text-center {
+  text-align: center;
 }
 
-/* Transition fade */
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.5s ease;
+/* Modal Animation */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: all 0.3s;
 }
-.fade-enter-from,
-.fade-leave-to {
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
   opacity: 0;
-  transform: translateY(20px);
+  transform: scale(0.95);
 }
 
-/* Responsive */
+/* Guide Modal Styles */
+.guide-modal-container {
+  max-width: 650px;
+}
+
+.guide-content {
+  max-height: 55vh; /* Giảm chiều cao tối đa để tránh bị tràn */
+  overflow-y: auto;
+  padding-right: 16px;
+  padding-top: 10px; /* Thêm padding-top */
+}
+
+.guide-section {
+  margin-bottom: 24px;
+}
+
+.guide-section:last-child {
+  margin-bottom: 0;
+}
+
+.guide-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  color: #3498db;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.guide-title i {
+  font-size: 1.1rem;
+}
+
+.guide-section p {
+  color: #e1e7ef;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin: 0 0 16px 0;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.step-indicator {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-description {
+  flex: 1;
+  color: #e1e7ef;
+  line-height: 1.5;
+  font-size: 0.95rem;
+  padding-top: 3px;
+}
+
+.step-description strong {
+  color: #3498db;
+}
+
+.btn-primary {
+  padding: 10px 30px;
+  background: linear-gradient(45deg, #3498db, #9b59b6);
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #2980b9, #8e44ad);
+}
+
+/* Responsive Styles */
 @media (max-width: 768px) {
-  .form-card { padding: 30px; max-width: 90%; }
-  .form-title { font-size: 2rem; }
-  .form-row { grid-template-columns: 1fr; }
-  .game-list { grid-template-columns: 1fr; }
-  .warning-modal, .success-modal { width: 90%; }
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .step-controls {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .progress-step .step-label {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .content-card {
+    padding: 20px 15px;
+  }
+  
+  .game-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  
+  .image-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+  
+  .review-field {
+    flex-direction: column;
+  }
+  
+  .field-name {
+    margin-bottom: 5px;
+  }
 }
 </style>

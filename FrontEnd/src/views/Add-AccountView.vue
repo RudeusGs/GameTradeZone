@@ -614,7 +614,7 @@ const toggleGuideModal = () => {
             <p>Thông tin tài khoản của bạn được mã hóa và bảo vệ an toàn</p>
           </div>
         </div>
-
+        
         <div class="info-card">
           <div class="info-icon">
             <i class="fas fa-bolt"></i>
@@ -624,7 +624,7 @@ const toggleGuideModal = () => {
             <p>Tài khoản của bạn sẽ được đăng ngay lập tức sau khi xác nhận</p>
           </div>
         </div>
-
+        
         <div class="info-card">
           <div class="info-icon">
             <i class="fas fa-percentage"></i>
@@ -634,13 +634,14 @@ const toggleGuideModal = () => {
             <p>Chỉ 5% giá trị giao dịch sẽ được trích làm phí dịch vụ</p>
           </div>
         </div>
+        
         <div class="info-card">
           <div class="info-icon">
-            <i class="fas fa-percentage"></i>
+            <i class="fas fa-headset"></i>
           </div>
           <div class="info-content">
-            <h3>Phí giao dịch thấp</h3>
-            <p>Chỉ 5% giá trị giao dịch sẽ được trích làm phí dịch vụ</p>
+            <h3>Hỗ trợ 24/7</h3>
+            <p>Đội ngũ hỗ trợ luôn sẵn sàng giải đáp mọi thắc mắc của bạn</p>
           </div>
         </div>
       </div>

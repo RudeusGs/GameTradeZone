@@ -25,7 +25,6 @@
               <span class="currency-prefix">₫</span>
               <input
                 v-model="rechargeAmount"
-                type="number"
                 id="rechargeAmount"
                 class="amount-input"
                 placeholder="Nhập số tiền"
@@ -84,7 +83,9 @@
 
           <div class="payment-grid">
             <div class="qr-section">
-              <img :src="qrCodeUrl" alt="Mã QR Thanh Toán" class="qr-image" />
+              <div class="qr-image-container">
+                <img :src="qrCodeUrl" alt="Mã QR Thanh Toán" class="qr-image" />
+              </div>
               <p class="qr-instruction">Quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
             </div>
 
@@ -96,7 +97,7 @@
 
               <div class="detail-item">
                 <span class="detail-label"><i class="fas fa-university"></i> Ngân Hàng:</span>
-                <span class="detail-value">BIDV</span>
+                <span class="detail-value">MB Bank</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label"><i class="fas fa-id-card"></i> Số Tài Khoản:</span>
@@ -119,7 +120,7 @@
 
               <div class="payment-note">
                 <i class="fas fa-exclamation-circle"></i>
-                <p>Vui lòng nhập đúng nội dung chuyển khoản để được xử lý tự động</p>
+                <p>Vui lòng nhập chính xác nội dung chuyển khoản</p>
               </div>
             </div>
           </div>
@@ -163,13 +164,6 @@
         </div>
       </div>
     </section>
-
-    <!-- Footer -->
-    <footer class="recharge-footer">
-      <p class="footer-text">
-        © 2025 GameTradeZone. Tất cả quyền được bảo lưu.
-      </p>
-    </footer>
   </div>
   <div v-else class="login-prompt">
     <div class="login-card">
@@ -197,7 +191,7 @@ const showPaymentDetails = ref<boolean>(false);
 const qrCodeUrl = ref<string>("");
 const bankAccount = {
   number: "123456789",
-  holder: "GameTradeZone Corp",
+  holder: "VU THANH LAM",
 };
 const presetAmounts = [10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000];
 
@@ -248,15 +242,14 @@ const initializeSignalR = async () => {
     .withUrl(
       "https://d2a0-2402-800-63af-bfoe-7981-11d7-6552-5e2c.ngrok-free.app/transactionHub",
       {
-        // Replace with your deployed SignalR hub URL
-        accessTokenFactory: () => "", // Removed token assumption since UserInfoModel doesn't have it
+        accessTokenFactory: () => "",
       }
     )
     .withAutomaticReconnect()
     .build();
 
   connection.on("ReceiveTransactionStatus", (message: string) => {
-    alert(message); // Show the success message
+    alert(message); 
   });
 
   connection.on("PaymentCompleted", () => {
@@ -374,7 +367,10 @@ onUnmounted(() => {
   padding-bottom: 15px;
   border-bottom: 1px solid rgba(79, 102, 255, 0.2);
 }
-
+.qr-image-container{
+  padding: 10px;
+  border: 1px solid white;
+}
 .card-icon {
   background: linear-gradient(135deg, #4661ff, #6e8cff);
   color: white;
@@ -567,12 +563,11 @@ onUnmounted(() => {
 .qr-image {
   max-width: 200px;
   border: 3px solid #ffffff;
-  border-radius: 12px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  margin-bottom: 15px;
 }
 
 .qr-instruction {
+  margin-top: 10px;
   font-size: 0.9rem;
   color: #b8c4ff;
   text-align: center;

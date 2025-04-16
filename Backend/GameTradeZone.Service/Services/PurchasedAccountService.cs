@@ -14,7 +14,11 @@ namespace GameTradeZone.Service.Services
         public PurchasedAccountService(DataContext dataContext, IUserService userService) : base(dataContext, userService)
         {
         }
-
+        public async Task<ApiResult> GetDontConfirm()
+        {
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.StatusBuyer == "Chưa xác nhận" && x.SellerID == _userService.UserId);
+            return new(purchased);
+        }    
         public async Task<ApiResult> ComfirmAccount(ComfirmModel model)
         {
             var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == model.Id);        
@@ -44,8 +48,6 @@ namespace GameTradeZone.Service.Services
                         purchased.StatusSeller = "Người mua từ chối";
                         purchased.Reason = model.Reason;
                         purchased.UpdatedDate = DateTime.Now;
-                        decimal buyerAmount = purchased.Price * 0.96m;
-                        buyer.Balance += buyerAmount;
                         _dataContext.Users.Update(buyer);
                         _dataContext.PurchasedAccounts.Update(purchased);
                         await _dataContext.SaveChangesAsync();
