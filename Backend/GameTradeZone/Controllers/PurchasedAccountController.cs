@@ -46,7 +46,20 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
-
+        [Authorize]
+        [HttpGet("Get-Dont-Confirm")]
+        public async Task<IActionResult> GetDontConfirm()
+        {
+            try
+            {
+                var result = await _purchasedAccountService.GetDontConfirm();
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
         [Authorize]
         [HttpPost("Delete")]
         public async Task<IActionResult> Delete(int id)

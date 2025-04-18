@@ -200,14 +200,16 @@ namespace GameTradeZone.Service.Services
                     Status = "Chờ xác nhận",
                     Reason = null,
                     FeedBack = null,
+                    Decriptions = model.Decription,
                     CreatedDate = DateTime.Now,
                 };
                 var newHired = new HiredService
                 {
                     ServiceID = model.Id,
                     UserID = _userService.UserId,
-                    Status = "Đang chờ xác nhận",
+                    Status = "Vui lòng xác nhận",
                     Reason = null,
+                    Decription = model.Decription,
                     CreatedDate = DateTime.Now,
                 };
                 _dataContext.OnGoingServices.Add(newOnGoing);

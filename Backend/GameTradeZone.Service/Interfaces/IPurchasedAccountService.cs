@@ -1,5 +1,6 @@
 ﻿using GameTradeZone.Service.Models;
 using GameTradeZone.Service.Models.PurchasedAccount;
+using System.Threading.Tasks;
 
 namespace GameTradeZone.Service.Interfaces
 {
@@ -13,5 +14,6 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> EmailResponse(int id, string email);
         Task<ApiResult> OTPRequest(int id);
         Task<ApiResult> OTPResponse(int id, string response);
+        Task<ApiResult> GetDontConfirm();
     }
 }

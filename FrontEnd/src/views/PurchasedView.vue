@@ -36,17 +36,10 @@
             </div>
           </div>
           <div class="stat-item">
-            <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+            <div class="stat-icon"><i class="fas fa-handshake"></i></div>
             <div class="stat-info">
-              <div class="stat-value">{{ sellingAccounts.length }}</div>
-              <div class="stat-label">TÀI KHOẢN ĐANG BÁN</div>
-            </div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-            <div class="stat-info">
-              <div class="stat-value">{{ confirmedSellingAccounts }}</div>
-              <div class="stat-label">ĐÃ XÁC NHẬN BÁN</div>
+              <div class="stat-value">{{ tradingAccounts.length }}</div>
+              <div class="stat-label">ĐANG GIAO DỊCH</div>
             </div>
           </div>
         </div>
@@ -98,10 +91,10 @@
         </button>
         <button 
           class="tab-button" 
-          :class="{ active: activeTab === 'selling' }" 
-          @click="activeTab = 'selling'"
+          :class="{ active: activeTab === 'trading' }" 
+          @click="switchToTradingTab"
         >
-          <i class="fas fa-store"></i> TÀI KHOẢN ĐANG BÁN
+          <i class="fas fa-handshake"></i> ĐANG GIAO DỊCH
         </button>
       </div>
 
@@ -143,6 +136,9 @@
               <div class="status-badge" :class="getStatusClass(account.statusBuyer ?? undefined)">
                 {{ getStatusText(account.statusBuyer ?? undefined) }}
               </div>
+              <button class="report-btn" @click="openReportModal(account.id)">
+                <i class="fas fa-exclamation-triangle"></i>
+              </button>
             </div>
             <div class="account-details">
               <div class="detail-group">
@@ -159,7 +155,7 @@
                     <div class="detail-label">MẬT KHẨU</div>
                     <div class="detail-value password-value">
                       <span>{{ account.password }}</span>
-                      <button class="copy-btn" @click="account.password && copyToClipboard(account.password)">
+                      <button class="copy-btn" @click="account.password ? copyToClipboard(account.password) : null">
                         <i class="fas fa-copy"></i>
                       </button>
                     </div>
@@ -195,16 +191,9 @@
               </div>
             </div>
             <div class="account-actions">
+              <!-- Initial Actions: Request Email or Reject -->
               <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối'"
-                class="cyber-button confirm-btn"
-                @click="openConfirmModal(account.id)"
-              >
-                <span class="button-content">XÁC NHẬN</span>
-                <span class="button-glitch"></span>
-              </button>
-              <button
-                v-if="account.statusBuyer === 'Mua thành công' && (account.email === 'Đang chờ' || !account.email)"
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && !account.email"
                 class="cyber-button email-btn"
                 @click="requestEmail(account.id)"
               >
@@ -212,11 +201,56 @@
                 <span class="button-glitch"></span>
               </button>
               <button
-                v-if="account.statusBuyer === 'Mua thành công' && (account.otpEmail === 'Đang chờ' || !account.otpEmail)"
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && !account.email"
+                class="cyber-button reject-btn"
+                @click="openRejectModal(account.id)"
+              >
+                <span class="button-content">TỪ CHỐI</span>
+                <span class="button-glitch"></span>
+              </button>
+              <!-- After Email Requested but Not Received -->
+              <button
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email === 'Đang chờ'"
+                class="cyber-button email-btn disabled"
+                disabled
+              >
+                <span class="button-content">ĐANG CHỜ EMAIL</span>
+                <span class="button-glitch"></span>
+              </button>
+              <!-- After Email Received: Request OTP -->
+              <button
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email && account.email !== 'Đang chờ' && !account.otpEmail"
                 class="cyber-button otp-btn"
                 @click="requestOTP(account.id)"
               >
                 <span class="button-content">YÊU CẦU OTP</span>
+                <span class="button-glitch"></span>
+              </button>
+              <!-- After OTP Requested but Not Received -->
+              <button
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.otpEmail === 'Đang chờ'"
+                class="cyber-button otp-btn disabled"
+                disabled
+              >
+                <span class="button-content">ĐANG CHỜ OTP</span>
+                <span class="button-glitch"></span>
+              </button>
+              <!-- After OTP Received: Accept -->
+              <button
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email && account.email !== 'Đang chờ' && account.otpEmail && account.otpEmail !== 'Đang chờ'"
+                class="cyber-button confirm-btn"
+                @click="openAcceptModal(account.id)"
+              >
+                <span class="button-content">ĐỒNG Ý</span>
+                <span class="button-glitch"></span>
+              </button>
+              <!-- Cannot Reject After Email Requested -->
+              <button
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email"
+                class="cyber-button reject-btn"
+                @click="openCannotRejectModal"
+              >
+                <span class="button-content">TỪ CHỐI</span>
                 <span class="button-glitch"></span>
               </button>
             </div>
@@ -224,9 +258,9 @@
         </div>
       </div>
 
-      <!-- Selling Accounts -->
-      <div v-if="activeTab === 'selling'">
-        <div v-if="sellingAccounts.length === 0" class="vault-empty">
+      <!-- Trading Accounts -->
+      <div v-if="activeTab === 'trading'">
+        <div v-if="tradingAccounts.length === 0" class="vault-empty">
           <div class="empty-container">
             <div class="empty-hologram">
               <div class="hologram-rings">
@@ -235,93 +269,177 @@
                 <div class="ring ring-3"></div>
               </div>
               <div class="hologram-icon">
-                <i class="fas fa-store"></i>
+                <i class="fas fa-handshake"></i>
               </div>
             </div>
-            <h3 class="empty-title">VAULT TRỐNG</h3>
-            <p class="empty-desc">Bạn chưa đăng bán tài khoản nào</p>
-            <button class="cyber-button pulse-button">
-              <span class="button-content">ĐĂNG BÁN NGAY</span>
-              <span class="button-glitch"></span>
-            </button>
+            <h3 class="empty-title">KHÔNG CÓ GIAO DỊCH</h3>
+            <p class="empty-desc">Bạn không có tài khoản nào đang giao dịch</p>
           </div>
         </div>
-        <div v-else>
-          <!-- Pending Selling Accounts -->
-          <div class="pending-selling">
-            <h3 class="section-title">TÀI KHOẢN CHỜ XÁC NHẬN</h3>
-            <div class="accounts-grid">
-              <div 
-                v-for="account in pendingSellingAccounts" 
-                :key="account.id" 
-                class="account-card status-pending"
-              >
-                <div class="card-holo-effect"></div>
-                <div class="game-banner">
-                  <div class="game-icon">
-                    <i class="fas fa-gamepad"></i>
-                  </div>
-                  <h3 class="game-title">{{ account.accountName }}</h3>
-                  <div class="status-badge status-pending">
-                    CHỜ XÁC NHẬN
+        <div v-else class="accounts-grid">
+          <div 
+            v-for="account in tradingAccounts" 
+            :key="account.id" 
+            class="account-card status-trading"
+          >
+            <div class="card-holo-effect"></div>
+            <div class="game-banner">
+              <div class="game-icon">
+                <i class="fas fa-gamepad"></i>
+              </div>
+              <h3 class="game-title">{{ account.gameName }}</h3>
+              <div class="status-badge status-trading">
+                ĐANG GIAO DỊCH
+              </div>
+              <button class="report-btn" @click="openReportModal(account.id)">
+                <i class="fas fa-exclamation-triangle"></i>
+              </button>
+            </div>
+            <div class="account-details">
+              <div class="detail-group">
+                <div class="detail-row">
+                  <div class="detail-icon"><i class="fas fa-user"></i></div>
+                  <div class="detail-content">
+                    <div class="detail-label">TÀI KHOẢN</div>
+                    <div class="detail-value">{{ account.accountName }}</div>
                   </div>
                 </div>
-                <div class="account-details">
-                  <div class="detail-group">
-                    <div class="detail-row">
-                      <div class="detail-icon"><i class="fas fa-user"></i></div>
-                      <div class="detail-content">
-                        <div class="detail-label">TÀI KHOẢN</div>
-                        <div class="detail-value">{{ account.accountName }}</div>
-                      </div>
+                <div class="detail-row">
+                  <div class="detail-icon"><i class="fas fa-tag"></i></div>
+                  <div class="detail-content">
+                    <div class="detail-label">GIÁ TIỀN</div>
+                    <div class="detail-value price-value">{{ formatPrice(account.price) }}</div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon"><i class="fas fa-envelope"></i></div>
+                  <div class="detail-content">
+                    <div class="detail-label">EMAIL</div>
+                    <div class="detail-value" :class="getEmailStatusClass(account.email ?? undefined)">
+                      {{ getEmailStatusText(account.email ?? undefined) }}
                     </div>
-                    <div class="detail-row">
-                      <div class="detail-icon"><i class="fas fa-tag"></i></div>
-                      <div class="detail-content">
-                        <div class="detail-label">GIÁ TIỀN</div>
-                        <div class="detail-value price-value">{{ formatPrice(account.price) }}</div>
-                      </div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon"><i class="fas fa-shield-alt"></i></div>
+                  <div class="detail-content">
+                    <div class="detail-label">OTP</div>
+                    <div class="detail-value" :class="getOtpStatusClass(account.otpEmail ?? undefined)">
+                      {{ getOtpStatusText(account.otpEmail ?? undefined) }}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <!-- Confirmed/Rejected Selling Accounts Table -->
-          <div class="selling-table" v-if="confirmedOrRejectedSellingAccounts.length > 0">
-            <h3 class="section-title">TÀI KHOẢN ĐÃ XỬ LÝ</h3>
-            <table class="cyber-table">
-              <thead>
-                <tr>
-                  <th>TÊN GAME</th>
-                  <th>TÀI KHOẢN</th>
-                  <th>GIÁ TIỀN</th>
-                  <th>TRẠNG THÁI</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="account in confirmedOrRejectedSellingAccounts" :key="account.id">
-                  <td>{{ account.accountName }}</td>
-                  <td>{{ account.accountName }}</td>
-                  <td>{{ formatPrice(account.price) }}</td>
-                  <td :class="getSellingStatusClass(account.status ?? undefined)">
-                    {{ getSellingStatusText(account.status ?? undefined) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="account-actions">
+              <!-- Buyer's Actions -->
+              <template v-if="account.userID === userId">
+                <!-- Initial Actions: Request Email or Reject -->
+                <button
+                  v-if="!account.email"
+                  class="cyber-button email-btn"
+                  @click="requestEmail(account.id)"
+                >
+                  <span class="button-content">YÊU CẦU EMAIL</span>
+                  <span class="button-glitch"></span>
+                </button>
+                <button
+                  v-if="!account.email"
+                  class="cyber-button reject-btn"
+                  @click="openRejectModal(account.id)"
+                >
+                  <span class="button-content">TỪ CHỐI</span>
+                  <span class="button-glitch"></span>
+                </button>
+                <!-- After Email Requested but Not Received -->
+                <button
+                  v-if="account.email === 'Đang chờ'"
+                  class="cyber-button email-btn disabled"
+                  disabled
+                >
+                  <span class="button-content">ĐANG CHỜ EMAIL</span>
+                  <span class="button-glitch"></span>
+                </button>
+                <!-- After Email Received: Request OTP -->
+                <button
+                  v-if="account.email && account.email !== 'Đang chờ' && !account.otpEmail"
+                  class="cyber-button otp-btn"
+                  @click="requestOTP(account.id)"
+                >
+                  <span class="button-content">YÊU CẦU OTP</span>
+                  <span class="button-glitch"></span>
+                </button>
+                <!-- After OTP Requested but Not Received -->
+                <button
+                  v-if="account.otpEmail === 'Đang chờ'"
+                  class="cyber-button otp-btn disabled"
+                  disabled
+                >
+                  <span class="button-content">ĐANG CHỜ OTP</span>
+                  <span class="button-glitch"></span>
+                </button>
+                <!-- After OTP Received: Accept -->
+                <button
+                  v-if="account.email && account.email !== 'Đang chờ' && account.otpEmail && account.otpEmail !== 'Đang chờ'"
+                  class="cyber-button confirm-btn"
+                  @click="openAcceptModal(account.id)"
+                >
+                  <span class="button-content">ĐỒNG Ý</span>
+                  <span class="button-glitch"></span>
+                </button>
+                <!-- Cannot Reject After Email Requested -->
+                <button
+                  v-if="account.email"
+                  class="cyber-button reject-btn"
+                  @click="openCannotRejectModal"
+                >
+                  <span class="button-content">TỪ CHỐI</span>
+                  <span class="button-glitch"></span>
+                </button>
+              </template>
+              <!-- Seller's Actions -->
+              <template v-else-if="account.sellerID === userId">
+                <div v-if="account.email === 'Đang chờ'" class="input-group">
+                  <input
+                    v-model="emailInput[account.id]"
+                    placeholder="Nhập email"
+                    class="cyber-input"
+                  />
+                  <button
+                    class="cyber-button email-btn"
+                    @click="sendEmailResponse(account.id, emailInput[account.id])"
+                  >
+                    <span class="button-content">GỬI EMAIL</span>
+                    <span class="button-glitch"></span>
+                  </button>
+                </div>
+                <div v-if="account.otpEmail === 'Đang chờ'" class="input-group">
+                  <input
+                    v-model="otpInput[account.id]"
+                    placeholder="Nhập OTP"
+                    class="cyber-input"
+                  />
+                  <button
+                    class="cyber-button otp-btn"
+                    @click="sendOtpResponse(account.id, otpInput[account.id])"
+                  >
+                    <span class="button-content">GỬI OTP</span>
+                    <span class="button-glitch"></span>
+                  </button>
+                </div>
+              </template>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Decision Modal -->
-    <div v-if="showDecisionModal" class="modal-overlay" @click.self="closeDecisionModal">
+    <!-- Accept Modal -->
+    <div v-if="showAcceptModal" class="modal-overlay" @click.self="closeAcceptModal">
       <div class="cyber-modal decision-modal">
         <div class="modal-header">
-          <h3>XÁC NHẬN TÀI KHOẢN</h3>
-          <button class="close-btn" @click="closeDecisionModal">×</button>
+          <h3>XÁC NHẬN ĐỒNG Ý</h3>
+          <button class="close-btn" @click="closeAcceptModal">×</button>
         </div>
         <div class="modal-content">
           <div class="modal-hologram">
@@ -330,18 +448,18 @@
               <div class="ring ring-2"></div>
             </div>
             <div class="hologram-icon">
-              <i class="fas fa-question"></i>
+              <i class="fas fa-check"></i>
             </div>
           </div>
-          <p>Bạn có muốn đồng ý hay từ chối tài khoản này?</p>
+          <p>Bạn có chắc chắn muốn đồng ý với tài khoản này?</p>
         </div>
         <div class="modal-actions">
-          <button @click="handleDecision('Từ chối')" class="cyber-button reject-btn">
-            <span class="button-content">TỪ CHỐI</span>
+          <button @click="closeAcceptModal" class="cyber-button cancel-btn">
+            <span class="button-content">HỦY</span>
             <span class="button-glitch"></span>
           </button>
-          <button @click="handleDecision('Đồng ý')" class="cyber-button accept-btn">
-            <span class="button-content">ĐỒNG Ý</span>
+          <button @click="handleAccept" class="cyber-button accept-btn">
+            <span class="button-content">XÁC NHẬN</span>
             <span class="button-glitch"></span>
           </button>
         </div>
@@ -386,6 +504,34 @@
       </div>
     </div>
 
+    <!-- Cannot Reject Modal -->
+    <div v-if="showCannotRejectModal" class="modal-overlay" @click.self="closeCannotRejectModal">
+      <div class="cyber-modal result-modal">
+        <div class="modal-header">
+          <h3>THÔNG BÁO</h3>
+          <button class="close-btn" @click="closeCannotRejectModal">×</button>
+        </div>
+        <div class="modal-content">
+          <div class="modal-hologram">
+            <div class="hologram-rings">
+              <div class="ring ring-1"></div>
+              <div class="ring ring-2"></div>
+            </div>
+            <div class="hologram-icon error-icon">
+              <i class="fas fa-exclamation"></i>
+            </div>
+          </div>
+          <p>Bạn đã yêu cầu gửi email, không thể từ chối giao dịch này nữa.</p>
+        </div>
+        <div class="modal-actions">
+          <button @click="closeCannotRejectModal" class="cyber-button ok-btn">
+            <span class="button-content">ĐÓNG</span>
+            <span class="button-glitch"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Result Modal -->
     <div v-if="showResultModal" class="modal-overlay" @click.self="closeResultModal">
       <div class="cyber-modal result-modal">
@@ -413,6 +559,31 @@
         </div>
       </div>
     </div>
+
+    <!-- Report Modal -->
+    <div v-if="showReportModal" class="modal-overlay" @click.self="closeReportModal">
+      <div class="cyber-modal report-modal">
+        <div class="modal-header">
+          <h3>BÁO CÁO</h3>
+          <button class="close-btn" @click="closeReportModal">×</button>
+        </div>
+        <div class="modal-content">
+          <p>Vui lòng nhập lý do báo cáo:</p>
+          <textarea 
+            v-model="reportReason" 
+            placeholder="Nhập lý do..." 
+            rows="4"
+            class="cyber-textarea"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button @click="submitReport" class="cyber-button confirm-btn">
+            <span class="button-content">GỬI BÁO CÁO</span>
+            <span class="button-glitch"></span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -420,9 +591,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { userStore } from '@/stores/auth';
 import purchasedApi from '@/api/purchased.api';
-import accountGameApi from '@/api/gameaccount.api';
 import type { PurchasedAccount } from '@/models/purchased.model';
-import type { GameAccount } from '@/models/gameaccount.model';
 
 // Initialize store and retrieve userId
 const store = userStore();
@@ -430,17 +599,22 @@ const userId = store.user?.id || JSON.parse(localStorage.getItem('user') || '{}'
 
 // State
 const purchasedAccounts = ref<PurchasedAccount[]>([]);
-const sellingAccounts = ref<GameAccount[]>([]);
+const tradingAccounts = ref<PurchasedAccount[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-const showDecisionModal = ref(false);
+const showAcceptModal = ref(false);
 const showRejectModal = ref(false);
+const showCannotRejectModal = ref(false);
+const showReportModal = ref(false);
 const selectedAccountId = ref<number | null>(null);
 const rejectionReason = ref('');
+const reportReason = ref('');
 const showResultModal = ref(false);
 const resultMessage = ref('');
 const resultType = ref<'success' | 'error' | 'info'>('info');
 const activeTab = ref('purchased');
+const emailInput = ref<{ [key: number]: string }>({});
+const otpInput = ref<{ [key: number]: string }>({});
 
 // Computed properties
 const resultIconClass = computed(() => {
@@ -457,49 +631,19 @@ const getResultIcon = computed(() => {
   return 'fas fa-info';
 });
 
-const confirmedAccounts = computed(() => {
-  return purchasedAccounts.value.filter(account => account.statusBuyer === 'Mua thành công').length;
-});
-
-const confirmedSellingAccounts = computed(() => {
-  return sellingAccounts.value.filter(account => account.status === 'Confirmed').length;
-});
-
-const pendingSellingAccounts = computed(() => {
-  return sellingAccounts.value.filter(account => !account.status || account.status === 'Pending');
-});
-
-const confirmedOrRejectedSellingAccounts = computed(() => {
-  return sellingAccounts.value.filter(account => account.status === 'Confirmed' || account.status === 'Rejected');
-});
-
 // Helper functions
 function getStatusClass(status: string | undefined) {
-  if (!status) return 'status-pending';
+  if (!status || status === 'Chưa xác nhận') return 'status-pending';
   if (status === 'Mua thành công') return 'status-success';
   if (status === 'Đã từ chối') return 'status-rejected';
   return 'status-pending';
 }
 
 function getStatusText(status: string | undefined) {
-  if (!status) return 'ĐANG CHỜ XÁC NHẬN';
+  if (!status || status === 'Chưa xác nhận') return 'ĐANG CHỜ XÁC NHẬN';
   if (status === 'Mua thành công') return 'ĐÃ XÁC NHẬN';
   if (status === 'Đã từ chối') return 'ĐÃ TỪ CHỐI';
   return 'ĐANG CHỜ XÁC NHẬN';
-}
-
-function getSellingStatusClass(status: string | undefined) {
-  if (!status || status === 'Pending') return 'pending';
-  if (status === 'Confirmed') return 'success';
-  if (status === 'Rejected') return 'rejected';
-  return 'pending';
-}
-
-function getSellingStatusText(status: string | undefined) {
-  if (!status || status === 'Pending') return 'CHỜ XÁC NHẬN';
-  if (status === 'Confirmed') return 'ĐÃ XÁC NHẬN';
-  if (status === 'Rejected') return 'ĐÃ TỪ CHỐI';
-  return 'CHỜ XÁC NHẬN';
 }
 
 function getEmailStatusClass(status: string | undefined) {
@@ -541,57 +685,81 @@ function copyToClipboard(text: string) {
 async function fetchAllAccounts() {
   try {
     loading.value = true;
-    
-    // Fetch purchased accounts
+
     const purchasedResponse = await purchasedApi.getAllByUserID(userId);
     if (purchasedResponse.data.result.isSuccess) {
-      purchasedAccounts.value = purchasedResponse.data.result.data ?? [];
+      const data = purchasedResponse.data.result.data ?? [];
+      purchasedAccounts.value = Array.isArray(data) ? data.filter(account => account !== null) : [];
     } else {
       error.value = purchasedResponse.data.result?.message || 'Lỗi khi tải dữ liệu tài khoản đã mua';
       return;
     }
 
-    // Fetch selling accounts
-    const sellingResponse = await accountGameApi.getAllByUserID(userId);
-    if (sellingResponse.data.result.isSuccess) {
-      sellingAccounts.value = sellingResponse.data.result.data ?? [];
+    const tradingResponse = await purchasedApi.getDontConfirm();
+    if (tradingResponse.data.result.isSuccess) {
+      const data = tradingResponse.data.result.data;
+      if (Array.isArray(data)) {
+        tradingAccounts.value = data.filter(account => account !== null);
+      } else if (data && typeof data === 'object') {
+        tradingAccounts.value = [data];
+      } else {
+        tradingAccounts.value = [];
+      }
     } else {
-      error.value = sellingResponse.data.result?.message || 'Lỗi khi tải dữ liệu tài khoản đang bán';
+      error.value = tradingResponse.data.result?.message || 'Lỗi khi tải dữ liệu tài khoản đang giao dịch';
     }
   } catch (err) {
-    console.error('API call error:', err);
-    error.value = 'Lỗi khi tải dữ liệu.';
+    error.value = 'Lỗi khi tải dữ liệu. Vui lòng kiểm tra kết nối hoặc API.';
+    console.error(err);
   } finally {
     loading.value = false;
   }
 }
 
+// Switch to trading tab with data refresh
+async function switchToTradingTab() {
+  activeTab.value = 'trading';
+  await fetchAllAccounts();
+}
+
 // Modal functions
-function openConfirmModal(id: number) {
+function openAcceptModal(id: number) {
   selectedAccountId.value = id;
-  showDecisionModal.value = true;
+  showAcceptModal.value = true;
 }
 
-function closeDecisionModal() {
-  showDecisionModal.value = false;
+function closeAcceptModal() {
+  showAcceptModal.value = false;
+  selectedAccountId.value = null;
 }
 
-function handleDecision(decision: string) {
-  showDecisionModal.value = false;
-  if (decision === 'Từ chối') {
-    showRejectModal.value = true;
-  } else if (decision === 'Đồng ý' && selectedAccountId.value !== null) {
-    confirmAccount(selectedAccountId.value).then(() => {
-      resultType.value = 'success';
-      resultMessage.value = 'Bạn đã xác nhận tài khoản này';
-      showResultModal.value = true;
-    });
-  }
+function openRejectModal(id: number) {
+  selectedAccountId.value = id;
+  showRejectModal.value = true;
 }
 
 function cancelReject() {
   showRejectModal.value = false;
   rejectionReason.value = '';
+  selectedAccountId.value = null;
+}
+
+function openCannotRejectModal() {
+  showCannotRejectModal.value = true;
+}
+
+function closeCannotRejectModal() {
+  showCannotRejectModal.value = false;
+}
+
+async function handleAccept() {
+  if (selectedAccountId.value !== null) {
+    const success = await confirmAccount(selectedAccountId.value);
+    if (success) {
+      showAcceptModal.value = false;
+      selectedAccountId.value = null;
+    }
+  }
 }
 
 async function confirmReject() {
@@ -600,24 +768,26 @@ async function confirmReject() {
       const model = { id: selectedAccountId.value, status: 'Từ chối', reason: rejectionReason.value };
       const response = await purchasedApi.confirmAccount(model);
       if (response.data.result.isSuccess && response.data.result.data) {
-        const account = purchasedAccounts.value.find((a) => a.id === selectedAccountId.value);
+        const account = purchasedAccounts.value.find((a) => a.id === selectedAccountId.value) ||
+                       tradingAccounts.value.find((a) => a.id === selectedAccountId.value);
         if (account) account.statusBuyer = 'Đã từ chối';
         resultType.value = 'info';
         resultMessage.value = 'Bạn đã từ chối tài khoản này';
         showResultModal.value = true;
+        await fetchAllAccounts();
       } else {
         resultType.value = 'error';
         resultMessage.value = response.data.result?.message || 'Lỗi khi từ chối tài khoản';
         showResultModal.value = true;
       }
     } catch (err) {
-      console.error('Rejection error:', err);
       resultType.value = 'error';
       resultMessage.value = 'Lỗi khi từ chối tài khoản';
       showResultModal.value = true;
     } finally {
       showRejectModal.value = false;
       rejectionReason.value = '';
+      selectedAccountId.value = null;
     }
   } else {
     resultType.value = 'error';
@@ -631,8 +801,13 @@ async function confirmAccount(accountId: number) {
     const model = { id: accountId, status: 'Đồng ý' };
     const response = await purchasedApi.confirmAccount(model);
     if (response.data.result.isSuccess && response.data.result.data) {
-      const account = purchasedAccounts.value.find((a) => a.id === accountId);
+      const account = purchasedAccounts.value.find((a) => a.id === accountId) ||
+                     tradingAccounts.value.find((a) => a.id === accountId);
       if (account) account.statusBuyer = 'Mua thành công';
+      resultType.value = 'success';
+      resultMessage.value = 'Giao dịch đã được xác nhận thành công!';
+      showResultModal.value = true;
+      await fetchAllAccounts();
       return true;
     } else {
       resultType.value = 'error';
@@ -641,7 +816,6 @@ async function confirmAccount(accountId: number) {
       return false;
     }
   } catch (err) {
-    console.error('Confirmation error:', err);
     resultType.value = 'error';
     resultMessage.value = 'Lỗi khi xác nhận tài khoản';
     showResultModal.value = true;
@@ -653,7 +827,8 @@ async function requestEmail(accountId: number) {
   try {
     const response = await purchasedApi.emailRequest(accountId);
     if (response.data.result.isSuccess) {
-      const account = purchasedAccounts.value.find((a) => a.id === accountId);
+      const account = purchasedAccounts.value.find((a) => a.id === accountId) ||
+                     tradingAccounts.value.find((a) => a.id === accountId);
       if (account) account.email = 'Đang chờ';
       resultType.value = 'success';
       resultMessage.value = 'Yêu cầu gửi email thành công!';
@@ -664,7 +839,6 @@ async function requestEmail(accountId: number) {
       showResultModal.value = true;
     }
   } catch (err) {
-    console.error('Email request error:', err);
     resultType.value = 'error';
     resultMessage.value = 'Lỗi khi yêu cầu gửi email';
     showResultModal.value = true;
@@ -675,7 +849,8 @@ async function requestOTP(accountId: number) {
   try {
     const response = await purchasedApi.otpRequest(accountId);
     if (response.data.result.isSuccess) {
-      const account = purchasedAccounts.value.find((a) => a.id === accountId);
+      const account = purchasedAccounts.value.find((a) => a.id === accountId) ||
+                     tradingAccounts.value.find((a) => a.id === accountId);
       if (account) account.otpEmail = 'Đang chờ';
       resultType.value = 'success';
       resultMessage.value = 'Yêu cầu gửi OTP thành công!';
@@ -686,15 +861,95 @@ async function requestOTP(accountId: number) {
       showResultModal.value = true;
     }
   } catch (err) {
-    console.error('OTP request error:', err);
     resultType.value = 'error';
     resultMessage.value = 'Lỗi khi yêu cầu gửi OTP';
     showResultModal.value = true;
   }
 }
 
+async function sendEmailResponse(accountId: number, email: string) {
+  if (!email) {
+    resultType.value = 'error';
+    resultMessage.value = 'Vui lòng nhập email!';
+    showResultModal.value = true;
+    return;
+  }
+  try {
+    const response = await purchasedApi.emailResponse(accountId, email);
+    if (response.data.result.isSuccess) {
+      const account = tradingAccounts.value.find((a) => a.id === accountId) ||
+                     purchasedAccounts.value.find((a) => a.id === accountId);
+      if (account) account.email = email;
+      resultType.value = 'success';
+      resultMessage.value = 'Đã gửi email thành công!';
+      showResultModal.value = true;
+      emailInput.value[accountId] = '';
+    } else {
+      resultType.value = 'error';
+      resultMessage.value = response.data.result?.message || 'Lỗi khi gửi email';
+      showResultModal.value = true;
+    }
+  } catch (err) {
+    resultType.value = 'error';
+    resultMessage.value = 'Lỗi khi gửi email: ' + (err as Error).message;
+    showResultModal.value = true;
+  }
+}
+
+async function sendOtpResponse(accountId: number, otp: string) {
+  if (!otp) {
+    resultType.value = 'error';
+    resultMessage.value = 'Vui lòng nhập OTP!';
+    showResultModal.value = true;
+    return;
+  }
+  try {
+    const response = await purchasedApi.otpResponse(accountId, otp);
+    if (response.data.result.isSuccess) {
+      const account = tradingAccounts.value.find((a) => a.id === accountId) ||
+                     purchasedAccounts.value.find((a) => a.id === accountId);
+      if (account) account.otpEmail = otp;
+      resultType.value = 'success';
+      resultMessage.value = 'Đã gửi OTP thành công!';
+      showResultModal.value = true;
+      otpInput.value[accountId] = '';
+    } else {
+      resultType.value = 'error';
+      resultMessage.value = response.data.result?.message || 'Lỗi khi gửi OTP';
+      showResultModal.value = true;
+    }
+  } catch (err) {
+    resultType.value = 'error';
+    resultMessage.value = 'Lỗi khi gửi OTP: ' + (err as Error).message;
+    showResultModal.value = true;
+  }
+}
+
 function closeResultModal() {
   showResultModal.value = false;
+}
+
+function openReportModal(id: number) {
+  selectedAccountId.value = id;
+  showReportModal.value = true;
+}
+
+function closeReportModal() {
+  showReportModal.value = false;
+  reportReason.value = '';
+}
+
+async function submitReport() {
+  if (reportReason.value.trim() === '') {
+    resultType.value = 'error';
+    resultMessage.value = 'Vui lòng nhập lý do báo cáo!';
+    showResultModal.value = true;
+    return;
+  }
+  resultType.value = 'success';
+  resultMessage.value = 'Báo cáo đã được gửi thành công!';
+  showResultModal.value = true;
+  closeReportModal();
 }
 
 function initParticles() {
@@ -816,12 +1071,8 @@ onMounted(() => {
 }
 
 @keyframes float-up {
-  0% {
-    transform: translateY(100vh) translateX(0);
-  }
-  100% {
-    transform: translateY(-100px) translateX(20px);
-  }
+  0% { transform: translateY(100vh) translateX(0); }
+  100% { transform: translateY(-100px) translateX(20px); }
 }
 
 .cyber-lines {
@@ -838,22 +1089,15 @@ onMounted(() => {
   animation: line-pulse infinite;
 }
 
-.cyber-line.horizontal {
-  height: 1px;
-}
-
+.cyber-line.horizontal { height: 1px; }
 .cyber-line.vertical {
   width: 1px;
   background: linear-gradient(180deg, transparent, #00ffff, transparent);
 }
 
 @keyframes line-pulse {
-  0%, 100% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.5; }
 }
 
 /* Header Styles */
@@ -872,6 +1116,9 @@ onMounted(() => {
   width: 100px;
   height: 100px;
   margin-right: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hologram-ring {
@@ -898,9 +1145,6 @@ onMounted(() => {
 
 .hologram-planet {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: 60px;
   height: 60px;
   background: radial-gradient(circle at 30% 30%, #00ffff, #0066ff);
@@ -909,9 +1153,7 @@ onMounted(() => {
   animation: pulse 3s ease-in-out infinite alternate;
 }
 
-.header-text {
-  position: relative;
-}
+.header-text { position: relative; }
 
 .glitch-text {
   font-family: 'Orbitron', sans-serif;
@@ -988,9 +1230,7 @@ onMounted(() => {
   letter-spacing: 2px;
 }
 
-.blink {
-  animation: blink 1s step-end infinite;
-}
+.blink { animation: blink 1s step-end infinite; }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
@@ -1026,9 +1266,7 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.panel-header i {
-  margin-right: 0.5rem;
-}
+.panel-header i { margin-right: 0.5rem; }
 
 .panel-stats {
   display: flex;
@@ -1066,10 +1304,7 @@ onMounted(() => {
   font-size: 1.2rem;
 }
 
-.stat-info {
-  display: flex;
-  flex-direction: column;
-}
+.stat-info { display: flex; flex-direction: column; }
 
 .stat-value {
   font-size: 1.5rem;
@@ -1096,6 +1331,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 .loading-cube {
@@ -1116,56 +1352,28 @@ onMounted(() => {
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
 }
 
-.cube-face.front {
-  transform: translateZ(40px);
-}
-
-.cube-face.back {
-  transform: rotateY(180deg) translateZ(40px);
-}
-
-.cube-face.right {
-  transform: rotateY(90deg) translateZ(40px);
-}
-
-.cube-face.left {
-  transform: rotateY(-90deg) translateZ(40px);
-}
-
-.cube-face.top {
-  transform: rotateX(90deg) translateZ(40px);
-}
-
-.cube-face.bottom {
-  transform: rotateX(-90deg) translateZ(40px);
-}
+.cube-face.front { transform: translateZ(40px); }
+.cube-face.back { transform: rotateY(180deg) translateZ(40px); }
+.cube-face.right { transform: rotateY(90deg) translateZ(40px); }
+.cube-face.left { transform: rotateY(-90deg) translateZ(40px); }
+.cube-face.top { transform: rotateX(90deg) translateZ(40px); }
+.cube-face.bottom { transform: rotateX(-90deg) translateZ(40px); }
 
 @keyframes cube-rotate {
-  0% {
-    transform: rotateX(0) rotateY(0);
-  }
-  100% {
-    transform: rotateX(360deg) rotateY(360deg);
-  }
+  0% { transform: rotateX(0) rotateY(0); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
 }
 
 .loading-text {
   font-size: 1.2rem;
   color: #00ffff;
   letter-spacing: 2px;
+  text-align: center;
 }
 
-.dot-1, .dot-2, .dot-3 {
-  animation: dot-blink 1.5s infinite;
-}
-
-.dot-2 {
-  animation-delay: 0.5s;
-}
-
-.dot-3 {
-  animation-delay: 1s;
-}
+.dot-1, .dot-2, .dot-3 { animation: dot-blink 1.5s infinite; }
+.dot-2 { animation-delay: 0.5s; }
+.dot-3 { animation-delay: 1s; }
 
 @keyframes dot-blink {
   0%, 100% { opacity: 0; }
@@ -1190,6 +1398,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   max-width: 500px;
   box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
 }
@@ -1233,6 +1442,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -1241,12 +1451,18 @@ onMounted(() => {
   width: 150px;
   height: 150px;
   margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hologram-rings {
   position: absolute;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ring {
@@ -1259,35 +1475,25 @@ onMounted(() => {
 }
 
 .ring-1 {
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   animation-duration: 10s;
 }
 
 .ring-2 {
-  top: 20%;
-  left: 20%;
-  right: 20%;
-  bottom: 20%;
+  width: 80%;
+  height: 80%;
   animation-duration: 7s;
   animation-direction: reverse;
 }
 
 .ring-3 {
-  top: 40%;
-  left: 40%;
-  right: 40%;
-  bottom: 40%;
+  width: 60%;
+  height: 60%;
   animation-duration: 5s;
 }
 
 .hologram-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: 60px;
   height: 60px;
   background: rgba(0, 255, 255, 0.2);
@@ -1392,17 +1598,10 @@ onMounted(() => {
   pointer-events: none;
 }
 
-.account-card.status-success {
-  border-color: rgba(0, 255, 127, 0.5);
-}
-
-.account-card.status-pending {
-  border-color: rgba(255, 193, 7, 0.5);
-}
-
-.account-card.status-rejected {
-  border-color: rgba(255, 75, 43, 0.5);
-}
+.account-card.status-success { border-color: rgba(0, 255, 127, 0.5); }
+.account-card.status-pending { border-color: rgba(255, 193, 7, 0.5); }
+.account-card.status-rejected { border-color: rgba(255, 75, 43, 0.5); }
+.account-card.status-trading { border-color: rgba(0, 255, 255, 0.5); }
 
 /* Game Banner */
 .game-banner {
@@ -1437,7 +1636,7 @@ onMounted(() => {
 .status-badge {
   position: absolute;
   top: 1rem;
-  right: 1rem;
+  right: 4rem;
   padding: 0.3rem 0.8rem;
   border-radius: 20px;
   font-size: 0.7rem;
@@ -1463,12 +1662,35 @@ onMounted(() => {
   border: 1px solid rgba(255, 75, 43, 0.5);
 }
 
+.status-badge.status-trading {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  border: 1px solid rgba(0, 255, 255, 0.5);
+}
+
+/* Report Button */
+.report-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #ff3333;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.report-btn:hover {
+  color: #ff6666;
+}
+
 /* Account Details */
 .account-details {
   padding: 1.5rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
 
 .detail-group {
@@ -1495,9 +1717,7 @@ onMounted(() => {
   font-size: 1rem;
 }
 
-.detail-content {
-  flex: 1;
-}
+.detail-content { flex: 1; }
 
 .detail-label {
   font-size: 0.7rem;
@@ -1542,18 +1762,12 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.not-requested {
-  color: #b0b0cc;
-}
-
+.not-requested { color: #b0b0cc; }
 .pending {
   color: #ffc107;
   animation: blink 2s infinite;
 }
-
-.received {
-  color: #00ff7f;
-}
+.received { color: #00ff7f; }
 
 /* Account Actions */
 .account-actions {
@@ -1561,6 +1775,28 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+/* Input Group */
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.cyber-input {
+  flex: 1;
+  padding: 0.5rem;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  color: #ffffff;
+  border-radius: 4px;
+}
+
+.cyber-input:focus {
+  outline: none;
+  border-color: #00ffff;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 /* Cyber Button */
@@ -1579,10 +1815,7 @@ onMounted(() => {
   display: inline-block;
 }
 
-.button-content {
-  position: relative;
-  z-index: 1;
-}
+.button-content { position: relative; z-index: 1; }
 
 .button-glitch {
   position: absolute;
@@ -1604,9 +1837,7 @@ onMounted(() => {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
-.cyber-button:hover .button-glitch {
-  transform: translateX(100%);
-}
+.cyber-button:hover .button-glitch { transform: translateX(100%); }
 
 .confirm-btn {
   background: rgba(0, 255, 255, 0.2);
@@ -1639,20 +1870,12 @@ onMounted(() => {
     transparent);
 }
 
-.pulse-button {
-  animation: button-pulse 2s infinite;
-}
+.pulse-button { animation: button-pulse 2s infinite; }
 
 @keyframes button-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(0, 255, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 255, 255, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(0, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); }
 }
 
 /* Selling Section */
@@ -1665,9 +1888,7 @@ onMounted(() => {
   text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
-.pending-selling {
-  margin-bottom: 3rem;
-}
+.pending-selling { margin-bottom: 3rem; }
 
 /* Cyber Table */
 .cyber-table {
@@ -1700,21 +1921,10 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
-.cyber-table tr:hover {
-  background: rgba(0, 255, 255, 0.05);
-}
-
-.cyber-table td.success {
-  color: #00ff7f;
-}
-
-.cyber-table td.rejected {
-  color: #ff4b2b;
-}
-
-.cyber-table td.pending {
-  color: #ffc107;
-}
+.cyber-table tr:hover { background: rgba(0, 255, 255, 0.05); }
+.cyber-table td.success { color: #00ff7f; }
+.cyber-table td.rejected { color: #ff4b2b; }
+.cyber-table td.pending { color: #ffc107; }
 
 /* Modal Styles */
 .modal-overlay {
@@ -1746,6 +1956,9 @@ onMounted(() => {
   box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
   animation: modal-in 0.3s ease;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 @keyframes modal-in {
@@ -1760,6 +1973,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+  width: 100%;
 }
 
 .modal-header h3 {
@@ -1772,273 +1986,100 @@ onMounted(() => {
 .close-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: #fff;
   font-size: 1.5rem;
   cursor: pointer;
-  transition: all 0.3s ease;
 }
 
-.close-btn:hover {
-  color: #fff;
-  transform: scale(1.1);
-}
+.close-btn:hover { color: #00ffff; }
 
 .modal-content {
-  padding: 1.5rem;
+  padding: 2rem;
   text-align: center;
+  width: 100%;
 }
 
 .modal-hologram {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.modal-hologram .hologram-icon {
-  background: rgba(0, 255, 255, 0.2);
-  color: #00ffff;
-}
-
-.modal-hologram .hologram-icon.success-icon {
-  background: rgba(0, 255, 127, 0.2);
-  color: #00ff7f;
-}
-
-.modal-hologram .hologram-icon.error-icon {
-  background: rgba(255, 75, 43, 0.2);
-  color: #ff4b2b;
-}
-
-.modal-content p {
-  margin-bottom: 1.5rem;
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-.cyber-textarea {
+.hologram-rings {
+  position: absolute;
   width: 100%;
-  background: rgba(0, 255, 255, 0.05);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 8px;
-  color: #fff;
-  padding: 0.8rem;
-  font-family: 'Rajdhani', sans-serif;
-  resize: none;
-  margin-top: 1rem;
-  transition: all 0.3s ease;
+  height: 100%;
 }
 
-.cyber-textarea:focus {
-  outline: none;
-  border-color: rgba(0, 255, 255, 0.7);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+.hologram-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00ffff;
+  font-size: 2rem;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
 }
 
 .modal-actions {
   display: flex;
   justify-content: center;
   gap: 1rem;
-  padding: 0 1.5rem 1.5rem;
-  flex-wrap: wrap;
+  padding: 1rem;
+  width: 100%;
 }
 
-.reject-btn {
-  background: rgba(255, 75, 43, 0.2);
-  border-color: rgba(255, 75, 43, 0.5);
-  color: #ff4b2b;
+.cyber-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #00ffff;
+  color: #fff;
+  border-radius: 4px;
+  margin-top: 1rem;
 }
 
-.reject-btn .button-glitch {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 75, 43, 0.2), 
-    transparent);
+.cyber-textarea:focus {
+  outline: none;
+  border-color: #00ffff;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
-.accept-btn {
-  background: rgba(0, 255, 127, 0.2);
-  border-color: rgba(0, 255, 127, 0.5);
-  color: #00ff7f;
+/* Centering Adjustments */
+.vault-loading, .vault-error, .vault-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.accept-btn .button-glitch {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(0, 255, 127, 0.2), 
-    transparent);
+.loading-container, .error-container, .empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.cancel-btn {
-  background: rgba(150, 150, 150, 0.2);
-  border-color: rgba(150, 150, 150, 0.5);
-  color: #b0b0cc;
-}
+.modal-content p { margin: 1rem 0; }
 
-.cancel-btn .button-glitch {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(150, 150, 150, 0.2), 
-    transparent);
-}
-
-.confirm-reject-btn {
-  background: rgba(255, 75, 43, 0.2);
-  border-color: rgba(255, 75, 43, 0.5);
-  color: #ff4b2b;
-}
-
-.ok-btn {
-  min-width: 120px;
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .accounts-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-  
-  .account-details {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .glitch-text {
-    font-size: 3rem;
-  }
-  
-  .header-hologram {
-    width: 80px;
-    height: 80px;
-  }
-  
-  .hologram-planet {
-    width: 50px;
-    height: 50px;
-  }
-}
-
-@media (max-width: 768px) {
-  .cyber-vault {
-    padding: 80px 1rem 1rem;
-  }
-  
-  .vault-header {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .header-hologram {
-    margin-right: 0;
-    margin-bottom: 1.5rem;
-  }
-  
-  .glitch-text {
-    font-size: 2.5rem;
-  }
-  
-  .panel-stats {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .stat-item {
-    width: 100%;
-  }
-  
-  .accounts-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .account-details {
-    padding: 1rem;
-  }
-  
-  .game-banner {
-    padding: 1rem;
-  }
-  
-  .account-actions {
-    padding: 0 1rem 1rem;
-    justify-content: center;
-  }
-  
-  .cyber-button {
-    width: 100%;
-    text-align: center;
-  }
-  
-  .vault-tabs {
-    justify-content: center;
-  }
-  
-  .tab-button {
-    padding: 0.6rem 1rem;
-    font-size: 0.8rem;
-  }
-  
-  .cyber-table th,
-  .cyber-table td {
-    padding: 0.8rem;
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .glitch-text {
-    font-size: 2rem;
-  }
-  
-  .header-subtitle {
-    font-size: 1rem;
-  }
-  
-  .game-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-  }
-  
-  .game-title {
-    font-size: 1.1rem;
-  }
-  
-  .detail-row {
-    gap: 0.5rem;
-  }
-  
-  .detail-icon {
-    width: 24px;
-    height: 24px;
-    font-size: 0.8rem;
-  }
-  
-  .modal-actions {
-    flex-direction: column;
-  }
-  
-  .cyber-modal {
-    max-width: 95%;
-  }
-  
-  .cyber-table {
-    font-size: 0.7rem;
-  }
-}
-
-/* Animations */
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.1); opacity: 1; }
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 </style>

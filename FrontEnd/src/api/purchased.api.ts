@@ -8,41 +8,33 @@ export interface ConfirmAccountModel {
   status: string;
 }
 
-export interface ResponseModel {
-  id: number;
-  model: string;
-}
-
+// No need for ResponseModel anymore since we're using query parameters
 export default {
-      getAll: async (): Promise<AxiosResponse<ApiResult<PurchasedAccount[]>>> => {
+  getAll: async (): Promise<AxiosResponse<ApiResult<PurchasedAccount[]>>> => {
     return await baseApi.get('PurchasedAccount/Get-All');
   },
-
+  getDontConfirm: async (): Promise<AxiosResponse<ApiResult<PurchasedAccount[]>>> => {
+    return await baseApi.get('PurchasedAccount/Get-Dont-Confirm');
+  },
   getAllByUserID: async (id: number): Promise<AxiosResponse<ApiResult<PurchasedAccount[]>>> => {
     return await baseApi.get(`PurchasedAccount/Get-All-By-User-Id?id=${id}`);
-},
-
+  },
   delete: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post(`PurchasedAccount/Delete?id=${id}`, null);
   },
-
   confirmAccount: async (model: ConfirmAccountModel): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post('PurchasedAccount/Confirm-Account', model);
   },
-
   emailRequest: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post(`PurchasedAccount/Email-request?id=${id}`, null);
   },
-
-  emailResponse: async (model: ResponseModel): Promise<AxiosResponse<ApiResult<any>>> => {
-    return await baseApi.post('PurchasedAccount/Email-response', model);
+  emailResponse: async (id: number, model: string): Promise<AxiosResponse<ApiResult<any>>> => {
+    return await baseApi.post(`PurchasedAccount/Email-response?id=${id}&model=${encodeURIComponent(model)}`, null);
   },
-
   otpRequest: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post(`PurchasedAccount/OTP-request?id=${id}`, null);
   },
-
-  otpResponse: async (model: ResponseModel): Promise<AxiosResponse<ApiResult<any>>> => {
-    return await baseApi.post('PurchasedAccount/OTP-response', model);
+  otpResponse: async (id: number, model: string): Promise<AxiosResponse<ApiResult<any>>> => {
+    return await baseApi.post(`PurchasedAccount/OTP-response?id=${id}&model=${encodeURIComponent(model)}`, null);
   },
 };
