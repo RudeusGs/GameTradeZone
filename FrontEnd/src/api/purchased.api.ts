@@ -37,4 +37,7 @@ export default {
   otpResponse: async (id: number, model: string): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post(`PurchasedAccount/OTP-response?id=${id}&model=${encodeURIComponent(model)}`, null);
   },
+  resendEmail: async (id: number, model: string): Promise<AxiosResponse<ApiResult<any>>> => {
+    return await baseApi.post(`PurchasedAccount/Resend-Email?id=${id}&model=${encodeURIComponent(model)}`, null);
+  },
 };

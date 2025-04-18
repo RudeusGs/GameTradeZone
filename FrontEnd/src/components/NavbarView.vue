@@ -25,8 +25,8 @@
                     <h4 class="column-title">TRÒ CHƠI</h4>
                   </div>
                   <ul class="column-list">
-                    <li><span class="hover-indicator"></span>Liên Minh Huyền Thoại</li>
-                    <li><span class="hover-indicator"></span>LMHT: Tốc Chiến</li>
+                    <li><span class="hover-indicator"></span>Tài khoản của tôi</li>
+                    <li><span class="hover-indicator"></span>Tài khoản đã mua</li>
                     <li><span class="hover-indicator"></span>Đấu Trường Chân Lý</li>
                     <li><span class="hover-indicator"></span>Valorant</li>
                     <li><span class="hover-indicator"></span>Huyền Thoại Runeterra</li>
@@ -38,8 +38,8 @@
                     <h4 class="column-title">DỊCH VỤ GAME</h4>
                   </div>
                   <ul class="column-list">
-                    <li><span class="hover-indicator"></span>CON/VRGENCE</li>
-                    <li><span class="hover-indicator"></span>Ruined King</li>
+                    <li><span class="hover-indicator"></span>Dịch vụ của tôi</li>
+                    <li><span class="hover-indicator"></span>Dịch vụ đã thuê</li>
                     <li><span class="hover-indicator"></span>Song of Nunu</li>
                     <li><span class="hover-indicator"></span>Trò Chơi Của Riot Forge</li>
                   </ul>
@@ -51,7 +51,7 @@
                   </div>
                   <ul class="column-list">
                     <li><span class="hover-indicator"></span><a href="/list-auction">Danh sách</a></li>
-                    <li><span class="hover-indicator"></span>Vũ Trụ</li>
+                    <li><span class="hover-indicator"></span>Phần thưởng</li>
                     <li><span class="hover-indicator"></span>Riot Games Music</li>
                   </ul>
                 </div>

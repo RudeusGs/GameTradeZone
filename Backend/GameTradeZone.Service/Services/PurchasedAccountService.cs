@@ -299,5 +299,91 @@ namespace GameTradeZone.Service.Services
                 return new ApiResult { Message = $"Gửi email thất bại: {ex.Message}" };
             }
         }
+
+        public async Task<ApiResult> ResendOTP(int id, string response)
+        {
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
+            if (purchased == null || purchased.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy giao dịch này" };
+            }
+            if (purchased.StatusBuyer == "Đã từ chối" || purchased.StatusBuyer == "Mua thành công")
+            {
+                return new ApiResult { Message = "Không thể gửi lại OTP vì giao dịch đã hoàn tất hoặc bị từ chối" };
+            }
+            if (purchased.OTPEmail == null || purchased.OTPEmail == "Đang chờ")
+            {
+                return new ApiResult { Message = "Chưa có OTP trước đó hoặc đang chờ phản hồi" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                var newNoti = new Notification
+                {
+                    TypeNoti = "Gửi lại OTP",
+                    Content = $"Giao dịch tài khoản mã số {purchased.Id}: đã gửi lại OTP là {response}",
+                    SenderID = _userService.UserId,
+                    UserID = purchased.UserID,
+                    IsRead = false,
+                    IsDelete = false,
+                    CreatedDate = DateTime.Now,
+                };
+                purchased.OTPEmail = response;
+                purchased.UpdatedDate = DateTime.Now;
+                _dataContext.Notifications.Add(newNoti);
+                _dataContext.PurchasedAccounts.Update(purchased);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Gửi lại OTP thất bại: {ex.Message}" };
+            }
+        }
+
+        public async Task<ApiResult> ResendEmail(int id, string email)
+        {
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
+            if (purchased == null || purchased.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy giao dịch này" };
+            }
+            if (purchased.StatusBuyer == "Đã từ chối" || purchased.StatusBuyer == "Mua thành công")
+            {
+                return new ApiResult { Message = "Không thể gửi lại email vì giao dịch đã hoàn tất hoặc bị từ chối" };
+            }
+            if (purchased.Email == null || purchased.Email == "Đang chờ")
+            {
+                return new ApiResult { Message = "Chưa có email trước đó hoặc đang chờ phản hồi" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                var newNoti = new Notification
+                {
+                    TypeNoti = "Gửi lại Gmail",
+                    Content = $"Giao dịch tài khoản mã số {purchased.Id}: đã gửi lại thông tin đăng ký tài khoản là {email}",
+                    SenderID = _userService.UserId,
+                    UserID = purchased.UserID,
+                    IsRead = false,
+                    IsDelete = false,
+                    CreatedDate = DateTime.Now,
+                };
+                purchased.Email = email;
+                purchased.UpdatedDate = DateTime.Now;
+                _dataContext.Notifications.Add(newNoti);
+                _dataContext.PurchasedAccounts.Update(purchased);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Gửi lại email thất bại: {ex.Message}" };
+            }
+        }
     }
 }

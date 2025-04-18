@@ -15,5 +15,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> OTPRequest(int id);
         Task<ApiResult> OTPResponse(int id, string response);
         Task<ApiResult> GetDontConfirm();
+        Task<ApiResult> ResendOTP(int id, string response);
+        Task<ApiResult> ResendEmail(int id, string email);
     }
 }

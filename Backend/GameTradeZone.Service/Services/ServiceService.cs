@@ -212,6 +212,8 @@ namespace GameTradeZone.Service.Services
                     Decription = model.Decription,
                     CreatedDate = DateTime.Now,
                 };
+                service.RentedC += 1;
+                _dataContext.Services.Update(service);
                 _dataContext.OnGoingServices.Add(newOnGoing);
                 _dataContext.HiredServices.Add(newHired);
                 await _dataContext.SaveChangesAsync();
@@ -287,5 +289,6 @@ namespace GameTradeZone.Service.Services
                 return new ApiResult { Message = $"Error: {e.Message}" };
             }
         }
+
     }
 }

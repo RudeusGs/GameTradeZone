@@ -149,5 +149,33 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [Authorize]
+        [HttpPost("Resend-Email")]
+        public async Task<IActionResult> ResendEmail(int id, string model)
+        {
+            try
+            {
+                var result = await _purchasedAccountService.ResendEmail(id, model);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+        [Authorize]
+        [HttpPost("Resend-OTP")]
+        public async Task<IActionResult> ResendOTP(int id, string model)
+        {
+            try
+            {
+                var result = await _purchasedAccountService.ResendOTP(id, model);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }

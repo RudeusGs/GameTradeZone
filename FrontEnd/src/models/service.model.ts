@@ -21,5 +21,5 @@ export interface UpdateServiceModel extends IEntityBase {
 }
 
 export interface RentServiceModel {
-  serviceId: number;
+  Id: number;
 }
