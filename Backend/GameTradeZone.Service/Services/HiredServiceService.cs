@@ -58,6 +58,7 @@ namespace GameTradeZone.Service.Services
                 }
                 else if(model.Status == "Đồng ý")
                 {
+                    hiredService.Status = "Trạng thái chờ";
                     ongoingService.Status = "Đã duyệt, vui lòng chờ";
                     _dataContext.OnGoingServices.Update(ongoingService);
                     await _dataContext.SaveChangesAsync();

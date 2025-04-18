@@ -68,12 +68,10 @@ import Cookies from "js-cookie";
 import authApi from "@/api/authenticate.api";
 import { userStore } from "../stores/auth";
 import DOMPurify from "dompurify";
-import LoadingSpinner from "@/components/LoadingView.vue";
 
 export default defineComponent({
   name: "Login",
   components: {
-    LoadingSpinner,
   },
   setup() {
     const user = userStore();

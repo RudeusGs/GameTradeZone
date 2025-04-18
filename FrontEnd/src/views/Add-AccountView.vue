@@ -74,20 +74,9 @@ onMounted(async () => {
         name: game.gameName,
         image: getFullImageUrl(game.image),
       }));
-    } else {
-      gameOptions.value = [
-        { id: 1, name: 'Valorant', image: getFullImageUrl('ValorantImageString') },
-        { id: 2, name: 'Genshin Impact', image: getFullImageUrl('GenshinImageString') },
-        { id: 3, name: 'League of Legends', image: getFullImageUrl('LoLImageString') },
-      ];
     }
   } catch (error) {
     console.error('Failed to fetch game list:', error);
-    gameOptions.value = [
-      { id: 1, name: 'Valorant', image: getFullImageUrl('ValorantImageString') },
-      { id: 2, name: 'Genshin Impact', image: getFullImageUrl('GenshinImageString') },
-      { id: 3, name: 'League of Legends', image: getFullImageUrl('LoLImageString') },
-    ];
   }
 });
 

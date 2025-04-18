@@ -1,5 +1,6 @@
 <template>
   <div class="cyber-vault">
+  </div>
     <!-- Animated Background Elements -->
     <div class="cyber-bg">
       <div class="grid-overlay"></div>
@@ -217,13 +218,21 @@
                 <span class="button-content">ĐANG CHỜ EMAIL</span>
                 <span class="button-glitch"></span>
               </button>
-              <!-- After Email Received: Request OTP -->
+              <!-- After Email Received: Request OTP or Request Resend Email -->
               <button
                 v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email && account.email !== 'Đang chờ' && !account.otpEmail"
                 class="cyber-button otp-btn"
                 @click="requestOTP(account.id)"
               >
                 <span class="button-content">YÊU CẦU OTP</span>
+                <span class="button-glitch"></span>
+              </button>
+              <button
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email && account.email !== 'Đang chờ'"
+                class="cyber-button resend-request-btn"
+                @click="openResendEmailModal(account.id)"
+              >
+                <span class="button-content">YÊU CẦU GỬI LẠI EMAIL</span>
                 <span class="button-glitch"></span>
               </button>
               <!-- After OTP Requested but Not Received -->
@@ -360,13 +369,21 @@
                   <span class="button-content">ĐANG CHỜ EMAIL</span>
                   <span class="button-glitch"></span>
                 </button>
-                <!-- After Email Received: Request OTP -->
+                <!-- After Email Received: Request OTP or Request Resend Email -->
                 <button
                   v-if="account.email && account.email !== 'Đang chờ' && !account.otpEmail"
                   class="cyber-button otp-btn"
                   @click="requestOTP(account.id)"
                 >
                   <span class="button-content">YÊU CẦU OTP</span>
+                  <span class="button-glitch"></span>
+                </button>
+                <button
+                  v-if="account.email && account.email !== 'Đang chờ'"
+                  class="cyber-button resend-request-btn"
+                  @click="openResendEmailModal(account.id)"
+                >
+                  <span class="button-content">YÊU CẦU GỬI LẠI EMAIL</span>
                   <span class="button-glitch"></span>
                 </button>
                 <!-- After OTP Requested but Not Received -->
@@ -413,6 +430,22 @@
                     <span class="button-glitch"></span>
                   </button>
                 </div>
+                <div v-else-if="account.email && account.email !== 'Đang chờ'" class="input-group">
+                  <input
+                    v-if="isEditingEmail[account.id]"
+                    v-model="emailInput[account.id]"
+                    placeholder="Nhập email mới"
+                    class="cyber-input"
+                  />
+                  <span v-else>Đã gửi: {{ account.email }}</span>
+                  <button
+                    class="cyber-button email-btn"
+                    @click="isEditingEmail[account.id] ? resendEmail(account.id, emailInput[account.id]) : enableEmailEdit(account.id)"
+                  >
+                    <span class="button-content">{{ isEditingEmail[account.id] ? 'GỬI LẠI EMAIL' : 'SỬA EMAIL' }}</span>
+                    <span class="button-glitch"></span>
+                  </button>
+                </div>
                 <div v-if="account.otpEmail === 'Đang chờ'" class="input-group">
                   <input
                     v-model="otpInput[account.id]"
@@ -432,158 +465,195 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Accept Modal -->
-    <div v-if="showAcceptModal" class="modal-overlay" @click.self="closeAcceptModal">
-      <div class="cyber-modal decision-modal">
-        <div class="modal-header">
-          <h3>XÁC NHẬN ĐỒNG Ý</h3>
-          <button class="close-btn" @click="closeAcceptModal">×</button>
-        </div>
-        <div class="modal-content">
-          <div class="modal-hologram">
-            <div class="hologram-rings">
-              <div class="ring ring-1"></div>
-              <div class="ring ring-2"></div>
-            </div>
-            <div class="hologram-icon">
-              <i class="fas fa-check"></i>
-            </div>
+      <!-- Accept Modal -->
+      <div v-if="showAcceptModal" class="modal-overlay" @click.self="closeAcceptModal">
+        <div class="cyber-modal decision-modal">
+          <div class="modal-header">
+            <h3>XÁC NHẬN ĐỒNG Ý</h3>
+            <button class="close-btn" @click="closeAcceptModal">×</button>
           </div>
-          <p>Bạn có chắc chắn muốn đồng ý với tài khoản này?</p>
-        </div>
-        <div class="modal-actions">
-          <button @click="closeAcceptModal" class="cyber-button cancel-btn">
-            <span class="button-content">HỦY</span>
-            <span class="button-glitch"></span>
-          </button>
-          <button @click="handleAccept" class="cyber-button accept-btn">
-            <span class="button-content">XÁC NHẬN</span>
-            <span class="button-glitch"></span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Reject Reason Modal -->
-    <div v-if="showRejectModal" class="modal-overlay" @click.self="cancelReject">
-      <div class="cyber-modal reject-modal">
-        <div class="modal-header">
-          <h3>LÝ DO TỪ CHỐI</h3>
-          <button class="close-btn" @click="cancelReject">×</button>
-        </div>
-        <div class="modal-content">
-          <div class="modal-hologram">
-            <div class="hologram-rings">
-              <div class="ring ring-1"></div>
-              <div class="ring ring-2"></div>
+          <div class="modal-content">
+            <div class="modal-hologram">
+              <div class="hologram-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+              </div>
+              <div class="hologram-icon">
+                <i class="fas fa-check"></i>
+              </div>
             </div>
-            <div class="hologram-icon">
-              <i class="fas fa-exclamation"></i>
-            </div>
+            <p>Bạn có chắc chắn muốn đồng ý với tài khoản này?</p>
           </div>
-          <p>Vui lòng nhập lý do từ chối tài khoản này:</p>
-          <textarea 
-            v-model="rejectionReason" 
-            placeholder="Nhập lý do..." 
-            rows="4"
-            class="cyber-textarea"
-          ></textarea>
-        </div>
-        <div class="modal-actions">
-          <button @click="cancelReject" class="cyber-button cancel-btn">
-            <span class="button-content">HỦY BỎ</span>
-            <span class="button-glitch"></span>
-          </button>
-          <button @click="confirmReject" class="cyber-button confirm-reject-btn">
-            <span class="button-content">XÁC NHẬN TỪ CHỐI</span>
-            <span class="button-glitch"></span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cannot Reject Modal -->
-    <div v-if="showCannotRejectModal" class="modal-overlay" @click.self="closeCannotRejectModal">
-      <div class="cyber-modal result-modal">
-        <div class="modal-header">
-          <h3>THÔNG BÁO</h3>
-          <button class="close-btn" @click="closeCannotRejectModal">×</button>
-        </div>
-        <div class="modal-content">
-          <div class="modal-hologram">
-            <div class="hologram-rings">
-              <div class="ring ring-1"></div>
-              <div class="ring ring-2"></div>
-            </div>
-            <div class="hologram-icon error-icon">
-              <i class="fas fa-exclamation"></i>
-            </div>
+          <div class="modal-actions">
+            <button @click="closeAcceptModal" class="cyber-button cancel-btn">
+              <span class="button-content">HỦY</span>
+              <span class="button-glitch"></span>
+            </button>
+            <button @click="handleAccept" class="cyber-button accept-btn">
+              <span class="button-content">XÁC NHẬN</span>
+              <span class="button-glitch"></span>
+            </button>
           </div>
-          <p>Bạn đã yêu cầu gửi email, không thể từ chối giao dịch này nữa.</p>
-        </div>
-        <div class="modal-actions">
-          <button @click="closeCannotRejectModal" class="cyber-button ok-btn">
-            <span class="button-content">ĐÓNG</span>
-            <span class="button-glitch"></span>
-          </button>
         </div>
       </div>
-    </div>
 
-    <!-- Result Modal -->
-    <div v-if="showResultModal" class="modal-overlay" @click.self="closeResultModal">
-      <div class="cyber-modal result-modal">
-        <div class="modal-header">
-          <h3>THÔNG BÁO HỆ THỐNG</h3>
-          <button class="close-btn" @click="closeResultModal">×</button>
-        </div>
-        <div class="modal-content">
-          <div class="modal-hologram">
-            <div class="hologram-rings">
-              <div class="ring ring-1"></div>
-              <div class="ring ring-2"></div>
-            </div>
-            <div class="hologram-icon" :class="resultIconClass">
-              <i :class="getResultIcon"></i>
-            </div>
+      <!-- Reject Reason Modal -->
+      <div v-if="showRejectModal" class="modal-overlay" @click.self="cancelReject">
+        <div class="cyber-modal reject-modal">
+          <div class="modal-header">
+            <h3>LÝ DO TỪ CHỐI</h3>
+            <button class="close-btn" @click="cancelReject">×</button>
           </div>
-          <p>{{ resultMessage }}</p>
-        </div>
-        <div class="modal-actions">
-          <button @click="closeResultModal" class="cyber-button ok-btn">
-            <span class="button-content">XÁC NHẬN</span>
-            <span class="button-glitch"></span>
-          </button>
+          <div class="modal-content">
+            <div class="modal-hologram">
+              <div class="hologram-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+              </div>
+              <div class="hologram-icon">
+                <i class="fas fa-exclamation"></i>
+              </div>
+            </div>
+            <p>Vui lòng nhập lý do từ chối tài khoản này:</p>
+            <textarea 
+              v-model="rejectionReason" 
+              placeholder="Nhập lý do..." 
+              rows="4"
+              class="cyber-textarea"
+            ></textarea>
+          </div>
+          <div class="modal-actions">
+            <button @click="cancelReject" class="cyber-button cancel-btn">
+              <span class="button-content">HỦY BỎ</span>
+              <span class="button-glitch"></span>
+            </button>
+            <button @click="confirmReject" class="cyber-button confirm-reject-btn">
+              <span class="button-content">XÁC NHẬN TỪ CHỐI</span>
+              <span class="button-glitch"></span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Report Modal -->
-    <div v-if="showReportModal" class="modal-overlay" @click.self="closeReportModal">
-      <div class="cyber-modal report-modal">
-        <div class="modal-header">
-          <h3>BÁO CÁO</h3>
-          <button class="close-btn" @click="closeReportModal">×</button>
-        </div>
-        <div class="modal-content">
-          <p>Vui lòng nhập lý do báo cáo:</p>
-          <textarea 
-            v-model="reportReason" 
-            placeholder="Nhập lý do..." 
-            rows="4"
-            class="cyber-textarea"
-          ></textarea>
-        </div>
-        <div class="modal-actions">
-          <button @click="submitReport" class="cyber-button confirm-btn">
-            <span class="button-content">GỬI BÁO CÁO</span>
-            <span class="button-glitch"></span>
-          </button>
+      <!-- Cannot Reject Modal -->
+      <div v-if="showCannotRejectModal" class="modal-overlay" @click.self="closeCannotRejectModal">
+        <div class="cyber-modal result-modal">
+          <div class="modal-header">
+            <h3>THÔNG BÁO</h3>
+            <button class="close-btn" @click="closeCannotRejectModal">×</button>
+          </div>
+          <div class="modal-content">
+            <div class="modal-hologram">
+              <div class="hologram-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+              </div>
+              <div class="hologram-icon error-icon">
+                <i class="fas fa-exclamation"></i>
+              </div>
+            </div>
+            <p>Bạn đã yêu cầu gửi email, không thể từ chối giao dịch này nữa.</p>
+          </div>
+          <div class="modal-actions">
+            <button @click="closeCannotRejectModal" class="cyber-button ok-btn">
+              <span class="button-content">ĐÓNG</span>
+              <span class="button-glitch"></span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- Resend Email Request Modal -->
+      <div v-if="showResendEmailModal" class="modal-overlay" @click.self="cancelResendEmail">
+        <div class="cyber-modal reject-modal">
+          <div class="modal-header">
+            <h3>LÝ DO YÊU CẦU GỬI LẠI EMAIL</h3>
+            <button class="close-btn" @click="cancelResendEmail">×</button>
+          </div>
+          <div class="modal-content">
+            <div class="modal-hologram">
+              <div class="hologram-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+              </div>
+              <div class="hologram-icon">
+                <i class="fas fa-envelope"></i>
+              </div>
+            </div>
+            <p>Vui lòng nhập lý do yêu cầu gửi lại email:</p>
+            <textarea 
+              v-model="resendEmailReason" 
+              placeholder="Nhập lý do..." 
+              rows="4"
+              class="cyber-textarea"
+            ></textarea>
+          </div>
+          <div class="modal-actions">
+            <button @click="cancelResendEmail" class="cyber-button cancel-btn">
+              <span class="button-content">HỦY BỎ</span>
+              <span class="button-glitch"></span>
+            </button>
+            <button @click="confirmResendEmailRequest" class="cyber-button confirm-reject-btn">
+              <span class="button-content">GỬI YÊU CẦU</span>
+              <span class="button-glitch"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Modal -->
+      <div v-if="showResultModal" class="modal-overlay" @click.self="closeResultModal">
+        <div class="cyber-modal result-modal">
+          <div class="modal-header">
+            <h3>THÔNG BÁO HỆ THỐNG</h3>
+            <button class="close-btn" @click="closeResultModal">×</button>
+          </div>
+          <div class="modal-content">
+            <div class="modal-hologram">
+              <div class="hologram-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+              </div>
+              <div class="hologram-icon" :class="resultIconClass">
+                <i :class="getResultIcon"></i>
+              </div>
+            </div>
+            <p>{{ resultMessage }}</p>
+          </div>
+          <div class="modal-actions">
+            <button @click="closeResultModal" class="cyber-button ok-btn">
+              <span class="button-content">XÁC NHẬN</span>
+              <span class="button-glitch"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report Modal -->
+      <div v-if="showReportModal" class="modal-overlay" @click.self="closeReportModal">
+        <div class="cyber-modal report-modal">
+          <div class="modal-header">
+            <h3>BÁO CÁO</h3>
+            <button class="close-btn" @click="closeReportModal">×</button>
+          </div>
+          <div class="modal-content">
+            <p>Vui lòng nhập lý do báo cáo:</p>
+            <textarea 
+              v-model="reportReason" 
+              placeholder="Nhập lý do..." 
+              rows="4"
+              class="cyber-textarea"
+            ></textarea>
+          </div>
+          <div class="modal-actions">
+            <button @click="submitReport" class="cyber-button confirm-btn">
+              <span class="button-content">GỬI BÁO CÁO</span>
+              <span class="button-glitch"></span>
+            </button>
+          </div>
+        </div>
+      </div>
   </div>
 </template>
 
@@ -606,8 +676,10 @@ const showAcceptModal = ref(false);
 const showRejectModal = ref(false);
 const showCannotRejectModal = ref(false);
 const showReportModal = ref(false);
+const showResendEmailModal = ref(false);
 const selectedAccountId = ref<number | null>(null);
 const rejectionReason = ref('');
+const resendEmailReason = ref('');
 const reportReason = ref('');
 const showResultModal = ref(false);
 const resultMessage = ref('');
@@ -615,6 +687,7 @@ const resultType = ref<'success' | 'error' | 'info'>('info');
 const activeTab = ref('purchased');
 const emailInput = ref<{ [key: number]: string }>({});
 const otpInput = ref<{ [key: number]: string }>({});
+const isEditingEmail = ref<{ [key: number]: boolean }>({});
 
 // Computed properties
 const resultIconClass = computed(() => {
@@ -752,6 +825,17 @@ function closeCannotRejectModal() {
   showCannotRejectModal.value = false;
 }
 
+function openResendEmailModal(id: number) {
+  selectedAccountId.value = id;
+  showResendEmailModal.value = true;
+}
+
+function cancelResendEmail() {
+  showResendEmailModal.value = false;
+  resendEmailReason.value = '';
+  selectedAccountId.value = null;
+}
+
 async function handleAccept() {
   if (selectedAccountId.value !== null) {
     const success = await confirmAccount(selectedAccountId.value);
@@ -792,6 +876,39 @@ async function confirmReject() {
   } else {
     resultType.value = 'error';
     resultMessage.value = 'Vui lòng nhập lý do từ chối';
+    showResultModal.value = true;
+  }
+}
+
+async function confirmResendEmailRequest() {
+  if (selectedAccountId.value !== null && resendEmailReason.value.trim() !== '') {
+    try {
+      const response = await purchasedApi.emailRequest(selectedAccountId.value);
+      if (response.data.result.isSuccess) {
+        const account = purchasedAccounts.value.find((a) => a.id === selectedAccountId.value) ||
+                       tradingAccounts.value.find((a) => a.id === selectedAccountId.value);
+        if (account) account.email = 'Đang chờ';
+        resultType.value = 'success';
+        resultMessage.value = 'Yêu cầu gửi lại email đã được gửi thành công!';
+        showResultModal.value = true;
+        await fetchAllAccounts();
+      } else {
+        resultType.value = 'error';
+        resultMessage.value = response.data.result?.message || 'Lỗi khi gửi yêu cầu gửi lại email';
+        showResultModal.value = true;
+      }
+    } catch (err) {
+      resultType.value = 'error';
+      resultMessage.value = 'Lỗi khi gửi yêu cầu gửi lại email: ' + (err as Error).message;
+      showResultModal.value = true;
+    } finally {
+      showResendEmailModal.value = false;
+      resendEmailReason.value = '';
+      selectedAccountId.value = null;
+    }
+  } else {
+    resultType.value = 'error';
+    resultMessage.value = 'Vui lòng nhập lý do yêu cầu gửi lại email';
     showResultModal.value = true;
   }
 }
@@ -843,6 +960,41 @@ async function requestEmail(accountId: number) {
     resultMessage.value = 'Lỗi khi yêu cầu gửi email';
     showResultModal.value = true;
   }
+}
+
+async function resendEmail(accountId: number, email: string) {
+  if (!email) {
+    resultType.value = 'error';
+    resultMessage.value = 'Vui lòng nhập email!';
+    showResultModal.value = true;
+    return;
+  }
+  try {
+    const response = await purchasedApi.resendEmail(accountId, email);
+    if (response.data.result.isSuccess) {
+      const account = tradingAccounts.value.find((a) => a.id === accountId) ||
+                     purchasedAccounts.value.find((a) => a.id === accountId);
+      if (account) account.email = email;
+      resultType.value = 'success';
+      resultMessage.value = 'Đã gửi lại email thành công!';
+      showResultModal.value = true;
+      emailInput.value[accountId] = '';
+      isEditingEmail.value[accountId] = false;
+    } else {
+      resultType.value = 'error';
+      resultMessage.value = response.data.result?.message || 'Lỗi khi gửi lại email';
+      showResultModal.value = true;
+    }
+  } catch (err) {
+    resultType.value = 'error';
+    resultMessage.value = 'Lỗi khi gửi lại email: ' + (err as Error).message;
+    showResultModal.value = true;
+  }
+}
+
+function enableEmailEdit(accountId: number) {
+  isEditingEmail.value[accountId] = true;
+  emailInput.value[accountId] = '';
 }
 
 async function requestOTP(accountId: number) {

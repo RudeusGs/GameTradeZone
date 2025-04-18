@@ -5,6 +5,7 @@ import gameApi from '@/api/gameinfor.api';
 import gameAccountApi from '@/api/gameaccount.api';
 import gamefieldApi from '@/api/gamefield.api';
 import serviceApi from '@/api/service.api';
+import GamingLoader from '@/components/LoadingPage.vue';
 import { userStore } from '@/stores/auth';
 
 interface Game {
@@ -23,6 +24,7 @@ interface Account {
   images: string[];
   fields: { fieldName: string; fieldValue: string }[];
   priceMin: number;
+  createdDate: string;
 }
 
 interface Service {
@@ -38,8 +40,16 @@ interface Service {
   feedback?: string;
   image?: string;
   isDelete?: boolean;
+  createdDate?: string;
 }
-
+const isLoading1 = ref(true);
+async function loadData() {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+}
+onMounted(async () => {
+  await loadData();
+  isLoading.value = false; 
+});
 interface BuyAccountGameModel {
   Id: number;
 }
@@ -50,7 +60,7 @@ const user = computed(() => authStore.user);
 
 // Trạng thái cho tab và phân trang
 const activeTab = ref<'accounts' | 'services'>('accounts');
-const itemsPerPage = 12;
+const itemsPerPage = 8;
 const accountsPage = ref(1);
 const servicesPage = ref(1);
 
@@ -60,6 +70,7 @@ const accountsFilters = ref({
   minPrice: null as number | null,
   maxPrice: null as number | null,
   search: '',
+  timeFilter: 'all',  // NEW: time filter for accounts
 });
 
 const servicesFilters = ref({
@@ -67,6 +78,7 @@ const servicesFilters = ref({
   minPrice: null as number | null,
   maxPrice: null as number | null,
   search: '',
+  timeFilter: 'all',  // NEW: time filter for services
 });
 
 const isLoading = ref<boolean>(false);
@@ -85,6 +97,12 @@ const purchaseStatus = ref<'success' | 'error'>('success');
 const purchaseMessage = ref<string>('');
 
 const showMoreDetails = ref<number[]>([]);
+
+// Trạng thái cho modal thuê dịch vụ
+const showConfirmModal = ref(false);
+const showDescriptionModal = ref(false);
+const selectedServiceId = ref<number | null>(null);
+const descriptionInput = ref('');
 
 const getFullImageUrls = (imageString: string | null | undefined): string[] => {
   if (!imageString || imageString.trim() === '') {
@@ -184,6 +202,7 @@ const fetchAccounts = async () => {
           images: getFullImageUrls(account.image),
           fields,
           priceMin: account.priceMin || 0,
+          createdDate: account.createdDate || 'Không xác định',
         };
       });
       accounts.value = await Promise.all(accountPromises);
@@ -232,6 +251,66 @@ onMounted(() => {
   fetchGames().then(() => fetchAccounts());
   fetchServices();
 });
+const formatRelativeTime = (dateStr: string): string => {
+  if (!dateStr || dateStr === 'Không xác định') {
+    return 'Thời gian không xác định';
+  }
+
+  const created = new Date(dateStr);
+  if (isNaN(created.getTime())) {
+    return 'Thời gian không hợp lệ';
+  }
+
+  const now = new Date();
+  const diff = now.getTime() - created.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+  if (seconds < 60) {
+    return 'Vừa đăng';
+  } else if (minutes < 60) {
+    return `${minutes} phút trước`; 
+  } else if (hours < 24) {
+    return `${hours} giờ trước`;
+  } else if (days < 30) {
+    return `${days} ngày trước`;
+  } else if (months < 12) {
+    return `${months} tháng trước`;
+  } else {
+    return `${years} năm trước`;
+  }
+};
+const isWithinTimeFilter = (dateStr: string, filter: string): boolean => {
+  if (!dateStr || dateStr === 'Không xác định') {
+    return filter === 'all'; }
+
+  const created = new Date(dateStr);
+  if (isNaN(created.getTime())) {
+    return filter === 'all'; 
+  }
+
+  const now = new Date();
+  const diff = now.getTime() - created.getTime(); 
+  switch(filter) {
+    case 'just_now':
+      return diff < 60000;
+    case 'minutes': // Vài phút trước (>=1 minute and <1 hour)
+      return diff >= 60000 && diff < 3600000;
+    case 'hours': // Vài tiếng trước (>=1 hour and <24 hours)
+      return diff >= 3600000 && diff < 86400000;
+    case 'days': // Vài ngày trước (>=24 hours and <7 days)
+      return diff >= 86400000 && diff < 604800000;
+    case 'months': // Vài tháng trước (>=7 days and <30 days)
+      return diff >= 604800000 && diff < 2592000000;
+    case 'years': // Vài năm trước (>=30 days)
+      return diff >= 2592000000;
+    default:
+      return true;
+  }
+};
 
 // Lọc và phân trang cho tài khoản
 const filteredAccounts = computed(() => {
@@ -253,6 +332,16 @@ const filteredAccounts = computed(() => {
       account.fields.some(field => field.fieldValue.toLowerCase().includes(searchLower))
     );
   }
+  // NEW: filter by createdDate using the timeFilter value
+  if (accountsFilters.value.timeFilter !== 'all') {
+    result = result.filter(account => isWithinTimeFilter(account.createdDate, accountsFilters.value.timeFilter));
+  }
+  // Sắp xếp tài khoản để "Còn hàng" lên trên
+  result.sort((a, b) => {
+    if (a.status === 'Còn hàng' && b.status !== 'Còn hàng') return -1;
+    if (a.status !== 'Còn hàng' && b.status === 'Còn hàng') return 1;
+    return 0;
+  });
   return result;
 });
 
@@ -286,6 +375,13 @@ const filteredServices = computed(() => {
       service.decription?.toLowerCase().includes(searchLower)
     );
   }
+  // NEW: if service.createdDate exists, filter by time as well
+  result = result.filter(service => {
+    if (service.createdDate && servicesFilters.value.timeFilter !== 'all') {
+      return isWithinTimeFilter(service.createdDate, servicesFilters.value.timeFilter);
+    }
+    return true;
+  });
   return result;
 });
 
@@ -309,6 +405,10 @@ watch(servicesFilters, () => {
 // Các hàm hỗ trợ
 const isOwnAccount = (account: Account) => {
   return user.value && account.sellerId !== null && Number(account.sellerId) === user.value.id;
+};
+
+const isOwnService = (service: Service) => {
+  return user.value && service.createrID === user.value.id;
 };
 
 const buyAccount = async (accountId: number) => {
@@ -403,10 +503,62 @@ const toggleMoreDetails = (accountId: number) => {
     showMoreDetails.value.splice(index, 1);
   }
 };
+
+// Hàm xử lý thuê dịch vụ
+const openConfirmModal = (id: number) => {
+  selectedServiceId.value = id;
+  showConfirmModal.value = true;
+};
+
+const closeConfirmModal = () => {
+  showConfirmModal.value = false;
+};
+
+const proceedToDescription = () => {
+  showConfirmModal.value = false;
+  showDescriptionModal.value = true;
+};
+
+const closeDescriptionModal = () => {
+  showDescriptionModal.value = false;
+  descriptionInput.value = '';
+};
+
+const rentService = async () => {
+  if (!selectedServiceId.value) return;
+
+  try {
+    isLoading.value = true;
+    const model = {
+      Id: selectedServiceId.value,
+      decription: descriptionInput.value,
+    };
+
+    const response = await serviceApi.rentService(model);
+    if (response.data?.result?.isSuccess) {
+      purchaseStatus.value = 'success';
+      purchaseMessage.value = 'Thuê dịch vụ thành công!';
+      await fetchServices();
+    } else {
+      purchaseStatus.value = 'error';
+      purchaseMessage.value = response.data?.result?.message || 'Lỗi không xác định';
+    }
+  } catch (error) {
+    purchaseStatus.value = 'error';
+    purchaseMessage.value = 'Lỗi khi gọi API thuê dịch vụ';
+    console.error('Lỗi thuê dịch vụ:', error);
+  } finally {
+    isLoading.value = false;
+    showDescriptionModal.value = false;
+    showPurchaseModal.value = true;
+    descriptionInput.value = '';
+  }
+};
 </script>
 
 <template>
   <div class="cosmo-trade-zone">
+    
     <!-- Hiệu ứng nền không gian -->
     <div class="stars-container">
       <div class="stars stars-small"></div>
@@ -421,7 +573,7 @@ const toggleMoreDetails = (accountId: number) => {
     <section class="top-banner">
       <div class="banner-particles"></div>
       <div class="banner-hologram"></div>
-      
+
       <div class="banner-content-wrapper">
         <div class="banner-left">
           <h1 class="banner-title">
@@ -430,7 +582,7 @@ const toggleMoreDetails = (accountId: number) => {
             <span class="title-line highlight">ZONE</span>
           </h1>
           <p class="banner-subtitle">Nền tảng giao dịch game an toàn <span class="highlight-text">số 1 Việt Nam</span></p>
-          
+
           <div class="banner-stats">
             <div class="stat-item">
               <div class="stat-value">10,000+</div>
@@ -445,7 +597,7 @@ const toggleMoreDetails = (accountId: number) => {
               <div class="stat-label">Hài lòng</div>
             </div>
           </div>
-          
+
           <div class="banner-buttons">
             <button class="banner-btn primary-btn">
               <i class="fas fa-rocket"></i> Khám phá ngay
@@ -455,7 +607,7 @@ const toggleMoreDetails = (accountId: number) => {
             </button>
           </div>
         </div>
-        
+
         <div class="banner-right">
           <div class="floating-cards-container">
             <div class="floating-card card-1">
@@ -486,7 +638,7 @@ const toggleMoreDetails = (accountId: number) => {
           <div class="holographic-sphere"></div>
         </div>
       </div>
-      
+
       <div class="banner-bottom-curve"></div>
     </section>
 
@@ -527,6 +679,15 @@ const toggleMoreDetails = (accountId: number) => {
             <input type="number" v-model="accountsFilters.minPrice" placeholder="Giá tối thiểu">
             <input type="number" v-model="accountsFilters.maxPrice" placeholder="Giá tối đa">
             <input type="text" v-model="accountsFilters.search" placeholder="Tìm kiếm...">
+            <select v-model="accountsFilters.timeFilter">
+              <option value="all">Tất cả</option>
+              <option value="just_now">Vừa đăng</option>
+              <option value="minutes">Vài phút trước</option>
+              <option value="hours">Vài tiếng trước</option>
+              <option value="days">Vài ngày trước</option>
+              <option value="months">Vài tháng trước</option>
+              <option value="years">Vài năm trước</option>
+            </select>
           </div>
           <div class="card-grid">
             <div v-for="account in displayedAccounts" :key="account.id" class="account-card" :class="{ 'sold': account.status === 'Đã bán' }">
@@ -544,6 +705,10 @@ const toggleMoreDetails = (accountId: number) => {
                 <div class="seller-info">
                   <i class="fas fa-user-circle"></i>
                   <span>{{ account.seller }}</span>
+                  <div class="timer-layout">
+                    <i class="fas fa-clock time"></i>
+                  <span style="margin-left: 5px">{{ formatRelativeTime(account.createdDate) }}</span>
+                  </div>
                 </div>
                 <div class="account-details">
                   <div v-for="field in showMoreDetails.includes(account.id) ? account.fields : account.fields.slice(0, 3)" :key="field.fieldName" class="detail-item">
@@ -566,13 +731,19 @@ const toggleMoreDetails = (accountId: number) => {
                     <span class="price-value">{{ account.priceMin.toLocaleString() }} VNĐ</span>
                   </div>
                 </div>
-                <div class="card-actions" v-if="!isOwnAccount(account)">
-                  <button class="bid-btn" :disabled="account.status === 'Đã bán'">
+                <div class="card-actions" v-if="!isOwnAccount(account) && account.status !== 'Đã bán'">
+                  <button class="bid-btn">
                     <i class="fas fa-gavel"></i> Trả giá
                   </button>
-                  <button class="buy-btn" :disabled="account.status === 'Đã bán'" @click="buyAccount(account.id)">
+                  <button class="buy-btn" @click="buyAccount(account.id)">
                     <i class="fas fa-shopping-cart"></i> Mua ngay
                   </button>
+                </div>
+                <div v-else-if="account.status === 'Đã bán'" class="sold-message">
+                  <i class="fas fa-times-circle"></i> Đã bán
+                </div>
+                <div v-else class="own-account-message">
+                  <i class="fas fa-info-circle"></i> Tài khoản của bạn
                 </div>
               </div>
             </div>
@@ -592,6 +763,15 @@ const toggleMoreDetails = (accountId: number) => {
             <input type="number" v-model="servicesFilters.minPrice" placeholder="Giá tối thiểu">
             <input type="number" v-model="servicesFilters.maxPrice" placeholder="Giá tối đa">
             <input type="text" v-model="servicesFilters.search" placeholder="Tìm kiếm...">
+            <select v-model="servicesFilters.timeFilter">
+              <option value="all">Tất cả</option>
+              <option value="just_now">Vừa đăng</option>
+              <option value="minutes">Vài phút trước</option>
+              <option value="hours">Vài tiếng trước</option>
+              <option value="days">Vài ngày trước</option>
+              <option value="months">Vài tháng trước</option>
+              <option value="years">Vài năm trước</option>
+            </select>
           </div>
           <div class="card-grid">
             <div v-for="service in displayedServices" :key="service.id" class="service-card">
@@ -609,9 +789,12 @@ const toggleMoreDetails = (accountId: number) => {
                   <span class="price-label">Giá dịch vụ:</span>
                   <span class="price-value">{{ service.servicePrice.toLocaleString() }} VNĐ</span>
                 </div>
-                <button class="hire-btn">
+                <button v-if="!isOwnService(service)" class="hire-btn" @click="openConfirmModal(service.id)">
                   <i class="fas fa-handshake"></i> Thuê ngay
                 </button>
+                <div v-else class="own-service-message">
+                  <i class="fas fa-info-circle"></i> Dịch vụ của bạn
+                </div>
               </div>
             </div>
           </div>
@@ -637,6 +820,51 @@ const toggleMoreDetails = (accountId: number) => {
       </div>
     </section>
 
+    <!-- Modal xác nhận thuê dịch vụ -->
+    <teleport to="body">
+      <div v-if="showConfirmModal" class="confirm-modal" @click="closeConfirmModal">
+        <div class="modal-content animated" @click.stop>
+          <h3>Xác nhận thuê dịch vụ</h3>
+          <p>Bạn có chắc chắn muốn thuê dịch vụ này không?</p>
+          <div class="modal-actions">
+            <button class="modal-btn cancel-btn" @click="closeConfirmModal">Không</button>
+            <button class="modal-btn confirm-btn" @click="proceedToDescription">Có</button>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
+    <!-- Modal nhập mô tả cho dịch vụ -->
+    <teleport to="body">
+      <div v-if="showDescriptionModal" class="description-modal" @click="closeDescriptionModal">
+        <div class="modal-content animated" @click.stop>
+          <h3>Nhập thông tin tài khoản game</h3>
+          <textarea v-model="descriptionInput" placeholder="Nhập mô tả của bạn (ví dụ: thông tin tài khoản, yêu cầu cụ thể,...)"></textarea>
+          <div class="modal-actions">
+            <button class="modal-btn cancel-btn" @click="closeDescriptionModal">Đóng</button>
+            <button class="modal-btn confirm-btn" @click="rentService">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
+    <!-- Modal thông báo mua hàng -->
+    <teleport to="body">
+      <div v-if="showPurchaseModal" class="purchase-modal" @click="closePurchaseModal">
+        <div class="modal-content animated" @click.stop>
+          <button class="close-btn" @click="closePurchaseModal">×</button>
+          <div class="modal-body">
+            <i :class="purchaseStatus === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'" class="modal-icon"></i>
+            <h3>{{ purchaseStatus === 'success' ? 'Thành công!' : 'Thất bại!' }}</h3>
+            <p>{{ purchaseMessage }}</p>
+            <div class="modal-actions">
+              <button class="modal-btn confirm-btn" @click="closePurchaseModal">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
     <!-- Modal xem hình ảnh -->
     <teleport to="body">
       <div v-if="showImageModal && selectedAccount" class="game-image-modal" @click="closeImageModal">
@@ -644,7 +872,6 @@ const toggleMoreDetails = (accountId: number) => {
           <div class="game-modal-header">
             <div class="game-modal-title">
               <div class="game-badge-modal">{{ selectedAccount.game }}</div>
-              <h3>GAME SHOWCASE</h3>
             </div>
             <button class="game-close-btn" @click="closeImageModal">
               <i class="fas fa-times"></i>
@@ -654,29 +881,17 @@ const toggleMoreDetails = (accountId: number) => {
             <div class="game-gallery">
               <div class="game-main-image-wrapper">
                 <div class="game-image-frame">
-                  <img 
-                    :src="selectedAccount.images[currentImageIndex]" 
-                    :alt="'Hình ' + (currentImageIndex + 1)" 
-                    class="game-main-image"
-                  >
+                  <img :src="selectedAccount.images[currentImageIndex]" :alt="'Hình ' + (currentImageIndex + 1)" class="game-main-image">
                   <div class="game-image-overlay"></div>
                   <div class="game-corner top-left"></div>
                   <div class="game-corner top-right"></div>
                   <div class="game-corner bottom-left"></div>
                   <div class="game-corner bottom-right"></div>
                 </div>
-                <button 
-                  v-if="selectedAccount.images.length > 1 && currentImageIndex > 0" 
-                  class="game-nav-btn prev-btn" 
-                  @click.stop="prevImage"
-                >
+                <button v-if="selectedAccount.images.length > 1 && currentImageIndex > 0" class="game-nav-btn prev-btn" @click.stop="prevImage">
                   <i class="fas fa-chevron-left"></i>
                 </button>
-                <button 
-                  v-if="selectedAccount.images.length > 1 && currentImageIndex < selectedAccount.images.length - 1" 
-                  class="game-nav-btn next-btn" 
-                  @click.stop="nextImage"
-                >
+                <button v-if="selectedAccount.images.length > 1 && currentImageIndex < selectedAccount.images.length - 1" class="game-nav-btn next-btn" @click.stop="nextImage">
                   <i class="fas fa-chevron-right"></i>
                 </button>
                 <div class="game-image-counter">
@@ -686,13 +901,7 @@ const toggleMoreDetails = (accountId: number) => {
                 </div>
               </div>
               <div v-if="selectedAccount.images.length > 1" class="game-thumbnails">
-                <div 
-                  v-for="(image, index) in selectedAccount.images" 
-                  :key="index"
-                  class="game-thumbnail"
-                  :class="{ active: index === currentImageIndex }"
-                  @click.stop="currentImageIndex = index"
-                >
+                <div v-for="(image, index) in selectedAccount.images" :key="index" class="game-thumbnail" :class="{ active: index === currentImageIndex }" @click.stop="currentImageIndex = index">
                   <div class="game-thumb-frame">
                     <img :src="image" :alt="'Thumbnail ' + (index + 1)">
                     <div class="game-thumb-overlay"></div>
@@ -732,7 +941,7 @@ const toggleMoreDetails = (accountId: number) => {
                   </div>
                 </div>
               </div>
-              <div class="game-action-buttons" v-if="selectedAccount.status !== 'Đã bán'">
+              <div class="game-action-buttons" v-if="!isOwnAccount(selectedAccount) && selectedAccount.status !== 'Đã bán'">
                 <button class="game-action-btn bid-btn" @click.stop>
                   <i class="fas fa-gavel"></i>
                   <span>Trả giá</span>
@@ -744,31 +953,12 @@ const toggleMoreDetails = (accountId: number) => {
                   <div class="btn-glow"></div>
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </teleport>
-
-    <!-- Modal phản hồi mua hàng -->
-    <teleport to="body">
-      <div v-if="showPurchaseModal" class="purchase-modal" @click="closePurchaseModal">
-        <div class="modal-content animated" @click.stop>
-          <button class="close-btn" @click="closePurchaseModal">×</button>
-          <div class="modal-body">
-            <i :class="purchaseStatus === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'"
-               class="modal-icon"></i>
-            <h3 class="modal-title">
-              {{ purchaseStatus === 'success' ? 'Thành công!' : 'Thất bại!' }}
-            </h3>
-            <p class="modal-message">{{ purchaseMessage }}</p>
-            <div class="modal-actions">
-              <button v-if="purchaseMessage === 'Vui lòng đăng nhập để mua tài khoản'" 
-                      class="modal-btn login-btn" 
-                      @click="goToLogin">
-                Đăng nhập
-              </button>
-              <button class="modal-btn" @click="closePurchaseModal">Đóng</button>
+              <div v-else-if="selectedAccount.status === 'Đã bán'" class="sold-message">
+                <i class="fas fa-times-circle"></i> Đã bán
+              </div>
+              <div v-else class="own-account-message">
+                <i class="fas fa-info-circle"></i> Tài khoản của bạn
+              </div>
             </div>
           </div>
         </div>
@@ -948,69 +1138,84 @@ h1, h2, h3, h4, .banner-title {
   box-shadow: 0 0 15px rgba(122, 78, 254, 0.5);
 }
 
-/* Bộ lọc */
+.tab-navigation button:hover {
+  background: rgba(122, 78, 254, 0.2);
+  border-color: #7A4EFE;
+}
+
+/* Filter Bar */
 .filter-bar {
   display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
   flex-wrap: wrap;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-  background: rgba(10, 15, 30, 0.8);
-  padding: 15px;
+  gap: 12px;
+  margin-bottom: 24px;
+  background: rgba(26, 34, 52, 0.6);
   border-radius: 12px;
-  border: 1px solid rgba(122, 78, 254, 0.3);
+  padding: 16px;
+  border: 1px solid rgba(122, 78, 254, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .filter-bar select,
 .filter-bar input {
-  padding: 10px 15px;
-  background: rgba(26, 34, 52, 0.9);
-  color: #e1e7ef;
-  border: 1px solid rgba(122, 78, 254, 0.4);
+  background: rgba(10, 14, 23, 0.8);
+  border: 1px solid rgba(122, 78, 254, 0.3);
   border-radius: 8px;
-  min-width: 180px;
-  font-size: 0.95rem;
+  color: #e1e7ef;
+  padding: 10px 16px;
+  font-size: 14px;
+  outline: none;
+  flex: 1;
+  min-width: 140px;
   transition: all 0.3s ease;
 }
 
-.filter-bar select:hover,
-.filter-bar input:hover {
+.filter-bar select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e1e7ef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.filter-bar select:focus,
+.filter-bar input:focus {
   border-color: #7A4EFE;
-  box-shadow: 0 0 10px rgba(122, 78, 254, 0.3);
+  box-shadow: 0 0 8px rgba(122, 78, 254, 0.4);
 }
 
 /* Phân trang */
 .pagination {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-top: 30px;
-  position: relative;
-  z-index: 2;
+  gap: 8px;
+  margin-top: 32px;
+  margin-bottom: 32px;
 }
 
 .pagination button {
-  padding: 10px 18px;
-  background: rgba(26, 34, 52, 0.6);
-  color: #e1e7ef;
-  border: 1px solid rgba(122, 78, 254, 0.2);
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
+  background: rgba(26, 34, 52, 0.6);
+  border: 1px solid rgba(122, 78, 254, 0.2);
+  color: #e1e7ef;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 1rem;
   transition: all 0.3s ease;
+}
+
+.pagination button:hover {
+  background: rgba(122, 78, 254, 0.2);
+  border-color: #7A4EFE;
 }
 
 .pagination button.active {
   background: #7A4EFE;
-  color: white;
   border-color: #7A4EFE;
+  color: white;
   box-shadow: 0 0 10px rgba(122, 78, 254, 0.5);
-}
-
-.pagination button:hover:not(.active) {
-  background: rgba(122, 78, 254, 0.2);
 }
 
 /* Banner trên cùng */
@@ -1031,7 +1236,7 @@ h1, h2, h3, h4, .banner-title {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 30%, rgba(122, 78, 254, 0.15), transparent 20%),
     radial-gradient(circle at 80% 20%, rgba(0, 224, 170, 0.1), transparent 20%),
     radial-gradient(circle at 10% 80%, rgba(255, 0, 128, 0.1), transparent 20%),
@@ -1050,7 +1255,7 @@ h1, h2, h3, h4, .banner-title {
   left: 0;
   width: 100%;
   height: 100%;
-  background: 
+  background:
     repeating-linear-gradient(
       to bottom,
       transparent,
@@ -1291,10 +1496,7 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .card-content {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  z-index: 1;
+  padding: 16px;
 }
 
 .card-game {
@@ -1490,99 +1692,115 @@ h1, h2, h3, h4, .banner-title {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 25px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
+/* Account Card Styling */
 .account-card {
-  background: rgba(26, 34, 52, 0.8);
-  backdrop-filter: blur(5px);
-  border-radius: 15px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-radius: 16px;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
   border: 1px solid rgba(122, 78, 254, 0.2);
-  display: flex;
-  flex-direction: column;
 }
 
 .account-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 15px 30px rgba(122, 78, 254, 0.3);
-  border-color: #7A4EFE;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 20px rgba(122, 78, 254, 0.4);
 }
 
 .account-card.sold {
-  opacity: 0.7;
-  filter: grayscale(0.5);
+  opacity: 0.75;
 }
 
 .card-banner {
   position: relative;
   height: 180px;
+  overflow: hidden;
 }
 
 .card-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.account-card:hover .card-img {
+  transform: scale(1.05);
 }
 
 .game-badge {
   position: absolute;
-  top: 15px;
-  left: 15px;
-  padding: 5px 12px;
-  background: linear-gradient(to right, #7A4EFE, #4A00E0);
-  color: white;
+  top: 12px;
+  left: 12px;
+  background: linear-gradient(to right, #7A4EFE, #00E0AA);
+  color: #fff;
+  font-size: 12px;
   font-weight: 600;
-  font-size: 0.8rem;
-  border-radius: 8px;
-  box-shadow: 0 5px 10px rgba(122, 78, 254, 0.3);
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .sold-tag {
   position: absolute;
   top: 0;
   right: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
+  bottom: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-shadow: 0 0 10px rgba(255, 0, 76, 0.8);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sold-tag::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 0, 85, 0.1),
+    rgba(255, 0, 85, 0.1) 10px,
+    rgba(0, 0, 0, 0.2) 10px,
+    rgba(0, 0, 0, 0.2) 20px
+  );
 }
 
 .view-more-images {
   position: absolute;
-  bottom: 15px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 12px;
+  right: 12px;
   background: rgba(0, 0, 0, 0.7);
-  border: 1px solid #00ffff;
-  border-radius: 30px;
-  padding: 8px 20px;
-  color: #00ffff;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 600;
-  font-size: 0.9rem;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
+  gap: 8px;
+  transition: background 0.3s ease;
   overflow: hidden;
-  transition: all 0.3s ease;
-  z-index: 5;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
 }
 
-.view-more-images i {
-  font-size: 1rem;
+.view-more-images:hover {
+  background: rgba(122, 78, 254, 0.7);
 }
 
 .view-more-images .btn-glow {
@@ -1596,192 +1814,185 @@ h1, h2, h3, h4, .banner-title {
   transition: opacity 0.3s ease;
 }
 
-.view-more-images:hover {
-  transform: translateX(-50%) translateY(-5px);
-  background: rgba(0, 0, 0, 0.8);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-}
-
 .view-more-images:hover .btn-glow {
   opacity: 0.3;
   animation: rotate 10s linear infinite;
+}
+
+.card-content {
+  padding: 16px;
 }
 
 .seller-info {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
   color: #b0b5c3;
-  font-size: 0.9rem;
-  background: rgba(0, 224, 170, 0.1);
-  padding: 5px 10px;
-  border-radius: 5px;
-  margin-bottom: 10px;
 }
 
 .seller-info i {
-  color: #00E0AA;
+  font-size: 16px;
+  color: #7A4EFE;
 }
 
 .account-details {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 15px;
-  background: rgba(5, 10, 21, 0.5);
-  border-radius: 10px;
-  border: 1px solid rgba(122, 78, 254, 0.1);
-  flex-grow: 1;
+  margin-bottom: 16px;
 }
 
 .detail-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 0;
-  border-bottom: 1px solid rgba(122, 78, 254, 0.1);
-}
-
-.detail-item:last-child {
-  border-bottom: none;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  font-size: 14px;
 }
 
 .detail-label {
-  color: #b0b5c3;
-  font-weight: 600;
   flex: 0 0 40%;
-  text-align: left;
+  color: #b0b5c3;
+  font-weight: 500;
 }
 
 .detail-value {
+  flex: 0 0 60%;
   color: #e1e7ef;
-  flex: 1;
-  text-align: right;
+  font-weight: 500;
+  word-break: break-word;
 }
 
 .more-details {
-  margin-top: 5px;
-  text-align: center;
+  margin-top: 12px;
 }
 
 .toggle-details-btn {
   background: none;
   border: none;
-  color: #00E0AA;
-  font-size: 0.85rem;
-  font-style: italic;
+  color: #7A4EFE;
+  font-size: 13px;
   cursor: pointer;
-  padding: 5px;
-  transition: all 0.3s ease;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  transition: color 0.3s ease;
 }
 
 .toggle-details-btn:hover {
-  color: #7A4EFE;
-  text-decoration: underline;
+  color: #00E0AA;
 }
 
 .price-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
   padding: 12px;
-  background: rgba(122, 78, 254, 0.1);
-  border-radius: 10px;
-  margin-top: auto;
+  margin-bottom: 16px;
+  border: 1px solid #7A4EFE;
 }
 
-.price, .min-price {
+.price,
+.min-price {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+}
+
+.price {
+  margin-bottom: 8px;
 }
 
 .price-label {
+  font-size: 14px;
   color: #b0b5c3;
-  font-size: 0.9rem;
 }
 
-.price-value {
-  color: #00E0AA;
+.price .price-value {
+  font-size: 18px;
   font-weight: 700;
-  font-size: 1.1rem;
-  text-shadow: 0 0 5px rgba(0, 224, 170, 0.3);
+  color: #00E0AA;
+}
+
+.min-price .price-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e1e7ef;
 }
 
 .card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 15px;
+  gap: 12px;
 }
 
-.bid-btn, .buy-btn {
-  padding: 10px;
-  border: none;
+.bid-btn,
+.buy-btn {
+  padding: 10px 8px;
   border-radius: 8px;
-  cursor: pointer;
+  border: none;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 14px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  transition: all 0.3s ease;
+  gap: 8px;
+  transition: background 0.3s ease, transform 0.3s ease;
 }
 
 .bid-btn {
-  background: rgba(0, 224, 170, 0.2);
-  color: #e1e7ef;
-  border: 1px solid rgba(0, 224, 170, 0.4);
+  background: #7A4EFE;
+  color: #fff;
 }
 
 .bid-btn:hover {
-  background: rgba(0, 224, 170, 0.3);
-  transform: translateY(-3px);
+  background: #5a3ece;
+  transform: translateY(-2px);
 }
 
 .buy-btn {
-  background: linear-gradient(to right, #7A4EFE, #00E0AA);
-  color: white;
-  box-shadow: 0 5px 10px rgba(122, 78, 254, 0.2);
+  background: #00E0AA;
+  color: #fff;
 }
 
 .buy-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 15px rgba(122, 78, 254, 0.4);
+  background: #00b38f;
+  transform: translateY(-2px);
 }
 
-.bid-btn:disabled, .buy-btn:disabled {
-  background: #2c3e50;
-  border-color: transparent;
-  color: #8896ae;
-  box-shadow: none;
-  cursor: not-allowed;
+.sold-message,
+.own-account-message {
+  text-align: center;
+  color: #ff4b4b;
+  font-weight: 600;
+  margin-top: 16px;
 }
 
+.own-account-message {
+  color: #00E0AA;
+}
+.timer-layout{
+  margin-left: auto;
+}
+/* Service Card */
 .service-card {
-  background: rgba(0, 224, 170, 0.05);
-  backdrop-filter: blur(5px);
-  border-radius: 15px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-radius: 16px;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
   border: 1px solid rgba(0, 224, 170, 0.2);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
 }
 
 .service-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 15px 30px rgba(0, 224, 170, 0.3);
-  border-color: #00E0AA;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 224, 170, 0.4);
 }
 
 .service-header {
   padding: 15px;
-  background: linear-gradient(to right, rgba(0, 224, 170, 0.2), rgba(41, 121, 255, 0.2));
-  border-bottom: 1px solid rgba(0, 224, 170, 0.2);
+  background: linear-gradient(to right, #7A4EFE, #00E0AA);
+  border-bottom: 1px solid #00E0AA;
 }
 
 .service-title {
@@ -1796,7 +2007,7 @@ h1, h2, h3, h4, .banner-title {
   display: inline-block;
   padding: 3px 10px;
   background: rgba(0, 0, 0, 0.3);
-  color: #00E0AA;
+  color: #fff;
   font-size: 0.8rem;
   border-radius: 5px;
   margin-top: 5px;
@@ -1807,7 +2018,6 @@ h1, h2, h3, h4, .banner-title {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  flex: 1;
 }
 
 .creator-info {
@@ -1827,7 +2037,6 @@ h1, h2, h3, h4, .banner-title {
   font-size: 0.95rem;
   line-height: 1.5;
   margin-bottom: 10px;
-  flex: 1;
 }
 
 .service-price {
@@ -1844,7 +2053,7 @@ h1, h2, h3, h4, .banner-title {
   width: 100%;
   padding: 12px;
   margin-top: 15px;
-  background: linear-gradient(to right, #00E0AA, #00b3e0);
+  background: linear-gradient(to right, #00E0AA, #00b38f);
   color: white;
   border: none;
   border-radius: 8px;
@@ -1861,6 +2070,13 @@ h1, h2, h3, h4, .banner-title {
 .hire-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 15px rgba(0, 224, 170, 0.4);
+}
+
+.own-service-message {
+  text-align: center;
+  color: #00E0AA;
+  font-weight: 600;
+  margin-top: 16px;
 }
 
 /* Banner khuyến mãi */
@@ -1935,6 +2151,137 @@ h1, h2, h3, h4, .banner-title {
   box-shadow: 0 15px 30px rgba(122, 78, 254, 0.6);
 }
 
+/* Modal Styling */
+.confirm-modal,
+.description-modal,
+.purchase-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(5, 10, 21, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  position: relative;
+  max-width: 500px;
+  width: 90%;
+  background: #0a0e17;
+  padding: 30px;
+  border-radius: 15px;
+  border: 1px solid #7A4EFE;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(122, 78, 254, 0.3);
+}
+
+.modal-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: #fff;
+  text-shadow: 0 0 5px rgba(122, 78, 254, 0.5);
+}
+
+.modal-content p {
+  margin-bottom: 20px;
+  color: #e1e7ef;
+}
+
+.modal-content textarea {
+  width: 100%;
+  height: 100px;
+  padding: 10px;
+  border: 1px solid #7A4EFE;
+  background: rgba(26, 34, 52, 0.6);
+  color: #e1e7ef;
+  border-radius: 8px;
+  resize: none;
+  transition: border-color 0.3s ease;
+}
+
+.modal-content textarea:focus {
+  border-color: #00E0AA;
+  outline: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn {
+  background: #2c3e50;
+  color: #e1e7ef;
+}
+
+.cancel-btn:hover {
+  background: #34495e;
+  transform: translateY(-2px);
+}
+
+.confirm-btn {
+  background: #7A4EFE;
+  color: white;
+}
+
+.confirm-btn:hover {
+  background: #5a3ece;
+  transform: translateY(-2px);
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #e1e7ef;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  color: #ff4b4b;
+  transform: rotate(90deg);
+}
+
+.modal-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.modal-icon.fa-check-circle {
+  color: #00E0AA;
+}
+
+.modal-icon.fa-exclamation-triangle {
+  color: #ff4b4b;
+}
+
+.animated {
+  animation: fadeInScale 0.3s ease;
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 /* Modal xem hình ảnh */
 .game-image-modal {
   position: fixed;
@@ -1943,7 +2290,6 @@ h1, h2, h3, h4, .banner-title {
   width: 100%;
   height: 100%;
   background: rgba(5, 10, 21, 0.95);
-  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1955,28 +2301,22 @@ h1, h2, h3, h4, .banner-title {
   width: 90%;
   max-width: 1200px;
   max-height: 90vh;
-  background: rgba(10, 15, 30, 0.9);
+  background: #0a0e17;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 40px rgba(122, 78, 254, 0.3);
+  border: 1px solid #7A4EFE;
   display: flex;
   flex-direction: column;
-  animation: modalFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
 }
 
 .game-modal-header {
-  background: linear-gradient(90deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+  background: linear-gradient(to right, #000000, #000000);
   padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  border-bottom: 1px solid #00E0AA;
 }
 
 .game-modal-title {
@@ -1986,30 +2326,26 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .game-modal-title h3 {
-  color: #ffffff;
+  color: #fff;
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  font-family: 'Orbitron', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
 
 .game-badge-modal {
-  background: rgba(0, 255, 255, 0.2);
-  color: #00ffff;
+  background: #00E0AA;
+  color: #fff;
   padding: 5px 15px;
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: 600;
-  border: 1px solid rgba(0, 255, 255, 0.4);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  border: 1px solid #00E0AA;
+  box-shadow: 0 0 10px rgba(0, 224, 170, 0.3);
 }
 
 .game-close-btn {
-  background: rgba(255, 0, 76, 0.2);
-  border: 1px solid rgba(255, 0, 76, 0.4);
-  color: #ff4b4b;
+  background: #ff4b4b;
+  color: #fff;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -2022,7 +2358,7 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .game-close-btn:hover {
-  background: rgba(255, 0, 76, 0.4);
+  background: #ff1a1a;
   transform: rotate(90deg);
   box-shadow: 0 0 15px rgba(255, 0, 76, 0.5);
 }
@@ -2059,8 +2395,8 @@ h1, h2, h3, h4, .banner-title {
   position: relative;
   width: 100%;
   padding-top: 56.25%;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: #000;
+  border: 1px solid #7A4EFE;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -2080,10 +2416,7 @@ h1, h2, h3, h4, .banner-title {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, 
-    rgba(0, 255, 255, 0.05) 0%, 
-    transparent 50%, 
-    rgba(255, 0, 255, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(122, 78, 254, 0.05) 0%, transparent 50%, rgba(0, 224, 170, 0.05) 100%);
   pointer-events: none;
 }
 
@@ -2091,7 +2424,7 @@ h1, h2, h3, h4, .banner-title {
   position: absolute;
   width: 20px;
   height: 20px;
-  border-color: #00ffff;
+  border-color: #00E0AA;
   z-index: 2;
 }
 
@@ -2105,8 +2438,8 @@ h1, h2, h3, h4, .banner-title {
   top: 50%;
   transform: translateY(-50%);
   background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(0, 255, 255, 0.5);
-  color: #00ffff;
+  border: 1px solid #7A4EFE;
+  color: #fff;
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -2123,9 +2456,9 @@ h1, h2, h3, h4, .banner-title {
 .next-btn { right: 20px; }
 
 .game-nav-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
+  background: rgba(122, 78, 254, 0.7);
   transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 20px rgba(122, 78, 254, 0.5);
 }
 
 .game-image-counter {
@@ -2133,10 +2466,10 @@ h1, h2, h3, h4, .banner-title {
   bottom: 20px;
   right: 20px;
   background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border: 1px solid #7A4EFE;
   border-radius: 30px;
   padding: 8px 15px;
-  color: #ffffff;
+  color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
   display: flex;
@@ -2145,7 +2478,7 @@ h1, h2, h3, h4, .banner-title {
   z-index: 5;
 }
 
-.current-index { color: #00ffff; }
+.current-index { color: #00E0AA; }
 .separator { color: rgba(255, 255, 255, 0.5); }
 
 .game-thumbnails {
@@ -2154,7 +2487,7 @@ h1, h2, h3, h4, .banner-title {
   overflow-x: auto;
   padding: 5px 0;
   scrollbar-width: thin;
-  scrollbar-color: #00ffff #0a0e17;
+  scrollbar-color: #00E0AA #0a0e17;
 }
 
 .game-thumbnails::-webkit-scrollbar {
@@ -2162,7 +2495,7 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .game-thumbnails::-webkit-scrollbar-thumb {
-  background: #00ffff;
+  background: #00E0AA;
   border-radius: 5px;
 }
 
@@ -2184,20 +2517,20 @@ h1, h2, h3, h4, .banner-title {
 .game-thumbnail.active {
   opacity: 1;
   transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 224, 170, 0.5);
 }
 
 .game-thumb-frame {
   position: relative;
   width: 100%;
   height: 100%;
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border: 1px solid #7A4EFE;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .game-thumbnail.active .game-thumb-frame {
-  border-color: #00ffff;
+  border-color: #00E0AA;
 }
 
 .game-thumbnail img {
@@ -2219,8 +2552,8 @@ h1, h2, h3, h4, .banner-title {
 .game-account-info {
   flex: 1;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.3);
-  border-left: 1px solid rgba(0, 255, 255, 0.2);
+  background: #0a0e17;
+  border-left: 1px solid #7A4EFE;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -2229,7 +2562,7 @@ h1, h2, h3, h4, .banner-title {
 @media (max-width: 991px) {
   .game-account-info {
     border-left: none;
-    border-top: 1px solid rgba(0, 255, 255, 0.2);
+    border-top: 1px solid #7A4EFE;
   }
 }
 
@@ -2242,32 +2575,31 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .game-seller-badge {
-  background: rgba(255, 0, 255, 0.1);
-  color: #ff00ff;
+  background: #7A4EFE;
+  color: #fff;
   padding: 8px 15px;
   border-radius: 30px;
   font-size: 0.9rem;
   font-weight: 600;
-  border: 1px solid rgba(255, 0, 255, 0.3);
+  border: 1px solid #7A4EFE;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .game-status-badge {
-  background: rgba(0, 255, 127, 0.1);
-  color: #00ff7f;
+  background: #00E0AA;
+  color: #fff;
   padding: 8px 15px;
   border-radius: 30px;
   font-size: 0.9rem;
   font-weight: 600;
-  border: 1px solid rgba(0, 255, 127, 0.3);
+  border: 1px solid #00E0AA;
 }
 
 .game-status-badge.sold-status {
-  background: rgba(255, 75, 75, 0.1);
-  color: #ff4b4b;
-  border-color: rgba(255, 75, 75, 0.3);
+  background: #ff4b4b;
+  border-color: #ff4b4b;
 }
 
 .game-price-section {
@@ -2279,44 +2611,44 @@ h1, h2, h3, h4, .banner-title {
 .game-price-box {
   flex: 1;
   min-width: 200px;
-  background: rgba(0, 255, 255, 0.1);
+  background: #1a1a2e;
   padding: 15px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
+  border: 1px solid #7A4EFE;
   transition: all 0.3s ease;
 }
 
 .game-price-box:hover {
-  background: rgba(0, 255, 255, 0.15);
+  background: #16213e;
   transform: translateY(-3px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-  border-color: rgba(0, 255, 255, 0.4);
+  border-color: #00E0AA;
 }
 
 .game-price-box.min-price {
-  background: rgba(255, 0, 255, 0.1);
-  border-color: rgba(255, 0, 255, 0.2);
+  background: #16213e;
+  border-color: #00E0AA;
 }
 
 .game-price-box.min-price:hover {
-  background: rgba(255, 0, 255, 0.15);
-  border-color: rgba(255, 0, 255, 0.4);
+  background: #1a1a2e;
+  border-color: #7A4EFE;
 }
 
 .game-price-label {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #b0b5c3;
   margin-bottom: 5px;
 }
 
 .game-price-value {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #00ffff;
+  color: #00E0AA;
 }
 
 .game-price-box.min-price .game-price-value {
-  color: #ff00ff;
+  color: #7A4EFE;
 }
 
 .game-price-value span {
@@ -2325,10 +2657,10 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .game-fields-container {
-  background: rgba(0, 0, 0, 0.3);
+  background: #16213e;
   border-radius: 12px;
   padding: 20px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
+  border: 1px solid #7A4EFE;
 }
 
 .game-fields-header {
@@ -2337,8 +2669,8 @@ h1, h2, h3, h4, .banner-title {
   gap: 10px;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-  color: #00ffff;
+  border-bottom: 1px solid #7A4EFE;
+  color: #00E0AA;
   font-size: 1.1rem;
   font-weight: 600;
 }
@@ -2350,28 +2682,28 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .game-field-item {
-  background: rgba(0, 255, 255, 0.05);
+  background: #1a1a2e;
   padding: 12px;
   border-radius: 8px;
   transition: all 0.3s ease;
-  border: 1px solid rgba(0, 255, 255, 0.1);
+  border: 1px solid #7A4EFE;
 }
 
 .game-field-item:hover {
-  background: rgba(0, 255, 255, 0.1);
+  background: #16213e;
   transform: translateY(-3px);
-  border-color: rgba(0, 255, 255, 0.3);
+  border-color: #00E0AA;
 }
 
 .field-name {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #b0b5c3;
   margin-bottom: 5px;
 }
 
 .field-value {
   font-size: 1rem;
-  color: #ffffff;
+  color: #e1e7ef;
   word-break: break-word;
 }
 
@@ -2387,7 +2719,6 @@ h1, h2, h3, h4, .banner-title {
   padding: 12px;
   border: none;
   border-radius: 8px;
-  font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
@@ -2404,25 +2735,23 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .bid-btn {
-  background: rgba(0, 255, 255, 0.1);
-  color: #00ffff;
-  border: 1px solid rgba(0, 255, 255, 0.4);
+  background: #7A4EFE;
+  color: #fff;
 }
 
 .bid-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 255, 255, 0.3);
+  background: #5a3ece;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(122, 78, 254, 0.3);
 }
 
 .buy-btn {
-  background: rgba(255, 0, 255, 0.1);
-  color: #ff00ff;
-  border: 1px solid rgba(255, 0, 255, 0.4);
+  background: #00E0AA;
+  color: #fff;
 }
 
 .buy-btn:hover {
-  background: rgba(255, 0, 255, 0.2);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 0, 255, 0.3);
+  background: #00b38f;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 224, 170, 0.3);
 }
 
 .btn-glow {
@@ -2439,41 +2768,6 @@ h1, h2, h3, h4, .banner-title {
 .game-action-btn:hover .btn-glow {
   opacity: 0.5;
   animation: rotate 10s linear infinite;
-}
-
-/* Modal phản hồi mua hàng */
-.purchase-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(5, 10, 21, 0.95);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  backdrop-filter: blur(5px);
-}
-
-.modal-content {
-  position: relative;
-  max-width: 500px;
-  width: 90%;
-  background: rgba(26, 34, 52, 0.9);
-  padding: 30px;
-  border-radius: 15px;
-  border: 1px solid rgba(122, 78, 254, 0.3);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.animated {
-  animation: fadeInScale 0.3s ease;
-}
-
-@keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
 }
 
 /* Responsive */
@@ -2531,5 +2825,23 @@ h1, h2, h3, h4, .banner-title {
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050A15;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #7A4EFE;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00E0AA;
 }
 </style>
