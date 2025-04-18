@@ -11,6 +11,7 @@ namespace GameTradeZone.Domain.Entities
     {
         public int? UserId { get; set; } // nguoi tao phien dau gia 
         public int? AuctionPrizeId { get; set; }
+        public int? GameInforsId { get; set; }
 
         public string? AuctionName { get; set; }
         public DateTime? StartDateTime { get; set; }
@@ -19,6 +20,7 @@ namespace GameTradeZone.Domain.Entities
 
         public string? TimeToEnd { get; set; } = "5"; // time between each raise by user(usually 5min)
         public bool? EndStatus { get; set; } = false; // auction end or not(end if(WinnerId = true))
+        public DateTime? EndDateTime { get; set; } // Endtime only has value when EndAuction function is activated
         public bool? IsApproved { get; set; } = false; // admin approve or not
         public int? WinnerId { get; set; } = 0;
     }

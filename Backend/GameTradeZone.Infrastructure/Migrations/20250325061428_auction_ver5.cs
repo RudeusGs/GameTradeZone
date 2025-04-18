@@ -5,25 +5,24 @@
 namespace GameTradeZone.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class updateCommentData : Migration
+    public partial class auction_ver5 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
-                name: "UserId",
-                table: "CommentDatas",
+                name: "GameInforsId",
+                table: "Auctions",
                 type: "int",
-                nullable: false,
-                defaultValue: 0);
+                nullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "CommentDatas");
+                name: "GameInforsId",
+                table: "Auctions");
         }
     }
 }

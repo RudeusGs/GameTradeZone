@@ -97,8 +97,14 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("EndDateTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool?>("EndStatus")
                         .HasColumnType("bit");
+
+                    b.Property<int?>("GameInforsId")
+                        .HasColumnType("int");
 
                     b.Property<bool?>("IsApproved")
                         .HasColumnType("bit");

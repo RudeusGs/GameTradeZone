@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GameTradeZone.Infrastructure.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250320030017_update_auctionDetail")]
-    partial class update_auctionDetail
+    [Migration("20250331085032_auction_ver6")]
+    partial class auction_ver6
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -100,8 +100,14 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("EndDateTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool?>("EndStatus")
                         .HasColumnType("bit");
+
+                    b.Property<int?>("GameInforsId")
+                        .HasColumnType("int");
 
                     b.Property<bool?>("IsApproved")
                         .HasColumnType("bit");

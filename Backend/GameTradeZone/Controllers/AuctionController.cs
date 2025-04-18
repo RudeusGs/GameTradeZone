@@ -48,7 +48,7 @@ namespace GameTradeZone.Controllers
             }
         }
 
-        [HttpGet("Get-All_Auction_Detail")]
+        [HttpGet("Get-All_Auction-Detail")]
         public async Task<IActionResult> GetAllAuctionDetail()
         {
             try
@@ -78,8 +78,8 @@ namespace GameTradeZone.Controllers
         }
 
         [Authorize]
-        [HttpPost("Add-Auction_Detail")]
-        public async Task<IActionResult> AddAuctionDetail(AddAuctionDetailModel model)
+        [HttpPost("Add-Auction-Detail")]
+        public async Task<IActionResult> AddAuctionDetail([FromForm]AddAuctionDetailModel model)
         {
             try
             {
@@ -136,7 +136,7 @@ namespace GameTradeZone.Controllers
             }
         }
 
-        [HttpPost("Get-Auction-Prize_By_Id")]
+        [HttpGet("Get-Auction-Prize-By-Id")]
         public async Task<IActionResult> GetAuctionPrizeById(int id)
         {
             try
@@ -151,7 +151,7 @@ namespace GameTradeZone.Controllers
         }
 
         [Authorize]
-        [HttpPut("Update-Auction_Detail")]
+        [HttpPut("Update-Auction-Detail")]
         public async Task<IActionResult> UpdateAuction([FromForm]UpdateAuctionModel model)
         {
             try
@@ -202,6 +202,35 @@ namespace GameTradeZone.Controllers
             try
             {
                 var result = await _auctionService.DeleteAuctionPrize(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("End-Auction")]
+        public async Task<IActionResult> EndAuction([FromForm]int id, int WinnerId, DateTime EndDatetime)
+        {
+            try
+            {
+                var result = await _auctionService.EndAuction(id, WinnerId, EndDatetime);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+        [Authorize]
+        [HttpPut("Update-Auction-Prize")]
+        public async Task<IActionResult> UpdateAuctionPrize([FromForm] UpdateAuctionPrizeModel model)
+        {
+            try
+            {
+                var result = await _auctionService.UpdateAuctionPrize(model);
                 return Response(result);
             }
             catch (Exception e)

@@ -9,7 +9,7 @@ export default {
   },
 
   getById: async (id: number): Promise<AxiosResponse<ApiResult<GameInfor>>> => {
-    return await baseApi.get(`GameInfor/Get-By-Id?id=${id}`);
+    return await baseApi.get(`GameInfor/Get-By-Id?id=${id}`); 
   },
 
   add: async (gameInfor: GameInfor): Promise<AxiosResponse<ApiResult<any>>> => {

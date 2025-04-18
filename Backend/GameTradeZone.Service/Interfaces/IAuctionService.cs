@@ -36,7 +36,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> DeleteAuctionDetail(int id);
         Task<ApiResult> DeleteAuctionPrize(int id);
 
-        Task<ApiResult> EndAuction(int id);
+        Task<ApiResult> EndAuction(int id, int WinnerId, DateTime EndDatetime);
 
     }
 }
