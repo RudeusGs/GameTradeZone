@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using GameTradeZone.Domain.Entities;
 using Microsoft.AspNetCore.Http;
+using GameTradeZone.Service.Models;
 
 namespace GameTradeZone.Service.Interfaces
 {
@@ -18,6 +19,6 @@ namespace GameTradeZone.Service.Interfaces
         Task<List<PostInfo>> GetAllPostByCategoryId(int categoryId);
         Task<List<PostInfo>> GetAllPostsByUserId(int userId);
         Task<PostInfo> UpdatePost(int postId, string caption, int categoryId, string content, List<IFormFile>? images);
-   
+        Task<ApiResult> GetPostCount();
     }
 }

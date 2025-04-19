@@ -18,9 +18,9 @@ const forumApi = {
     // Assuming data contains updated comment content
     return await baseApi.post(`/PostInfo/comment/${commentId}`, data);
   },
-  // unlikePost: async (postId: string) => {
-  //     return await baseApi.post(`/PostInfo/unlike/${postId}`);
-  // },
+  unlikePost: async (postId: string) => {
+    return await baseApi.post(`/PostInfo/unlike/${postId}`, null);
+  },
   createPost: async (data: any) => {
     // Assuming data contains post details
     return await baseApi.post("/posts/create", data);
@@ -43,6 +43,14 @@ const forumApi = {
   updatePost: async (postId: string, data: any) => {
     // Assuming data contains updated post details
     return await baseApi.post(`/posts/update/${postId}`, data);
+  },
+  GetAllCategoryPostCount: async () => {
+    // Removed data parameter as GET usually doesn't need it for this type of request
+    return await baseApi.get("/forumscategory/getallcategorypostcount");
+  },
+  GetPostCount: async () => {
+    // Removed data parameter as GET usually doesn't need it for this type of request
+    return await baseApi.get("/posts/getpostcount");
   },
 };
 

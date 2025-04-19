@@ -54,12 +54,12 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
-        [HttpGet("getallstat")]
-        public async Task<IActionResult> GetAllCategoryStat()
+        [HttpGet("getallcategorypostcount")]
+        public async Task<IActionResult> GetAllCategoryPostCount()
         {
             try
             {
-                var result = await _forumsCategoryService.GetAllCategoryStat();
+                var result = await _forumsCategoryService.GetAllCategoryPostCount();
                 return Response(result);
             }
             catch (Exception e)

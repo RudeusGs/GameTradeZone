@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import axios from "axios";
+import { ref, onMounted, watch } from "vue"; // Import watch
+// import axios from "axios"; // Remove axios if not used elsewhere
 import { useRoute } from "vue-router";
-
-// 🌐 API URL
-const API_BASE_URL = "https://localhost:7232/api";
+import forumApi from "../api/forums"; // Import forum API
 
 // 📌 Get postId from route
 const route = useRoute();
-const postId = ref<number>(Number(route.params.id));
+const postId = ref<string>(String(route.params.id)); // Use string for API consistency
 
 // 📝 Types for Post and Comment
 interface User {
@@ -26,6 +24,7 @@ interface Post {
   likesCount: number;
   imageUrl?: string;
   user?: User;
+  categoryId?: number; // Added categoryId to Post interface
 }
 
 interface Comment {
@@ -42,7 +41,14 @@ const comments = ref<Comment[]>([]);
 const newComment = ref<string>("");
 const isLoading = ref<boolean>(true);
 const isSubmitting = ref<boolean>(false);
-const isLiked = ref<boolean>(false);
+const isLiked = ref<boolean>(false); // Consider fetching initial like status if needed
+const isLikeProcessing = ref<boolean>(false); // Prevent multiple clicks
+const editingCommentId = ref<number | null>(null); // Track which comment is being edited
+const editedCommentContent = ref<string>(""); // Store the edited content
+const isDeletingCommentId = ref<number | null>(null); // Track which comment is being deleted
+const isSavingEdit = ref<boolean>(false); // Track if edit save is in progress
+const relatedPosts = ref<Post[]>([]); // State for related posts
+const isLoadingRelated = ref<boolean>(false); // Loading state for related posts
 
 // 🔄 Format date to a more readable format
 const formatDate = (dateString: string) => {
@@ -56,77 +62,137 @@ const formatDate = (dateString: string) => {
   }).format(date);
 };
 
-// 🟢 Fetch post details
+// 🟢 Fetch post details using forumApi
 const fetchPost = async () => {
   try {
     isLoading.value = true;
-    console.log(
-      "🔍 Fetching API:",
-      `${API_BASE_URL}/posts/get/${postId.value}`
-    );
-    const response = await axios.get<{ result: Post }>(
-      `${API_BASE_URL}/posts/get/${postId.value}`
-    );
+    console.log("🔍 Fetching post with ID:", postId.value);
+    const response = await forumApi.getPostById(postId.value);
     post.value = response.data.result;
+
+    // Fetch related posts after getting the category
+    if (post.value?.categoryId) {
+      await fetchRelatedPosts(post.value.categoryId);
+    }
+
+    // TODO: Fetch initial like status for the current user here if possible
+    // isLiked.value = response.data.result.isLikedByUser; // Example
   } catch (error) {
     console.error("❌ Error fetching post:", error);
+    post.value = null; // Reset post on error
   } finally {
     isLoading.value = false;
   }
 };
 
+// 🟢 Fetch comments using forumApi
 const fetchComments = async () => {
   try {
     console.log("📌 Current Post ID:", postId.value); // Debug postId
-    console.log(
-      "🔍 Fetching API:",
-      `${API_BASE_URL}/PostInfo/comments/${postId.value}`
-    );
-    const response = await axios.get<{ result: Comment[] }>(
-      `${API_BASE_URL}/PostInfo/comments/${postId.value}`
-    );
+    console.log("🔍 Fetching comments for post ID:", postId.value);
+    const response = await forumApi.getPostComments(postId.value);
     console.log("✅ Comments fetched:", response.data.result); // Log comments
     comments.value = response.data.result;
   } catch (error) {
     console.error("❌ Error fetching comments:", error);
+    comments.value = []; // Reset comments on error
   }
 };
 
-const likePost = async () => {
-  if (isLiked.value) return;
+// 📚 Fetch related posts based on category
+const fetchRelatedPosts = async (categoryId: number | undefined) => {
+  if (categoryId === undefined) {
+    relatedPosts.value = []; // Clear if no category ID
+    return;
+  }
+
+  isLoadingRelated.value = true;
+  try {
+    console.log("📚 Fetching related posts for category ID:", categoryId);
+    const response = await forumApi.getPostsByCategory(String(categoryId));
+
+    // Filter out the current post
+    let allRelated = response.data.result.filter(
+      (p: Post) => p.id !== Number(postId.value)
+    );
+
+    // Shuffle the array (Fisher-Yates shuffle)
+    for (let i = allRelated.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allRelated[i], allRelated[j]] = [allRelated[j], allRelated[i]];
+    }
+
+    // Take the first 3 (or fewer if less than 3 are available)
+    relatedPosts.value = allRelated.slice(0, 3);
+
+    console.log(
+      "✅ Related posts fetched (randomized & limited):",
+      relatedPosts.value
+    );
+  } catch (error) {
+    console.error("❌ Error fetching related posts:", error);
+    relatedPosts.value = []; // Clear on error
+  } finally {
+    isLoadingRelated.value = false;
+  }
+};
+// ❤️ Toggle Like/Unlike post using forumApi
+const toggleLike = async () => {
+  if (isLikeProcessing.value || !post.value) return; // Prevent multiple clicks or action if post not loaded
+
+  isLikeProcessing.value = true;
+  const currentlyLiked = isLiked.value;
 
   try {
-    await axios.post(`${API_BASE_URL}/PostInfo/like/${postId.value}`);
-    post.value!.likesCount += 1;
-    isLiked.value = true;
+    if (currentlyLiked) {
+      // Unlike the post
+      await forumApi.unlikePost(postId.value);
+      post.value.likesCount -= 1;
+      isLiked.value = false;
+    } else {
+      // Like the post
+      await forumApi.likePost(postId.value);
+      post.value.likesCount += 1;
+      isLiked.value = true;
+    }
   } catch (error) {
-    console.error("❌ Error liking post:", error);
+    console.error(
+      `❌ Error ${currentlyLiked ? "unliking" : "liking"} post:`,
+      error
+    );
+    // Optional: Revert UI changes on error
+    if (post.value) {
+      post.value.likesCount += currentlyLiked ? 1 : -1; // Revert count
+    }
+    isLiked.value = currentlyLiked; // Revert like status
+  } finally {
+    isLikeProcessing.value = false;
   }
 };
 
-// Report post function
+// Report post function (remains the same)
 const reportPost = () => {
   alert("Report functionality will be implemented in a future update.");
 };
 
-// Share post function
+// Share post function (remains the same)
 const sharePost = () => {
   navigator.clipboard.writeText(window.location.href);
   alert("Link copied to clipboard!");
 };
 
-// ✍️ Submit new comment
+// ✍️ Submit new comment using forumApi
 const submitComment = async () => {
   if (!newComment.value.trim()) return;
 
   try {
     isSubmitting.value = true;
-    await axios.post(`${API_BASE_URL}/PostInfo/comment`, {
-      postId: postId.value,
+    await forumApi.commentOnPost({
+      postId: Number(postId.value),
       content: newComment.value,
     });
     newComment.value = "";
-    fetchComments();
+    await fetchComments(); // Refresh comments list
   } catch (error) {
     console.error("❌ Error submitting comment:", error);
   } finally {
@@ -134,13 +200,101 @@ const submitComment = async () => {
   }
 };
 
+// 🗑️ Delete comment using forumApi
+const deleteComment = async (commentId: number) => {
+  if (!confirm("Are you sure you want to delete this comment?")) {
+    return;
+  }
+  isDeletingCommentId.value = commentId; // Indicate deletion in progress
+  try {
+    await forumApi.deleteComment(String(commentId)); // API expects string ID
+    // Remove comment from local state immediately for better UX
+    comments.value = comments.value.filter((c) => c.id !== commentId);
+    // Optional: Show success message
+  } catch (error) {
+    console.error("❌ Error deleting comment:", error);
+    // Optional: Show error message
+  } finally {
+    isDeletingCommentId.value = null; // Reset deletion state
+  }
+};
+
+// ✏️ Start editing a comment
+const startEditing = (comment: Comment) => {
+  editingCommentId.value = comment.id;
+  editedCommentContent.value = comment.content; // Pre-fill with current content
+};
+
+// ❌ Cancel editing
+const cancelEditing = () => {
+  editingCommentId.value = null;
+  editedCommentContent.value = "";
+};
+
+// ✅ Save edited comment using forumApi
+const saveEdit = async (commentId: number) => {
+  if (!editedCommentContent.value.trim()) {
+    alert("Comment cannot be empty.");
+    return;
+  }
+  isSavingEdit.value = true;
+  try {
+    await forumApi.updateComment(String(commentId), {
+      // API expects string ID
+      content: editedCommentContent.value,
+    });
+    // Update local comment data
+    const index = comments.value.findIndex((c) => c.id === commentId);
+    if (index !== -1) {
+      comments.value[index].content = editedCommentContent.value;
+    }
+    cancelEditing(); // Exit editing mode
+    // Optional: Show success message
+  } catch (error) {
+    console.error("❌ Error updating comment:", error);
+    // Optional: Show error message
+  } finally {
+    isSavingEdit.value = false;
+  }
+};
+
+// 👀 Watch for route parameter changes to reload data
+watch(
+  () => route.params.id,
+  async (newId) => {
+    const currentId = postId.value;
+    if (newId && String(newId) !== currentId) {
+      console.log("🔄 Route ID changed, refetching data for post:", newId);
+      postId.value = String(newId); // Update the reactive postId ref
+
+      // Reset states before fetching new data
+      post.value = null;
+      comments.value = [];
+      relatedPosts.value = [];
+      isLiked.value = false; // Reset like status
+      isLoading.value = true; // Show loading indicator
+      isLoadingRelated.value = true;
+      editingCommentId.value = null; // Cancel any ongoing edit
+      editedCommentContent.value = "";
+
+      // Scroll to top for better UX
+      window.scrollTo(0, 0);
+
+      // Refetch all data for the new post ID
+      await fetchPost(); // This will call fetchRelatedPosts internally
+      await fetchComments();
+    }
+  },
+  { immediate: false } // Don't run immediately on mount, onMounted handles initial load
+);
+
 // 🔄 Call API when component mounts
 onMounted(() => {
   fetchPost();
   fetchComments();
+  // Optional: Fetch initial like status for the current user if needed
 });
 </script>
-
 <template>
   <div class="neon-theme">
     <div class="layout">
@@ -172,50 +326,63 @@ onMounted(() => {
         <div class="breadcrumb">
           <router-link to="/forums">Forums</router-link>
           <span class="breadcrumb-separator">/</span>
-          <router-link to="/forums/category">Category</router-link>
-          <span class="breadcrumb-separator">/</span>
-          <span class="breadcrumb-current">aaaa</span>
+          <router-link
+            v-if="post?.categoryId"
+            :to="`/forums/category/${post?.categoryId}`"
+            >Category</router-link
+          >
+          <!-- TODO: Make dynamic based on actual category name -->
+          <span v-if="post?.categoryId" class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-current">{{
+            post?.caption || (isLoading ? "Loading..." : "Post Not Found")
+          }}</span>
         </div>
 
         <!-- Post Header -->
         <div class="post-header">
-          <h1 class="post-title">{{ post?.caption || "aaaa" }}</h1>
-          <div class="post-meta">
+          <h1 class="post-title">
+            {{ post?.caption || (isLoading ? "Loading..." : "") }}
+          </h1>
+          <div v-if="post" class="post-meta">
             Posted
             {{
-              post?.createdDate
+              post.createdDate
                 ? formatDate(post.createdDate)
-                : "Feb 16, 2025, 06:54 AM"
+                : "Loading date..."
             }}
+            by
+            {{ post.user?.fullName || post.user?.userName || "Unknown User" }}
           </div>
         </div>
 
         <!-- Loading State -->
         <div v-if="isLoading" class="loading">
           <div class="loading-spinner"></div>
-          <span>Loading...</span>
+          <span>Loading Post...</span>
         </div>
 
         <!-- Post Content -->
-        <div v-else class="post-content">
+        <div v-else-if="post" class="post-content">
           <!-- Author Info -->
           <div class="author-info">
             <div class="author-avatar">
               <span class="avatar-letter">{{
-                post?.user?.fullName?.[0] || "N"
+                post.user?.fullName?.[0] || post.user?.userName?.[0] || "U"
               }}</span>
             </div>
             <div class="author-name">
-              {{ post?.user?.fullName || "Nguyễn Văn A" }}
+              {{ post.user?.fullName || post.user?.userName || "Unknown User" }}
             </div>
             <div class="author-role">Member</div>
+            <!-- Consider fetching role if available -->
           </div>
 
           <!-- Post Body -->
           <div class="post-body">
-            <p>{{ post?.content || "aaaa" }}</p>
+            <p v-html="post.content"></p>
+            <!-- Use v-html if content can contain HTML -->
 
-            <div v-if="post?.imageUrl" class="post-image">
+            <div v-if="post.imageUrl" class="post-image">
               <img :src="post.imageUrl" alt="Post Image" />
             </div>
 
@@ -224,10 +391,11 @@ onMounted(() => {
               <button
                 class="action-btn like"
                 :class="{ active: isLiked }"
-                @click="likePost"
+                @click="toggleLike"
+                :disabled="isLikeProcessing"
               >
                 <span class="action-icon">❤️</span>
-                <span class="action-count">{{ post?.likesCount || 4 }}</span>
+                <span class="action-count">{{ post.likesCount }}</span>
               </button>
               <button class="action-btn share" @click="sharePost">
                 <span class="action-text">Share</span>
@@ -238,64 +406,105 @@ onMounted(() => {
             </div>
           </div>
         </div>
+        <div v-else class="error-message">
+          Failed to load post details or post not found.
+        </div>
 
         <!-- Comments Section -->
-        <div class="comments-section">
+        <div v-if="post" class="comments-section">
           <h2 class="section-title">
-            Comments<span class="comment-count"
-              >({{ comments.length || 3 }})</span
-            >
+            Comments<span class="comment-count">({{ comments.length }})</span>
           </h2>
 
           <!-- Comments List -->
           <div class="comments-list">
+            <div v-if="!comments.length && !isLoading" class="no-comments">
+              No comments yet. Be the first to comment!
+            </div>
             <div
-              v-for="(comment, index) in comments.length
-                ? comments
-                : [
-                    {
-                      id: 1,
-                      content: 'Cũng ok',
-                      user: { fullName: 'Ngô Trần Nguyên Quân' },
-                      createdDate: 'Mar 9, 2025, 01:37 PM',
-                    },
-                    {
-                      id: 2,
-                      content: 'Cũng ok 2',
-                      user: { fullName: 'Ngô Trần Nguyên Quân' },
-                      createdDate: 'Mar 9, 2025, 01:38 PM',
-                    },
-                    {
-                      id: 3,
-                      content: 'Cũng ok 3',
-                      user: { fullName: 'Ngô Trần Nguyên Quân' },
-                      createdDate: 'Mar 9, 2025, 01:39 PM',
-                    },
-                  ]"
+              v-for="comment in comments"
               :key="comment.id"
               class="comment-item"
             >
               <div class="comment-user">
                 <div class="comment-user-avatar">
-                  {{ comment.user?.fullName?.[0] || "N" }}
+                  {{
+                    comment.user?.fullName?.[0] ||
+                    comment.user?.userName?.[0] ||
+                    "U"
+                  }}
                 </div>
               </div>
               <div class="comment-content">
                 <div class="comment-header">
                   <span class="comment-author">{{
-                    comment.user?.fullName || "Ngô Trần Nguyên Quân"
+                    comment.user?.fullName ||
+                    comment.user?.userName ||
+                    "Unknown User"
                   }}</span>
                   <span class="comment-time">{{
-                    comment.createdDate
-                      ? formatDate(comment.createdDate)
-                      : comment.createdDate
+                    formatDate(comment.createdDate)
                   }}</span>
                 </div>
-                <div class="comment-text">{{ comment.content }}</div>
+                <!-- Editing View -->
+                <div
+                  v-if="editingCommentId === comment.id"
+                  class="comment-edit-view"
+                >
+                  <textarea
+                    v-model="editedCommentContent"
+                    class="comment-edit-textarea"
+                    rows="3"
+                    :disabled="isSavingEdit"
+                  ></textarea>
+                  <div class="comment-edit-actions">
+                    <button
+                      class="neon-btn green small"
+                      @click="saveEdit(comment.id)"
+                      :disabled="isSavingEdit || !editedCommentContent.trim()"
+                    >
+                      {{ isSavingEdit ? "Saving..." : "Save" }}
+                    </button>
+                    <button
+                      class="neon-btn gray small"
+                      @click="cancelEditing"
+                      :disabled="isSavingEdit"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <!-- Normal View -->
+                <div v-else class="comment-text">{{ comment.content }}</div>
+
+                <!-- Comment Actions (Edit/Delete) - TODO: Add logic to show only for comment owner -->
+                <div
+                  v-if="editingCommentId !== comment.id"
+                  class="comment-item-actions"
+                >
+                  <button
+                    class="comment-action-btn edit"
+                    @click="startEditing(comment)"
+                    title="Edit Comment"
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    class="comment-action-btn delete"
+                    @click="deleteComment(comment.id)"
+                    :disabled="isDeletingCommentId === comment.id"
+                    title="Delete Comment"
+                  >
+                    {{
+                      isDeletingCommentId === comment.id
+                        ? "Deleting..."
+                        : "🗑️ Delete"
+                    }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-
           <!-- Comment Form -->
           <div class="comment-form">
             <h3 class="form-title">Leave a comment</h3>
@@ -304,6 +513,7 @@ onMounted(() => {
                 v-model="newComment"
                 placeholder="Write your comment..."
                 class="comment-textarea"
+                :disabled="isSubmitting"
               ></textarea>
             </div>
             <div class="form-actions">
@@ -312,43 +522,47 @@ onMounted(() => {
                 :disabled="!newComment.trim() || isSubmitting"
                 @click="submitComment"
               >
-                Post Comment
+                {{ isSubmitting ? "Posting..." : "Post Comment" }}
               </button>
             </div>
           </div>
         </div>
 
         <!-- Related Discussions -->
-        <div class="related-discussions">
+        <div v-if="post" class="related-discussions">
           <h2 class="section-title">Related Discussions</h2>
-          <div class="discussion-list">
-            <div class="discussion-item">
+          <div v-if="isLoadingRelated" class="loading-related">
+            Loading related posts...
+          </div>
+          <div v-else-if="relatedPosts.length > 0" class="discussion-list">
+            <router-link
+              v-for="relatedPost in relatedPosts"
+              :key="relatedPost.id"
+              :to="`/post/${relatedPost.id}`"
+              class="discussion-item"
+            >
               <div class="discussion-info">
-                <h3 class="discussion-title">[Planned feature] Soon™</h3>
-                <p class="discussion-preview">
-                  A brief preview of the discussion content would go here...
-                </p>
+                <h3 class="discussion-title">{{ relatedPost.caption }}</h3>
+                <!-- Optional: Add a preview if available -->
+                <!-- <p class="discussion-preview">Preview...</p> -->
               </div>
               <div class="discussion-meta">
-                <div class="discussion-date">Dec 11, 2024</div>
-                <div class="discussion-author">by kouyo</div>
+                <div class="discussion-date">
+                  {{ formatDate(relatedPost.createdDate) }}
+                </div>
+                <div class="discussion-author">
+                  by
+                  {{
+                    relatedPost.user?.fullName ||
+                    relatedPost.user?.userName ||
+                    "Unknown"
+                  }}
+                </div>
               </div>
-            </div>
-            <div class="discussion-item">
-              <div class="discussion-info">
-                <h3 class="discussion-title">
-                  Change "Popular New Titles" to "Popular Weekly Titles"
-                  [Planned]
-                </h3>
-                <p class="discussion-preview">
-                  A brief preview of the discussion content would go here...
-                </p>
-              </div>
-              <div class="discussion-meta">
-                <div class="discussion-date">Feb 19, 2024</div>
-                <div class="discussion-author">by kabachi</div>
-              </div>
-            </div>
+            </router-link>
+          </div>
+          <div v-else class="no-related">
+            No other discussions found in this category.
           </div>
         </div>
       </main>
@@ -478,7 +692,7 @@ button {
   color: var(--neon-blue);
 }
 
-.neon-btn.blue:hover {
+.neon-btn.blue:hover:not(:disabled) {
   background-color: rgba(0, 198, 255, 0.1);
   box-shadow: var(--glow-blue);
 }
@@ -488,7 +702,7 @@ button {
   color: var(--neon-green);
 }
 
-.neon-btn.green:hover {
+.neon-btn.green:hover:not(:disabled) {
   background-color: rgba(0, 255, 148, 0.1);
   box-shadow: var(--glow-green);
 }
@@ -499,7 +713,7 @@ button {
   color: var(--text-secondary);
 }
 
-.neon-btn.icon-only:hover {
+.neon-btn.icon-only:hover:not(:disabled) {
   background-color: var(--light-blue);
   color: var(--text-primary);
 }
@@ -550,7 +764,7 @@ button {
   border-right: 1px solid var(--border-color);
   padding: 1.5rem 0;
   position: sticky;
-  top: 61px; /* Header height */
+  top: 0px; /* Header height */
   height: calc(100vh - 61px);
   overflow-y: auto;
 }
@@ -589,7 +803,7 @@ button {
 .nav-item.active::before {
   content: "";
   position: absolute;
-  left: -1.5rem;
+  left: -1.5rem; /* Adjust if sidebar padding changes */
   width: 3px;
   height: 24px;
   background-color: var(--neon-blue);
@@ -610,7 +824,10 @@ button {
 .main-content {
   flex: 1;
   padding: 1.5rem;
-  overflow: hidden;
+  overflow-y: auto; /* Allow scrolling if content overflows */
+  max-height: calc(
+    100vh - 61px
+  ); /* Prevent content from pushing below viewport */
 }
 
 /* Breadcrumb Styles */
@@ -620,6 +837,7 @@ button {
   margin-bottom: 1.5rem;
   font-size: 0.875rem;
   color: var(--text-muted);
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 
 .breadcrumb a {
@@ -666,6 +884,7 @@ button {
   justify-content: center;
   padding: 3rem 0;
   gap: 1rem;
+  color: var(--text-secondary);
 }
 
 .loading-spinner {
@@ -681,6 +900,17 @@ button {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Error Message */
+.error-message {
+  text-align: center;
+  padding: 3rem;
+  color: var(--neon-pink);
+  font-style: italic;
+  background-color: var(--dark-blue);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
 }
 
 /* Post Content Styles */
@@ -701,6 +931,7 @@ button {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .author-avatar {
@@ -724,6 +955,7 @@ button {
 .author-name {
   font-weight: 600;
   margin-bottom: 0.5rem;
+  word-break: break-word; /* Prevent long names from overflowing */
 }
 
 .author-role {
@@ -737,11 +969,13 @@ button {
 .post-body {
   flex: 1;
   padding: 1.5rem;
+  min-width: 0; /* Allow shrinking */
 }
 
 .post-body p {
   margin-bottom: 1.5rem;
   line-height: 1.7;
+  word-wrap: break-word; /* Ensure long words wrap */
 }
 
 .post-image {
@@ -763,6 +997,7 @@ button {
   display: flex;
   gap: 1rem;
   margin-top: 1.5rem;
+  flex-wrap: wrap; /* Allow wrapping */
 }
 
 .action-btn {
@@ -782,7 +1017,7 @@ button {
   border: 1px solid var(--neon-pink);
 }
 
-.action-btn.like:hover {
+.action-btn.like:hover:not(:disabled) {
   background-color: rgba(244, 63, 94, 0.2);
   box-shadow: var(--glow-pink);
 }
@@ -799,8 +1034,8 @@ button {
   border: 1px solid var(--border-color);
 }
 
-.action-btn.share:hover,
-.action-btn.report:hover {
+.action-btn.share:hover:not(:disabled),
+.action-btn.report:hover:not(:disabled) {
   background-color: var(--light-blue);
   color: var(--text-primary);
 }
@@ -832,6 +1067,16 @@ button {
   margin-bottom: 2rem;
 }
 
+.no-comments {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  background-color: var(--dark-blue);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
 .comment-item {
   display: flex;
   gap: 1rem;
@@ -840,6 +1085,10 @@ button {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   margin-bottom: 1rem;
+}
+
+.comment-user {
+  flex-shrink: 0; /* Prevent avatar shrinking */
 }
 
 .comment-user-avatar {
@@ -856,6 +1105,7 @@ button {
 
 .comment-content {
   flex: 1;
+  min-width: 0; /* Allow shrinking */
 }
 
 .comment-header {
@@ -863,19 +1113,24 @@ button {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap; /* Allow wrapping */
+  gap: 0.5rem;
 }
 
 .comment-author {
   font-weight: 600;
+  word-break: break-all; /* Break long author names */
 }
 
 .comment-time {
   font-size: 0.75rem;
   color: var(--text-muted);
+  flex-shrink: 0; /* Prevent time from wrapping unnecessarily */
 }
 
 .comment-text {
   line-height: 1.6;
+  word-wrap: break-word; /* Ensure long words wrap */
 }
 
 /* Comment Form */
@@ -884,6 +1139,82 @@ button {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1.5rem;
+}
+
+.comment-item-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.comment-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.comment-action-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background-color: var(--medium-blue);
+}
+
+.comment-action-btn.edit:hover:not(:disabled) {
+  color: var(--neon-blue);
+}
+.comment-action-btn.delete:hover:not(:disabled) {
+  color: var(--neon-pink);
+}
+
+.comment-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.comment-edit-view {
+  margin-top: 0.5rem;
+}
+
+.comment-edit-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: var(--medium-blue);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 0.5rem;
+}
+
+.comment-edit-textarea:focus {
+  outline: none;
+  border-color: var(--neon-blue);
+  box-shadow: var(--glow-blue);
+}
+
+.comment-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.neon-btn.small {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.neon-btn.gray {
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.neon-btn.gray:hover:not(:disabled) {
+  background-color: var(--light-blue);
+  color: var(--text-primary);
 }
 
 .form-title {
@@ -951,6 +1282,7 @@ button {
   border-radius: 8px;
   transition: all 0.3s ease;
   cursor: pointer;
+  text-decoration: none; /* Remove underline from link */
 }
 
 .discussion-item:hover {
@@ -961,6 +1293,7 @@ button {
 
 .discussion-info {
   flex: 1;
+  min-width: 0; /* Allow shrinking */
 }
 
 .discussion-title {
@@ -978,6 +1311,7 @@ button {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
 }
 
 .discussion-meta {
@@ -997,7 +1331,43 @@ button {
   color: var(--text-muted);
 }
 
+.loading-related,
+.no-related {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  background-color: var(--dark-blue);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
 /* Responsive Styles */
+@media (max-width: 992px) {
+  /* Adjust breakpoint if needed */
+  .post-content {
+    flex-direction: column;
+  }
+  .author-info {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 1rem;
+  }
+  .author-avatar {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 0;
+  }
+  .avatar-letter {
+    font-size: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .layout {
     flex-direction: column;
@@ -1010,6 +1380,7 @@ button {
     padding: 0.75rem;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
+    overflow-y: visible; /* Remove scrollbar */
   }
 
   .nav-menu {
@@ -1021,45 +1392,43 @@ button {
     display: none;
   }
 
-  .post-content {
-    flex-direction: column;
-  }
-
-  .author-info {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-    padding: 1rem;
-    flex-direction: row;
-    justify-content: flex-start;
-    text-align: left;
-    gap: 1rem;
-  }
-
-  .post-actions {
-    flex-wrap: wrap;
+  .main-content {
+    max-height: none; /* Remove max-height */
+    padding: 1rem; /* Reduce padding */
   }
 
   .discussion-item {
     flex-direction: column;
+    gap: 0.5rem;
   }
 
   .discussion-meta {
     text-align: left;
+    min-width: auto;
   }
 
   .header-actions {
-    display: none;
+    display: none; /* Hide header actions on smaller screens */
   }
 
   .user-menu {
-    display: flex;
+    display: flex; /* Ensure user menu is visible */
   }
 }
 
 @media (max-width: 480px) {
   .user-name {
-    display: none;
+    display: none; /* Hide username in user menu */
+  }
+  .post-title {
+    font-size: 1.5rem; /* Reduce title size */
+  }
+  .section-title {
+    font-size: 1.25rem; /* Reduce section title size */
+  }
+  .comment-header {
+    flex-direction: column; /* Stack author and time */
+    align-items: flex-start;
   }
 }
 

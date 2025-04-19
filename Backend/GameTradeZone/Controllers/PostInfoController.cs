@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CloudinaryDotNet;
 
 namespace GameTradeZone.Controllers
 {
@@ -116,6 +117,19 @@ namespace GameTradeZone.Controllers
             {
                 var post = await _postService.UpdatePost(postId, caption, categoryId, content, images);
                 return Response(post);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+        [HttpGet("getpostcount")]
+        public async Task<IActionResult> GetPostCount()
+        {
+            try
+            {
+                var postcount = await _postService.GetPostCount();
+                return Response(postcount);
             }
             catch (Exception e)
             {
