@@ -65,5 +65,19 @@ export default {
       bankname,
       banknumber
     });
-  }
+  },
+  updateUser: async (
+    token: string,
+    userName: string,
+    fullName: string,
+    email: string,
+    bankname: string,
+    banknumber: string
+  ): Promise<AxiosResponse> => {
+    return await apiClient.put(
+      'Authenticate/update-user',
+      { userName, fullName, email, bankname, banknumber },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  },
 };

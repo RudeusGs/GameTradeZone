@@ -15,6 +15,9 @@
       getRoleById: async (id: number) => {
         return await baseApi.get(`Authenticate/roles?userId=${id}`);
       }, 
+      externalLogin: (provider: string = 'Google'): string => {
+        return `https://localhost:7232/api/authenticate/external-login?provider=${provider}`;
+      },
   };
   export interface LoginModel{
       userName: string,

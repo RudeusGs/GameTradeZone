@@ -16,6 +16,7 @@ namespace GameTradeZone.Domain.Entities
         public string? StatusBuyer { get; set; } // Đồng ý, Không đồng ý
         public string? StatusSeller { get; set; } // Đang chờ, hoàn thành, từ chối
         public string? Reason { get; set; } // Lý do từ chối
+        public DateTime? OTPSentTime{ get; set;}
         public bool? IsDelete { get; set; }
     }
 }

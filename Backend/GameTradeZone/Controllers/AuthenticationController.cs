@@ -1,6 +1,10 @@
-﻿using GameTradeZone.Service.Interfaces;
+﻿using GameTradeZone.Domain.Entities;
+using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models.Authenticate;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace GameTradeZone.Controllers
 {
@@ -9,10 +13,14 @@ namespace GameTradeZone.Controllers
     public class AuthenticateController : BaseController
     {
         private readonly IAuthenticateService _authenticateService;
+        private readonly SignInManager<User> _signInManager;
 
-        public AuthenticateController(IAuthenticateService authenticateService)
+        public AuthenticateController(
+            IAuthenticateService authenticateService,
+            SignInManager<User> signInManager)
         {
             _authenticateService = authenticateService;
+            _signInManager = signInManager;
         }
 
         [HttpPost("login")]
@@ -51,6 +59,45 @@ namespace GameTradeZone.Controllers
                 return Response(result.Data);
             }
             return Response(result.Message);
+        }
+        [HttpGet("external-login")]
+        public IActionResult ExternalLogin(string provider = "Google", string returnUrl = null)
+        {
+            var redirectUrl = Url.Action("ExternalLoginCallback", "Authenticate", new { returnUrl }, Request.Scheme);
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+            return Challenge(properties, provider);
+        }
+        [HttpGet("external-login-callback")]
+        public async Task<IActionResult> ExternalLoginCallback(string returnUrl = null, string remoteError = null)
+        {
+            if (remoteError != null)
+                return Redirect($"http://localhost:5173/callback?error={Uri.EscapeDataString(remoteError)}");
+
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+                return Redirect("http://localhost:5173/callback?error=Không thể lấy thông tin đăng nhập từ Google.");
+
+            var result = await _authenticateService.ExternalLoginAsync(info);
+            if (result.Data != null)
+            {
+                var token = result.Data.GetType().GetProperty("Token")?.GetValue(result.Data)?.ToString();
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+                return Redirect($"http://localhost:5173/callback?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(email ?? "")}");
+            }
+            return Redirect($"http://localhost:5173/callback?error={Uri.EscapeDataString(result.Message ?? "Lỗi không xác định")}");
+        }
+        [HttpPut("update-user")]
+        [Authorize]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserModel model)
+        {
+            var userId = User.FindFirst(ClaimTypes.Name)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var result = await _authenticateService.UpdateUser(userId, model);
+            if (result.Data != null)
+                return Ok(result.Data);
+            return BadRequest(result.Message);
         }
     }
 }

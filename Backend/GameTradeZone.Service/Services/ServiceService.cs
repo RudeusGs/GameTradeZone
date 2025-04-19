@@ -202,6 +202,7 @@ namespace GameTradeZone.Service.Services
                     FeedBack = null,
                     Decriptions = model.Decription,
                     CreatedDate = DateTime.Now,
+                    IsDelete = false,
                 };
                 var newHired = new HiredService
                 {
@@ -211,6 +212,7 @@ namespace GameTradeZone.Service.Services
                     Reason = null,
                     Decription = model.Decription,
                     CreatedDate = DateTime.Now,
+                    IsDelete = false,
                 };
                 service.RentedC += 1;
                 _dataContext.Services.Update(service);

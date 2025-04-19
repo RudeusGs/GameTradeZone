@@ -1172,13 +1172,12 @@ onMounted(() => {
 
 /* Base Styles */
 .cyber-vault {
-  min-height: 100vh;
   background-color: #050520;
   color: #e0f7ff;
   font-family: 'Rajdhani', sans-serif;
   position: relative;
   overflow: hidden;
-  padding: 100px 2rem 2rem;
+  padding: 30px 2rem 2rem 30px;
 }
 
 /* Animated Background */
