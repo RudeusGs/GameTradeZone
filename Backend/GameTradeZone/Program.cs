@@ -1,4 +1,4 @@
-using Microsoft.Extensions.FileProviders;
+﻿using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using GameTradeZone.Infrastructure.Configurations;
 using GameTradeZone.Service.Configurations;
@@ -24,7 +24,7 @@ namespace GameTradeZone
             builder.Services.AddDbContext<DataContext>(options =>
             {
                 options.UseSqlServer(connectionString);
-                options.EnableDetailedErrors(); 
+                options.EnableDetailedErrors();
                 options.EnableSensitiveDataLogging();
             });
             builder.Services.AddSignalR();
@@ -36,9 +36,15 @@ namespace GameTradeZone
             builder.Services.AddScoped<IPostInfoService, PostInfoService>();
             builder.Services.AddScoped<IPostService, PostService>();
             builder.Services.AddScoped<IForumsCategoryService, ForumsService>();
-            builder.Services.AddHttpContextAccessor();  
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddAuthentication()
+                .AddGoogle(options =>
+                {
+                    options.ClientId = builder.Configuration["Google:ClientId"];
+                    options.ClientSecret = builder.Configuration["Google:ClientSecret"];
+                    options.CallbackPath = "/signin-google";
+                });
 
-            // Configure Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
@@ -59,31 +65,37 @@ namespace GameTradeZone
                 });
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
                 {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new string[] {}
-                    }
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] { }
+        }
+    });
+
+                options.DocInclusionPredicate((docName, apiDesc) =>
+                {
+                    var action = apiDesc.ActionDescriptor?.RouteValues["action"];
+                    return action != "ExternalLogin";
                 });
 
                 options.CustomSchemaIds(type => type.ToString());
             });
 
-            // Configure CORS policy
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAnyCorsPolicy",
                     policy => policy
-                        .AllowAnyOrigin()
+                        .WithOrigins("http://localhost:5173", "https://localhost:5173", "https://localhost:7232") // Thay bằng URL frontend của bạn
                         .AllowAnyMethod()
-                        .AllowAnyHeader());
+                        .AllowAnyHeader()
+                        .AllowCredentials());
             });
 
             // Register Application Services
@@ -112,6 +124,7 @@ namespace GameTradeZone
             app.UseHttpsRedirection();
             app.UseRouting();
             app.UseCors("AllowAnyCorsPolicy");
+            app.UseAuthentication();
             app.MapHub<TransactionHub>("/transactionHub");
             app.MapHub<AuctionHub>("/auctionHub");
             app.UseAuthorization();

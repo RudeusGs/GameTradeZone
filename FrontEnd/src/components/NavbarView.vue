@@ -75,20 +75,6 @@
 
       <!-- Right Section -->
       <div class="topbar-right">
-        <!-- Search Bar -->
-        <div class="search-bar">
-          <input
-            type="text"
-            placeholder="Tìm kiếm..."
-            class="search-input"
-            v-model="searchQuery"
-            @keyup.enter="handleSearch"
-          />
-          <button class="search-btn" @click="handleSearch">
-            <i class="fas fa-search"></i>
-          </button>
-        </div>
-
         <!-- Recharge Button -->
         <button class="cosmo-btn recharge-btn" @click="handleRechargeClick">
           <i class="fas fa-coins"></i>
@@ -122,6 +108,11 @@
             @mouseover="bounceIcon($event)"
             @mouseout="resetIcon($event)"
           ></i>
+        </div>
+
+        <!-- Transaction Icon -->
+        <div class="icon-container" @click="handleTransactionClick">
+          <i class="fas fa-credit-card cosmo-icon"></i>
         </div>
 
         <!-- Notification Icon -->
@@ -262,7 +253,6 @@ export default {
     const modalMessage = ref("");
     const modalActionText = ref("Đăng nhập");
     const modalAction = ref(() => {});
-    const searchQuery = ref("");
     const balance = ref(0);
 
     const isLoggedIn = computed(() => !!store.user);
@@ -297,7 +287,7 @@ export default {
 
     onMounted(() => {
       store.init();
-      fetchUserBalance(); // Fetch balance when component mounts
+      fetchUserBalance();
       document.addEventListener("click", handleClickOutside);
     });
 
@@ -366,7 +356,7 @@ export default {
       try {
         await authenticateApi.logout();
         store.logout();
-        balance.value = 0; // Reset balance on logout
+        balance.value = 0;
         closeAllMenus();
         router.push("/login");
       } catch (error) {
@@ -401,9 +391,19 @@ export default {
       closeAllMenus();
     };
 
-    const handleSearch = () => {
-      if (searchQuery.value) {
-        router.push(`/search?query=${searchQuery.value}`);
+    const handleTransactionClick = () => {
+      if (!isLoggedIn.value) {
+        showCustomModal(
+          "Thông báo",
+          "Vui lòng đăng nhập để xem giao dịch.",
+          "Đăng nhập",
+          () => {
+            closeModal();
+            router.push("/login");
+          }
+        );
+      } else {
+        router.push("/transactions");
       }
     };
 
@@ -457,7 +457,6 @@ export default {
       modalMessage,
       modalActionText,
       modalAction,
-      searchQuery,
       toggleAddMenu,
       toggleNotifications,
       toggleUserMenu,
@@ -471,7 +470,7 @@ export default {
       handleRechargeClick,
       handleAddAccountClick,
       handleAddServiceClick,
-      handleSearch,
+      handleTransactionClick,
       bounceIcon,
       resetIcon,
       closeAllMenus,
@@ -789,53 +788,6 @@ a {
   box-shadow: 0 2px 5px rgba(255, 0, 255, 0.5);
 }
 
-/* Search Bar */
-.search-bar {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 5px 10px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  transition: all 0.3s ease;
-  width: 200px;
-}
-
-.search-bar:focus-within {
-  border-color: rgba(0, 255, 255, 0.5);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.search-input {
-  background: transparent;
-  border: none;
-  color: #e0e0e0;
-  font-size: 0.95rem;
-  padding: 5px;
-  width: 100%;
-  outline: none;
-  font-family: 'Rajdhani', sans-serif;
-}
-
-.search-input::placeholder {
-  color: rgba(224, 224, 224, 0.6);
-}
-
-.search-btn {
-  background: transparent;
-  border: none;
-  color: #00ffff;
-  cursor: pointer;
-  padding: 5px;
-  transition: all 0.3s ease;
-}
-
-.search-btn:hover {
-  color: #ff00ff;
-  transform: scale(1.1);
-}
-
 /* Balance Display */
 .cosmo-balance {
   display: flex;
@@ -884,16 +836,15 @@ a {
 }
 
 .user-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .avatar-circle {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
+  border-radius: 4px !important;
   background: linear-gradient(135deg, #00ffff, #0088ff);
   display: flex;
   align-items: center;
@@ -903,6 +854,40 @@ a {
   font-size: 0.9rem;
   text-transform: uppercase;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.user-avatar .cosmo-icon {
+  color: #fff;
+  background: transparent;
+}
+
+.user-avatar:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.user-avatar::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #ff4757;
+  border-radius: 50%;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
 .cosmo-user-name {
@@ -1218,10 +1203,6 @@ a {
   .slide-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
-  .search-bar {
-    width: 150px;
-  }
 }
 
 @media (max-width: 768px) {
@@ -1260,10 +1241,6 @@ a {
   .column-list li {
     font-size: 0.9rem;
     padding: 8px 0 8px 15px;
-  }
-  
-  .search-bar {
-    width: 120px;
   }
   
   .cosmo-btn {
@@ -1305,10 +1282,6 @@ a {
   
   .slide-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .search-bar {
-    width: 100px;
   }
   
   .cosmo-btn {

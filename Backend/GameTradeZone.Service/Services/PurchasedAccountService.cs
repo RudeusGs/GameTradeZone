@@ -5,23 +5,28 @@ using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
 using GameTradeZone.Service.Models.PurchasedAccount;
 using Microsoft.EntityFrameworkCore;
-using System.Runtime.InteropServices;
+using System;
 
 namespace GameTradeZone.Service.Services
 {
     public class PurchasedAccountService : ServiceBase, IPurchasedAccountService
     {
+        private const int OTP_TIMEOUT_HOURS = 24; 
+        private const long EXPERIENCE_PENALTY = 100000;
+
         public PurchasedAccountService(DataContext dataContext, IUserService userService) : base(dataContext, userService)
         {
         }
+
         public async Task<ApiResult> GetDontConfirm()
         {
             var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.StatusBuyer == "Chưa xác nhận" && x.SellerID == _userService.UserId);
             return new(purchased);
-        }    
+        }
+
         public async Task<ApiResult> ComfirmAccount(ComfirmModel model)
         {
-            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == model.Id);        
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == model.Id);
             if (purchased == null)
             {
                 return new ApiResult { Message = "Không tìm thấy tài khoản này" };
@@ -86,23 +91,22 @@ namespace GameTradeZone.Service.Services
             }
         }
 
-        private void UpdateSellerLevel(User seller, long? transactionAmount)
+        private void UpdateSellerLevel(User seller, long transactionAmount)
         {
-
             long[] thresholds = new long[]
             {
-        100000,  // level 0 -> 1
-        300000,  // level 1 -> 2
-        500000,  // level 2 -> 3
-        700000,  // level 3 -> 4
-        1300000, // level 4 -> 5
-        1600000, // level 5 -> 6
-        2000000, // level 6 -> 7
-        2500000, // level 7 -> 8
-        3000000, // level 8 -> 9
-        4000000  // level 9 -> 10
+                100000,  // level 0 -> 1
+                300000,  // level 1 -> 2
+                500000,  // level 2 -> 3
+                700000,  // level 3 -> 4
+                1300000, // level 4 -> 5
+                1600000, // level 5 -> 6
+                2000000, // level 6 -> 7
+                2500000, // level 7 -> 8
+                3000000, // level 8 -> 9
+                4000000  // level 9 -> 10
             };
-            seller.Experience = seller.Level + transactionAmount;
+            seller.Experience = seller.Experience + transactionAmount;
             while (seller.Level < thresholds.Length && seller.Experience >= thresholds[seller.Level])
             {
                 seller.Experience -= thresholds[seller.Level];
@@ -113,11 +117,11 @@ namespace GameTradeZone.Service.Services
         public async Task<ApiResult> Delete(int id)
         {
             var purChased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
-            if(purChased == null || purChased.IsDelete == true)
+            if (purChased == null || purChased.IsDelete == true)
             {
                 return new ApiResult { Message = "Không tìm thấy hoặc đã bị xóa!" };
             }
-            var tran =await _dataContext.Database.BeginTransactionAsync();
+            var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {
                 purChased.IsDelete = true;
@@ -132,7 +136,6 @@ namespace GameTradeZone.Service.Services
                 await tran.RollbackAsync();
                 return new ApiResult { Message = $"Error: {e.Message}" };
             }
-
         }
 
         public async Task<ApiResult> EmailRequest(int id)
@@ -142,7 +145,7 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = "Không tìm thấy giao dịch này" };
             }
-            if(purchased.StatusBuyer == "Đã từ chối")
+            if (purchased.StatusBuyer == "Đã từ chối")
             {
                 return new ApiResult { Message = "Bạn đã từ chối tài khoản này không thể yêu cầu gửi thông tin" };
             }
@@ -181,7 +184,7 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = "Không tìm thấy giao dịch này" };
             }
-            if(purchased.Email == null)
+            if (purchased.Email == null)
             {
                 return new ApiResult { Message = "Không có yêu cầu nào được thực hiện" };
             }
@@ -286,6 +289,7 @@ namespace GameTradeZone.Service.Services
                     CreatedDate = DateTime.Now,
                 };
                 purchased.OTPEmail = response;
+                purchased.OTPSentTime = DateTime.Now; // Ghi lại thời gian gửi OTP
                 purchased.UpdatedDate = DateTime.Now;
                 _dataContext.Notifications.Add(newNoti);
                 _dataContext.PurchasedAccounts.Update(purchased);
@@ -296,7 +300,7 @@ namespace GameTradeZone.Service.Services
             catch (Exception ex)
             {
                 await tran.RollbackAsync();
-                return new ApiResult { Message = $"Gửi email thất bại: {ex.Message}" };
+                return new ApiResult { Message = $"Gửi OTP thất bại: {ex.Message}" };
             }
         }
 
@@ -329,6 +333,7 @@ namespace GameTradeZone.Service.Services
                     CreatedDate = DateTime.Now,
                 };
                 purchased.OTPEmail = response;
+                purchased.OTPSentTime = DateTime.Now; // Cập nhật lại thời gian gửi OTP
                 purchased.UpdatedDate = DateTime.Now;
                 _dataContext.Notifications.Add(newNoti);
                 _dataContext.PurchasedAccounts.Update(purchased);
@@ -383,6 +388,89 @@ namespace GameTradeZone.Service.Services
             {
                 await tran.RollbackAsync();
                 return new ApiResult { Message = $"Gửi lại email thất bại: {ex.Message}" };
+            }
+        }
+
+        // Updated method to check and process OTP timeouts
+        public async Task<ApiResult> CheckOTPTimeout(int id)
+        {
+            var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
+            if (purchased == null || purchased.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy giao dịch này" };
+            }
+            if (purchased.OTPSentTime == null || purchased.StatusBuyer == "Mua thành công" || purchased.StatusBuyer == "Đã từ chối")
+            {
+                return new ApiResult { Message = "Giao dịch không đủ điều kiện kiểm tra timeout" };
+            }
+
+            var timeElapsed = DateTime.Now - purchased.OTPSentTime.Value;
+            if (timeElapsed.TotalHours < OTP_TIMEOUT_HOURS)
+            {
+                return new ApiResult { Message = "OTP vẫn còn hiệu lực" };
+            }
+
+            var buyer = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == purchased.UserID);
+            var seller = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == purchased.SellerID);
+            var accountGame = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.Id == purchased.AccountGameId);
+            if (buyer == null || seller == null || accountGame == null)
+            {
+                return new ApiResult { Message = "Không tìm thấy thông tin người mua, người bán hoặc tài khoản game" };
+            }
+
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                // Cộng tiền cho người bán
+                decimal sellerAmount = purchased.Price * 0.93m;
+                seller.Balance += sellerAmount;
+                UpdateSellerLevel(seller, (long)purchased.Price);
+                UpdateSellerLevel(buyer, (long)purchased.Price); // Cộng kinh nghiệm cho người mua như giao dịch thành công
+
+                // Trừ kinh nghiệm của người mua vì không xác nhận
+                buyer.Experience = Math.Max(0, buyer.Experience - EXPERIENCE_PENALTY);
+
+                // Cập nhật trạng thái giao dịch thành công
+                purchased.StatusBuyer = "Mua thành công";
+                purchased.StatusSeller = "Thành công";
+                purchased.Reason = "Tự động hoàn tất do người mua không xác nhận trong thời gian quy định";
+                purchased.UpdatedDate = DateTime.Now;
+
+                // Gửi thông báo cho cả hai bên
+                var buyerNoti = new Notification
+                {
+                    TypeNoti = "Giao dịch hoàn tất",
+                    Content = $"Giao dịch tài khoản mã số {purchased.Id}: đã hoàn tất tự động do bạn không xác nhận trong {OTP_TIMEOUT_HOURS} giờ. Bạn bị trừ {EXPERIENCE_PENALTY} kinh nghiệm.",
+                    SenderID = _userService.UserId,
+                    UserID = purchased.UserID,
+                    IsRead = false,
+                    IsDelete = false,
+                    CreatedDate = DateTime.Now,
+                };
+                var sellerNoti = new Notification
+                {
+                    TypeNoti = "Giao dịch hoàn tất",
+                    Content = $"Giao dịch tài khoản mã số {purchased.Id}: đã hoàn tất do người mua không xác nhận. Bạn nhận được {sellerAmount} vào số dư.",
+                    SenderID = _userService.UserId,
+                    UserID = purchased.SellerID,
+                    IsRead = false,
+                    IsDelete = false,
+                    CreatedDate = DateTime.Now,
+                };
+
+                _dataContext.Users.Update(buyer);
+                _dataContext.Users.Update(seller);
+                _dataContext.PurchasedAccounts.Update(purchased);
+                _dataContext.Notifications.Add(buyerNoti);
+                _dataContext.Notifications.Add(sellerNoti);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult { Message = "Đã xử lý giao dịch do OTP hết hạn" };
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Xử lý timeout thất bại: {ex.Message}" };
             }
         }
     }

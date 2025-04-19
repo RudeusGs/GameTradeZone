@@ -2,7 +2,7 @@
   <div class="login-container">
     <!-- Component LoadingSpinner hiển thị khi đang tải -->
     <LoadingSpinner v-if="loading" class="spinner-overlay" />
-    
+
     <div class="login-card">
       <div class="card-header">
         <h3 class="login-title">Đăng Nhập</h3>
@@ -37,13 +37,17 @@
           <span>hoặc dùng</span>
         </div>
         <div class="social-buttons">
-          <button type="button" class="social-btn google-btn">
+          <button
+            type="button"
+            class="social-btn google-btn"
+            @click="handleGoogleLogin"
+          >
             <i class="fab fa-google"></i>
           </button>
-          <button type="button" class="social-btn github-btn">
+          <button type="button" class="social-btn github-btn" disabled>
             <i class="fab fa-github"></i>
           </button>
-          <button type="button" class="social-btn facebook-btn">
+          <button type="button" class="social-btn facebook-btn" disabled>
             <i class="fab fa-facebook-f"></i>
           </button>
         </div>
@@ -58,30 +62,70 @@
         </div>
       </transition>
     </div>
+
+    <!-- Modal nhập thông tin bổ sung sau Google OAuth -->
+    <UserInfoModal 
+      v-if="showInfoModal" 
+      :modalData="modalData" 
+      :modalError="modalError" 
+      :loading="loading" 
+      :banks="banks" 
+      @submit="submitUserInfo" 
+      @close="showInfoModal = false"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
-import { useRouter } from "vue-router";
-import Cookies from "js-cookie";
-import authApi from "@/api/authenticate.api";
-import { userStore } from "../stores/auth";
-import DOMPurify from "dompurify";
+import { defineComponent, ref, reactive } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import Cookies from 'js-cookie';
+import authApi from '@/api/authenticate.api';
+import baseApi from '@/api/base.api';
+import { userStore } from '../stores/auth';
+import DOMPurify from 'dompurify';
+import UserInfoModal from '@/components/UserInforModal.vue';
 
 export default defineComponent({
-  name: "Login",
+  name: 'Login',
   components: {
+    UserInfoModal
   },
   setup() {
     const user = userStore();
-    const userName = ref("");
-    const password = ref("");
+    const userName = ref('');
+    const password = ref('');
     const router = useRouter();
+    const route = useRoute();
     const loading = ref(false);
     const errorMessage = ref<string | null>(null);
     const showPassword = ref(false);
+    const showInfoModal = ref(false);
+    const modalError = ref<string | null>(null);
 
+    // Dữ liệu cho modal
+    const modalData = reactive({
+      accountName: '',
+      email: '',
+      fullName: '',
+      bankName: '',
+      bankNumber: '',
+      token: '',
+    });
+
+    // Danh sách ngân hàng
+    const banks = [
+      { id: 1, name: 'Vietcombank' },
+      { id: 2, name: 'Techcombank' },
+      { id: 3, name: 'MB Bank' },
+      { id: 4, name: 'Agribank' },
+      { id: 5, name: 'TPBank' },
+      { id: 6, name: 'Sacombank' },
+      { id: 7, name: 'BIDV' },
+      { id: 8, name: 'VPBank' },
+    ];
+
+    // Xử lý đăng nhập thông thường
     const handleLogin = async () => {
       if (userName.value && password.value) {
         loading.value = true;
@@ -109,28 +153,129 @@ export default defineComponent({
               bankName: response.result.data.bankname,
               bankNumber: response.result.data.banknumber,
             });
-            Cookies.set("token", response.result.data.token);
-            localStorage.setItem("token", response.result.data.token);
-            router.push("/");
+            Cookies.set('token', response.result.data.token);
+            localStorage.setItem('token', response.result.data.token);
+            router.push('/');
             setTimeout(() => {
               window.location.reload();
             }, 100);
           } else {
-            errorMessage.value = "Tài khoản hoặc mật khẩu không đúng.";
+            errorMessage.value = 'Tài khoản hoặc mật khẩu không đúng.';
             setTimeout(() => (errorMessage.value = null), 3000);
           }
         } catch (error) {
-          console.error("Error during login:", error);
-          errorMessage.value = "Không thể kết nối đến API.";
+          console.error('Error during login:', error);
+          errorMessage.value = 'Không thể kết nối đến API.';
           setTimeout(() => (errorMessage.value = null), 3000);
         } finally {
-          loading.value = false; // Ẩn loading spinner sau khi xử lý xong
+          loading.value = false;
         }
       } else {
-        errorMessage.value = "Vui lòng nhập đầy đủ tài khoản và mật khẩu.";
+        errorMessage.value = 'Vui lòng nhập đầy đủ tài khoản và mật khẩu.';
         setTimeout(() => (errorMessage.value = null), 3000);
       }
     };
+
+    // Xử lý đăng nhập bằng Google
+    const handleGoogleLogin = () => {
+      try {
+        const googleLoginUrl = authApi.externalLogin('Google');
+        window.location.href = googleLoginUrl;
+      } catch (error) {
+        console.error('Error initiating Google login:', error);
+        errorMessage.value = 'Không thể khởi động đăng nhập Google.';
+        setTimeout(() => (errorMessage.value = null), 3000);
+      }
+    };
+
+    // Xử lý callback sau Google OAuth
+    const handleOAuthCallback = async () => {
+      if (route.path === '/callback') {
+        loading.value = true;
+        try {
+          const token = route.query.token as string;
+          const email = route.query.email as string; // Lấy email từ query
+          const error = route.query.error as string;
+
+          if (error) {
+            errorMessage.value = error;
+            setTimeout(() => (errorMessage.value = null), 3000);
+            router.push('/login');
+            return;
+          }
+
+          if (token) {
+            modalData.email = email || 'example@google.com';
+            modalData.token = token;
+            showInfoModal.value = true;
+          }
+        } catch (error) {
+          console.error('Error handling OAuth callback:', error);
+          errorMessage.value = 'Lỗi khi xử lý đăng nhập Google.';
+          setTimeout(() => (errorMessage.value = null), 3000);
+          router.push('/login');
+        } finally {
+          loading.value = false;
+        }
+      }
+    };
+
+    // Xử lý submit thông tin từ modal
+    const submitUserInfo = async () => {
+      modalError.value = null;
+      loading.value = true;
+
+      try {
+        const sanitizedAccountName = DOMPurify.sanitize(modalData.accountName);
+        const sanitizedEmail = DOMPurify.sanitize(modalData.email);
+        const sanitizedFullName = DOMPurify.sanitize(modalData.fullName);
+        const sanitizedBankName = DOMPurify.sanitize(modalData.bankName);
+        const sanitizedBankNumber = DOMPurify.sanitize(modalData.bankNumber);
+
+        // Gọi API update-user
+        const response = await baseApi.updateUser(
+          modalData.token,
+          sanitizedAccountName,
+          sanitizedFullName,
+          sanitizedEmail,
+          sanitizedBankName,
+          sanitizedBankNumber
+        );
+
+        if (response.status === 200) {
+          user.login({
+            id: response.data.userId || 0,
+            userName: sanitizedAccountName,
+            email: sanitizedEmail,
+            fullName: sanitizedFullName,
+            balance: response.data.balance || 0,
+            coin: response.data.coin || 0,
+            level: 0,
+            status: false,
+            experience: 0,
+            bankName: sanitizedBankName,
+            bankNumber: sanitizedBankNumber,
+          });
+          Cookies.set('token', modalData.token);
+          localStorage.setItem('token', modalData.token);
+          showInfoModal.value = false;
+          router.push('/');
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+        } else {
+          modalError.value = response.data?.message || 'Không thể lưu thông tin.';
+        }
+      } catch (error) {
+        console.error('Error saving user info:', error);
+        modalError.value = 'Lỗi khi lưu thông tin. Vui lòng thử lại.';
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // Gọi handleOAuthCallback khi component được mount
+    handleOAuthCallback();
 
     const togglePassword = () => {
       showPassword.value = !showPassword.value;
@@ -140,17 +285,23 @@ export default defineComponent({
       userName,
       password,
       handleLogin,
+      handleGoogleLogin,
       loading,
       errorMessage,
       showPassword,
       togglePassword,
+      showInfoModal,
+      modalData,
+      modalError,
+      submitUserInfo,
+      banks,
     };
   },
 });
 </script>
 
 <style scoped>
-/* Tổng thể */
+/* CSS cho login form */
 .login-container {
   min-height: 100vh;
   display: flex;
@@ -174,11 +325,16 @@ export default defineComponent({
 }
 
 @keyframes pulseGlow {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 0.8; }
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
 }
 
-/* Login Card */
 .login-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(15px);
@@ -193,7 +349,6 @@ export default defineComponent({
   overflow: hidden;
 }
 
-/* Card Header */
 .card-header {
   text-align: center;
   margin-bottom: 15px;
@@ -214,7 +369,6 @@ export default defineComponent({
   margin-top: 6px;
 }
 
-/* Form */
 .login-form {
   display: flex;
   flex-direction: column;
@@ -243,6 +397,7 @@ input {
   font-size: 0.9rem;
   outline: none;
   transition: all 0.3s ease;
+  border-radius: 8px; /* Bo góc nhẹ */
 }
 
 input:focus {
@@ -282,7 +437,6 @@ input:focus {
   text-shadow: 0 0 4px rgba(255, 0, 122, 0.5);
 }
 
-/* Button Đăng Nhập */
 .sign-in-btn {
   width: 100%;
   padding: 10px;
@@ -303,7 +457,6 @@ input:focus {
   box-shadow: 0 8px 20px rgba(0, 221, 235, 0.6);
 }
 
-/* Or Container */
 .or-container {
   display: flex;
   justify-content: center;
@@ -323,7 +476,6 @@ input:focus {
   margin: 0 8px;
 }
 
-/* Social Buttons */
 .social-buttons {
   display: flex;
   justify-content: center;
@@ -344,16 +496,32 @@ input:focus {
   transition: all 0.3s ease;
 }
 
-.google-btn { color: #db4437; }
-.google-btn:hover { background: #db4437; color: #ffffff; border-color: #db4437; }
+.google-btn {
+  color: #db4437;
+}
+.google-btn:hover {
+  background: #db4437;
+  color: #ffffff;
+  border-color: #db4437;
+}
 
-.github-btn { color: #ffffff; }
-.github-btn:hover { background: #333; border-color: #333; }
+.github-btn {
+  color: #ffffff;
+}
+.github-btn:hover {
+  background: #333;
+  border-color: #333;
+}
 
-.facebook-btn { color: #3b5998; }
-.facebook-btn:hover { background: #3b5998; color: #ffffff; border-color: #3b5998; }
+.facebook-btn {
+  color: #3b5998;
+}
+.facebook-btn:hover {
+  background: #3b5998;
+  color: #ffffff;
+  border-color: #3b5998;
+}
 
-/* Register Link */
 .register-link {
   text-align: center;
   font-size: 0.8rem;
@@ -373,7 +541,6 @@ input:focus {
   text-shadow: 0 0 4px rgba(0, 221, 235, 0.5);
 }
 
-/* Error Notification */
 .error-notification {
   position: absolute;
   bottom: 10px;
@@ -388,28 +555,37 @@ input:focus {
   z-index: 2;
 }
 
-/* Transition cho thông báo lỗi */
 .fade-enter-active,
 .fade-leave-active {
-  transition: all 0.5s ease;
+  transition: all 0.4s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(10px);
+  transform: translateY(20px);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
-  .login-card { padding: 20px; max-width: 300px; }
-  .login-title { font-size: 1.4rem; }
-  .login-subtitle { font-size: 0.75rem; }
-  .sign-in-btn { padding: 8px; }
-  .error-notification { width: 90%; font-size: 0.7rem; }
+  .login-card {
+    padding: 20px;
+    max-width: 320px;
+  }
+  .login-title {
+    font-size: 1.4rem;
+  }
+  .login-subtitle {
+    font-size: 0.75rem;
+  }
+  .sign-in-btn {
+    padding: 8px;
+  }
+  .error-notification {
+    width: 90%;
+    font-size: 0.7rem;
+  }
 }
 
-/* Style cho lớp phủ loading spinner */
 .spinner-overlay {
   position: fixed;
   top: 0;

@@ -19,6 +19,9 @@
           throw new Error(response.data?.message || 'Tài khoản hoặc mật khẩu không chính xác.');
         }
       },
+      externalLogin: (provider: string = 'Google'): string => {
+        return `https://localhost:7232/api/authenticate/external-login?provider=${provider}`;
+      },
   };
   export interface LoginModel{
       userName: string,

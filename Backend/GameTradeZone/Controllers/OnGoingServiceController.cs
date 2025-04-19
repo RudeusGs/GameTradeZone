@@ -32,7 +32,6 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
-
         [HttpGet("Get-All-By-User-Id")]
         public async Task<IActionResult> GetAllByUserID(int id)
         {
