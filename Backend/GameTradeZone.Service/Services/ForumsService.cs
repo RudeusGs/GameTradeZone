@@ -56,18 +56,20 @@ namespace GameTradeZone.Service.Services
             return await _context.ForumsCategories.ToListAsync();
         }
 
-        public async Task<ApiResult> GetAllCategoryStat()
+        public async Task<ApiResult> GetAllCategoryPostCount()
         {
-            var categoryStats = await _context.ForumsCategories
-          .Select(category => new
-          {
-              CategoryId = category.Id,
-              CategoryName = category.Name,
-              PostCount = category.PostCount
-          })
-          .ToListAsync();
-
-            return new ApiResult(categoryStats);
+            var categories = await _context.ForumsCategories
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    PostCount = _context.PostInfos.Count(p => p.CategoryId == c.Id)
+                })
+                .ToListAsync();
+            return new ApiResult
+            {
+                Data = categories
+            };
         }
     }
 }

@@ -2,6 +2,7 @@
 using GameTradeZone.Infrastructure.Persistence;
 using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Interfaces;
+using GameTradeZone.Service.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -157,6 +158,14 @@ namespace GameTradeZone.Service.Services
             await _context.SaveChangesAsync();
             return post;
         }
-
+        public async Task<ApiResult> GetPostCount()
+        {
+            var postCount = await _context.PostInfos.CountAsync();
+            return new ApiResult
+            {
+                Message = "Post count retrieved successfully.",
+                Data = postCount
+            };
+        }
     }
 }

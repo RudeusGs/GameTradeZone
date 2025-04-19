@@ -1,7 +1,12 @@
 <template>
   <div class="add-post-view">
     <div class="post-card">
-      <h2 class="title">Create New Post</h2>
+      <div class="header-actions">
+        <button @click="goBack" class="back-button">
+          <i class="fas fa-arrow-left"></i> Back to Forums
+        </button>
+        <h2 class="title">Create New Post</h2>
+      </div>
 
       <form @submit.prevent="submitPost" enctype="multipart/form-data">
         <!-- Caption Input -->
@@ -164,6 +169,12 @@ const error = ref("");
 const success = ref(false);
 const isDragging = ref(false);
 
+// Function to navigate back
+const goBack = () => {
+  router.push("/forums"); // Navigate specifically to the forums page
+  // Or use router.back(); to go to the previous page in history
+};
+
 // Handle drag and drop
 const handleDrop = (event: DragEvent) => {
   isDragging.value = false;
@@ -226,9 +237,9 @@ const submitPost = async () => {
   formData.append("categoryId", form.value.categoryId);
   formData.append("content", form.value.content);
 
-  // Append images with the correct key ('image' instead of 'images')
-  form.value.images.forEach((image, index) => {
-    formData.append("image", image); // Match the key expected by the backend
+  // Append images with the correct key ('images')
+  form.value.images.forEach((imageFile, index) => {
+    formData.append("images", imageFile);
   });
 
   // Log FormData contents for debugging
@@ -301,10 +312,39 @@ fetchCategories();
   color: #ffffff;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Adjust as needed */
+  margin-bottom: 2rem;
+  position: relative; /* To position title if needed */
+}
+
+.back-button {
+  background: none;
+  border: 1px solid rgba(0, 242, 254, 0.5);
+  color: #00f2fe;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.back-button:hover {
+  background: rgba(0, 242, 254, 0.1);
+  border-color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+}
+
 .title {
   font-size: 1.8rem;
   color: #00f2fe; /* Màu xanh neon */
-  margin-bottom: 2rem;
+  /* margin-bottom: 2rem; */ /* Removed bottom margin */
+  flex-grow: 1; /* Allow title to take space */
   text-align: center;
   font-family: "Orbitron", sans-serif; /* Font kiểu gaming */
   text-transform: uppercase;
@@ -531,6 +571,15 @@ label {
 @media (max-width: 768px) {
   .add-post-view {
     max-width: 100%;
+  }
+  .header-actions {
+    flex-direction: column-reverse; /* Stack title above button */
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .title {
+    text-align: center;
   }
 }
 </style>

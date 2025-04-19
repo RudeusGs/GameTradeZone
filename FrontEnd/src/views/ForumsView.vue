@@ -46,6 +46,13 @@ interface ForumPost {
   views: number;
 }
 
+// Interface for popular topics (based on API response)
+interface PopularTopic {
+  id: number;
+  name: string;
+  postCount: number;
+}
+
 // API URL (can be removed if baseApi handles it)
 const API_BASE_URL = "https://localhost:7232/api";
 
@@ -56,6 +63,8 @@ const searchQuery = ref<string>("");
 const selectedCategory = ref<number | null>(null);
 const currentPage = ref(1);
 const postsPerPage = 10;
+const popularTopics = ref<PopularTopic[]>([]);
+const totalPostCount = ref<number | null>(null);
 
 // Fetch forum categories using forumCategoryApi
 const fetchCategories = async () => {
@@ -96,6 +105,29 @@ const fetchCategories = async () => {
         postCount: 5,
       },
     ];
+  }
+};
+
+const fetchTotalPostCount = async () => {
+  try {
+    const response = await forumApi.GetPostCount();
+    console.log("Total Post Count API Response:", response.data); // Log the response
+    if (
+      response.data &&
+      response.data.result &&
+      typeof response.data.result.data === "number"
+    ) {
+      totalPostCount.value = response.data.result.data;
+    } else {
+      console.warn(
+        "Unexpected total post count API response structure:",
+        response.data
+      );
+      totalPostCount.value = 0; // Set to 0 or handle error appropriately
+    }
+  } catch (error) {
+    console.error("Lỗi khi lấy tổng số bài viết:", error);
+    totalPostCount.value = 0; // Set to 0 or handle error appropriately
   }
 };
 
@@ -156,6 +188,30 @@ const fetchPosts = async (categoryId: number | null = null) => {
   }
 };
 
+const fetchPopularTopics = async () => {
+  try {
+    const response = await forumApi.GetAllCategoryPostCount();
+    console.log("Popular Topics API Response:", response.data); // Log the response
+    if (response.data && response.data.result && response.data.result.data) {
+      // Sort by postCount ascending
+      const sortedTopics = response.data.result.data.sort(
+        (a: PopularTopic, b: PopularTopic) => b.postCount - a.postCount
+      );
+      popularTopics.value = sortedTopics;
+    } else {
+      console.warn(
+        "Unexpected popular topics API response structure:",
+        response.data
+      );
+      popularTopics.value = [];
+    }
+  } catch (error) {
+    console.error("Lỗi khi lấy chủ đề phổ biến:", error);
+    popularTopics.value = []; // Set empty on error
+    // Optionally add fallback static data here if needed
+  }
+};
+
 // Handle category selection
 const selectCategory = (categoryId: number) => {
   selectedCategory.value = categoryId;
@@ -213,6 +269,8 @@ onMounted(() => {
   fetchCategories();
   fetchPosts();
   fetchUserStats();
+  fetchPopularTopics();
+  fetchTotalPostCount();
 });
 </script>
 
@@ -426,26 +484,15 @@ onMounted(() => {
 
     <!-- Stats sidebar -->
     <aside class="stats-sidebar">
-      <div class="user-card">
-        <div class="user-avatar">G</div>
-        <div class="user-info">
-          <h3 class="user-name">Gamer123</h3>
-          <p class="user-status">Online</p>
-        </div>
-      </div>
-
       <div class="stats-card">
         <h3 class="stats-title">THỐNG KÊ</h3>
         <ul class="stats-list">
           <li>
-            <i class="fas fa-users"></i>
-            <span class="stat-label">Thành viên online:</span>
-            <span class="stat-value highlight">0</span>
-          </li>
-          <li>
             <i class="fas fa-comments"></i>
             <span class="stat-label">Tổng bài viết:</span>
-            <span class="stat-value">12,345</span>
+            <span class="stat-value">{{
+              totalPostCount !== null ? totalPostCount : "..."
+            }}</span>
           </li>
           <li>
             <i class="fas fa-user-friends"></i>
@@ -463,34 +510,14 @@ onMounted(() => {
       <div class="popular-topics-card">
         <h3 class="sidebar-subtitle">CHỦ ĐỀ PHỔ BIẾN</h3>
         <ul class="topic-list">
-          <li>
-            <a href="#">
-              <span class="topic-name">Thảo luận game mới</span>
-              <span class="topic-posts">125</span>
-            </a>
+          <!-- Add a loading/empty state if desired -->
+          <li v-if="popularTopics.length === 0">
+            <span class="topic-name">Đang tải...</span>
           </li>
-          <li>
-            <a href="#">
-              <span class="topic-name">Chia sẻ kinh nghiệm</span>
-              <span class="topic-posts">98</span>
-            </a>
-          </li>
-          <li>
-            <a href="#">
-              <span class="topic-name">Hướng dẫn kỹ thuật</span>
-              <span class="topic-posts">76</span>
-            </a>
-          </li>
-          <li>
-            <a href="#">
-              <span class="topic-name">Game mobile</span>
-              <span class="topic-posts">64</span>
-            </a>
-          </li>
-          <li>
-            <a href="#">
-              <span class="topic-name">eSports</span>
-              <span class="topic-posts">52</span>
+          <li v-for="topic in popularTopics" :key="topic.id">
+            <a href="#" @click.prevent="selectCategory(topic.id)">
+              <span class="topic-name">{{ topic.name }}</span>
+              <span class="topic-posts">{{ topic.postCount }}</span>
             </a>
           </li>
         </ul>
@@ -510,19 +537,31 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.forum-container {
-  display: flex;
-  min-height: 100vh;
-  background: linear-gradient(
-    135deg,
-    #1a0933 0%,
-    #0d1b2a 100%
-  ); /* Home page gradient */
-  color: #f0f0f0; /* Primary text color */
-  font-family: "Inter", "Arial", sans-serif;
+/* Ensure html/body allow scrolling and have full height */
+/* You might need to place this in a global CSS file (e.g., main.css or index.css)
+   if not already present, but including it here for completeness of the concept. */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  /* Ensure no hidden overflow is blocking sticky */
+  overflow: visible !important; /* Use !important cautiously, only if necessary */
 }
 
-/* Sidebar */
+/* Main container for the forum view */
+.forum-container {
+  display: flex;
+  /* Use min-height to allow content to grow, but ensure it takes at least viewport height */
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a0933 0%, #0d1b2a 100%);
+  color: #f0f0f0;
+  font-family: "Inter", "Arial", sans-serif;
+  /* Crucially, the container itself should NOT scroll vertically on desktop */
+  /* overflow: hidden; */ /* Avoid setting overflow here unless specifically needed */
+}
+
+/* Left Sidebar */
 .sidebar {
   width: 260px;
   background: rgba(13, 27, 42, 0.9);
@@ -530,21 +569,66 @@ onMounted(() => {
   border-right: 1px solid rgba(0, 179, 224, 0.2);
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  position: relative;
+  position: sticky; /* Make it sticky */
+  top: 0; /* Stick to the top */
+  height: 100vh; /* Take full viewport height */
+  overflow-y: auto; /* Allow internal scrolling if content overflows */
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
+/* Add the bottom gradient effect back if desired */
 .sidebar::after {
   content: "";
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 3px; /* Độ dày viền đáy */
-  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient viền đáy */
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5); /* Hiệu ứng glow */
+  height: 3px;
+  background: linear-gradient(45deg, #00b3e0, #ff00ff);
+  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
+}
+
+/* Main Content Area - This MUST be the scrollable part */
+.forum-main {
+  flex: 1; /* Take remaining horizontal space */
+  padding: 30px;
+  background: transparent;
+  overflow-y: auto; /* THIS makes the main content scrollable */
+  /* min-width: 0; */ /* Add if needed to prevent flexbox overflow issues */
+  /* No height or max-height needed here, let content dictate height */
+}
+
+/* Right Stats Sidebar */
+.stats-sidebar {
+  width: 280px;
+  background: rgba(13, 27, 42, 0.9);
+  padding: 30px 20px;
+  border-left: 1px solid rgba(0, 179, 224, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  position: sticky; /* Make it sticky */
+  top: 0; /* Stick to the top */
+  height: 100vh; /* Take full viewport height */
+  overflow-y: auto; /* Allow internal scrolling if content overflows */
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Add the bottom gradient effect back if desired */
+.stats-sidebar::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(45deg, #00b3e0, #ff00ff);
+  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
+}
+
+/* Ensure content within stats sidebar doesn't shrink unexpectedly */
+.stats-sidebar > * {
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
@@ -659,14 +743,6 @@ onMounted(() => {
 .my-posts-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(255, 0, 255, 0.7);
-}
-
-/* Main content */
-.forum-main {
-  flex: 1;
-  padding: 30px;
-  background: transparent; /* Inherit container gradient */
-  overflow-y: auto;
 }
 
 /* Forum header */
@@ -1149,38 +1225,6 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
-/* Stats sidebar */
-.stats-sidebar {
-  width: 280px;
-  background: rgba(13, 27, 42, 0.9);
-  padding: 30px 20px;
-  border-left: 1px solid rgba(0, 179, 224, 0.2);
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: hidden; /* Bỏ thanh cuộn như yêu cầu trước */
-  position: relative;
-}
-
-.stats-sidebar::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 3px; /* Độ dày viền đáy */
-  background: linear-gradient(45deg, #00b3e0, #ff00ff); /* Gradient viền đáy */
-  box-shadow: 0 0 10px rgba(0, 204, 255, 0.5); /* Hiệu ứng glow */
-}
-
-/* Đảm bảo nội dung trong stats-sidebar không bị cắt */
-.stats-sidebar > * {
-  flex-shrink: 0; /* Ngăn các phần tử co lại */
-}
-
 /* User card */
 .user-card {
   display: flex;
@@ -1389,15 +1433,45 @@ onMounted(() => {
 @media (max-width: 768px) {
   .forum-container {
     flex-direction: column;
+    /* Allow the container itself to scroll on mobile */
+    overflow-y: auto;
+    min-height: unset; /* Remove min-height if not needed */
+    height: auto; /* Allow height to be determined by content */
   }
 
   .sidebar {
     width: 100%;
-    height: auto;
+    height: auto; /* Auto height on mobile */
     padding: 15px;
-    position: static;
+    position: static; /* IMPORTANT: Disable sticky */
     border-right: none;
     border-bottom: 1px solid rgba(0, 179, 224, 0.3);
+    overflow-y: visible; /* Disable internal scroll */
+    flex-shrink: 1; /* Allow shrinking */
+  }
+
+  .sidebar::after {
+    display: none; /* Hide gradient border on mobile */
+  }
+
+  .forum-main {
+    /* Disable scrolling for main content on mobile, let container scroll */
+    overflow-y: visible;
+    flex: none; /* Reset flex property */
+  }
+
+  .stats-sidebar {
+    /* Already hidden by a previous rule, but ensure it's static if shown */
+    position: static;
+    width: 100%;
+    height: auto;
+    overflow-y: visible;
+    border-left: none;
+    border-top: 1px solid rgba(0, 179, 224, 0.2);
+    flex-shrink: 1;
+  }
+  .stats-sidebar::after {
+    display: none; /* Hide gradient border on mobile */
   }
 
   .sidebar-logo {
