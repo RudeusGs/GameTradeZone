@@ -15,7 +15,6 @@ import ListAuctionView from "@/views/ListAuctionView.vue";
 import DetailAuctionView from "@/views/DetailAuctionView.vue";
 import AddPostView from "@/views/Add-PostView.vue";
 import AllPostsView from "@/views/AllPostsView.vue";
-import TransactionView from "@/views/RentedService.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -108,7 +107,7 @@ const router = createRouter({
     {
       path: '/transactions',
       name: 'transactions',
-      component: TransactionView, 
+      component: () => import('@/views/ServiceView.vue'), 
     },
   ],
 });
