@@ -3,7 +3,7 @@ import type { AxiosResponse } from 'axios';
 import type { ApiResult } from '@/models/api-result.model';
 import type { GameAccount } from '@/models/gameaccount.model';
 import type { GameAccountField } from '@/models/gameaccountfield.model';
-
+import type { PagedResult } from '@/models/PageResult.model';
 // Định nghĩa interface cho dữ liệu gửi lên API
 export interface AddAccountGameModel {
   gameInforId: number | null;
@@ -66,5 +66,8 @@ export default {
   // Lấy thông tin trường theo id (không yêu cầu token)
   getByIdForGame: async (id: number, id2: number): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.get('GameAccountField/Get-By-Id-For-Game', { id, id2 });
+  },
+  getAllPaged: async (pageIndex: number, pageSize: number): Promise<AxiosResponse<ApiResult<PagedResult<GameAccount>>>> => {
+    return await baseApi.get('AccountGame/Get-All-Paged', { params: { pageIndex, pageSize } });
   },
 };

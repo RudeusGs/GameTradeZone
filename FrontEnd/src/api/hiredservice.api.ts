@@ -18,7 +18,6 @@ export default {
   getAllByServiceId: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.get('HiredService/Get-All-By-Service-Id', { id });
   },
-
   delete: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post(`HiredService/Delete?id=${id}`, null);
   },

@@ -20,7 +20,6 @@
           </div>
 
           <div class="input-group">
-            <label for="rechargeAmount" class="amount-label">Số tiền (VNĐ):</label>
             <div class="input-wrapper">
               <span class="currency-prefix">₫</span>
               <input

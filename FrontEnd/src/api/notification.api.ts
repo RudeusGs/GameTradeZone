@@ -4,7 +4,7 @@ import type { ApiResult } from '@/models/api-result.model';
 
 export default {
   getAllByUserId: async (userId: number): Promise<AxiosResponse<ApiResult<any>>> => {
-    return await baseApi.get('Notification/Get-All-By-User-Id', { userId });
+    return await baseApi.get(`Notification/Get-All-By-User-Id?userId=${userId}`);
   },
 
   read: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {

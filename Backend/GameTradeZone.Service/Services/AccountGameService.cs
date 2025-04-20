@@ -247,6 +247,32 @@ namespace GameTradeZone.Service.Services
             var newUsersToday = newUsersByDay.FirstOrDefault(x => x.Date == DateTime.Now.Date);
             return new ApiResult(new { TotalUsers = totalUsers, NewUsersByDay = newUsersByDay ,NewUsersToday = newUsersToday });
         }
+        public async Task<ApiResult> GetAllPaged(int pageIndex, int pageSize)
+        {
+            try
+            {
+                var query = _dataContext.AccountGames.Where(x => x.IsDelete == false);
+                var totalItems = await query.CountAsync();
+                var items = await query
+                    .OrderBy(x => x.Id) 
+                    .Skip((pageIndex - 1) * pageSize)
+                    .Take(pageSize) 
+                    .ToListAsync();
+                var pagedResult = new PagedResult<AccountGame>
+                {
+                    Items = items,
+                    TotalItems = totalItems,
+                    PageIndex = pageIndex,
+                    PageSize = pageSize
+                };
+
+                return new ApiResult(pagedResult);
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult { Message = $"Error: {ex.Message}" };
+            }
+        }
 
     }
 }

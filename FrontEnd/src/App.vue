@@ -17,78 +17,26 @@ import NavbarView from './components/NavbarView.vue';
 </template>
 
 <style scoped>
-/* Tùy chỉnh thanh cuộn */
 .cosmo-content {
-  margin-top: 60px;
+  margin-top: 60px; /* Space for NavbarView */
   margin-left: 0;
   transition: margin-left 0.3s ease;
-  min-height: calc(100vh - 60px);
-  overflow-y: auto; /* Đảm bảo nội dung có thể cuộn */
+  min-height: calc(100vh - 60px); /* Ensure content fills viewport minus navbar */
+  width: 100%; /* Full width */
+  padding-bottom: 80px; /* Space for messenger-btn */
+  position: relative;
+  z-index: 1; /* Above background elements, below messenger-btn */
 }
 
-/* Tùy chỉnh thanh cuộn (Webkit - Chrome, Safari, Edge) */
-.cosmo-content::-webkit-scrollbar {
-  width: 12px; /* Độ rộng thanh cuộn */
-  background: transparent; /* Nền trong suốt */
-}
-
-.cosmo-content::-webkit-scrollbar-track {
-  background: rgba(10, 10, 10, 0.8); /* Nền track tối với độ mờ */
-  border-radius: 10px; /* Bo góc */
-}
-
-.cosmo-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, #00ffff, #ff00ff); /* Gradient neon */
-  border-radius: 10px; /* Bo góc thumb */
-  border: 2px solid rgba(0, 0, 0, 0.5); /* Viền tối để tạo hiệu ứng nổi */
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.5); /* Hiệu ứng glow neon */
-}
-
-.cosmo-content::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(45deg, #ff00ff, #00ffff); /* Thay đổi gradient khi hover */
-  box-shadow: 0 0 12px rgba(255, 0, 255, 0.7); /* Tăng glow khi hover */
-}
-
-/* Tùy chỉnh thanh cuộn cho Firefox */
-@supports (scrollbar-color: #00ffff #0a0a0a) {
-  .cosmo-content {
-    scrollbar-color: #00ffff #0a0a0a; /* Màu thumb và track */
-    scrollbar-width: thin; /* Thanh cuộn mỏng */
-  }
-}
-
-/* Đảm bảo body cũng có scrollbar đẹp nếu cần */
 body {
   background-color: #121212;
   font-family: 'Arial', sans-serif;
   color: #e0e0e0;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
-body::-webkit-scrollbar {
-  width: 12px;
-}
-
-body::-webkit-scrollbar-track {
-  background: rgba(10, 10, 10, 0.8);
-  border-radius: 10px;
-}
-
-body::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, #00ffff, #ff00ff);
-  border-radius: 10px;
-  border: 2px solid rgba(0, 0, 0, 0.5);
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-}
-
-body::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(45deg, #ff00ff, #00ffff);
-  box-shadow: 0 0 12px rgba(255, 0, 255, 0.7);
-}
-
-/* Messenger Button Styles */
 .messenger-btn {
   position: fixed;
   bottom: 20px;
@@ -102,7 +50,7 @@ body::-webkit-scrollbar-thumb:hover {
   align-items: center;
   box-shadow: 0 4px 15px rgba(0, 136, 204, 0.5);
   text-decoration: none;
-  z-index: 1000;
+  z-index: 1000; /* Above all content */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -119,27 +67,10 @@ body::-webkit-scrollbar-thumb:hover {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .cosmo-sidebar {
-    width: 220px;
-    transform: translateX(-220px);
-  }
-  .cosmo-sidebar.active {
-    transform: translateX(0);
-  }
-  .cosmo-topbar {
-    height: 50px;
-  }
   .cosmo-content {
-    margin-top: 50px;
-    margin-left: 0;
-  }
-  .cosmo-content.with-sidebar {
-    margin-left: 220px;
-  }
-
-  /* Đảm bảo scrollbar responsive */
-  .cosmo-content::-webkit-scrollbar {
-    width: 8px; /* Thu nhỏ thanh cuộn trên màn hình nhỏ */
+    margin-top: 50px; /* Adjust for smaller navbar */
+    min-height: calc(100vh - 50px);
+    padding-bottom: 60px; /* Slightly less padding for smaller screens */
   }
 
   /* Messenger button responsive */

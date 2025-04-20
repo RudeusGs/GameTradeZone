@@ -8,6 +8,7 @@ import serviceApi from '@/api/service.api';
 import GamingLoader from '@/components/LoadingPage.vue';
 import { userStore } from '@/stores/auth';
 
+// Định nghĩa các interface cho dữ liệu
 interface Game {
   id: number;
   name: string;
@@ -42,18 +43,12 @@ interface Service {
   isDelete?: boolean;
   createdDate?: string;
 }
-const isLoading1 = ref(true);
-async function loadData() {
-  await new Promise(resolve => setTimeout(resolve, 3000));
-}
-onMounted(async () => {
-  await loadData();
-  isLoading.value = false; 
-});
+
 interface BuyAccountGameModel {
   Id: number;
 }
 
+// Khởi tạo các biến và state
 const router = useRouter();
 const authStore = userStore();
 const user = computed(() => authStore.user);
@@ -63,6 +58,7 @@ const activeTab = ref<'accounts' | 'services'>('accounts');
 const itemsPerPage = 8;
 const accountsPage = ref(1);
 const servicesPage = ref(1);
+const totalAccountsPages = ref(1);
 
 // Bộ lọc cho từng tab
 const accountsFilters = ref({
@@ -70,7 +66,7 @@ const accountsFilters = ref({
   minPrice: null as number | null,
   maxPrice: null as number | null,
   search: '',
-  timeFilter: 'all',  // NEW: time filter for accounts
+  timeFilter: 'all',
 });
 
 const servicesFilters = ref({
@@ -78,7 +74,7 @@ const servicesFilters = ref({
   minPrice: null as number | null,
   maxPrice: null as number | null,
   search: '',
-  timeFilter: 'all',  // NEW: time filter for services
+  timeFilter: 'all',
 });
 
 const isLoading = ref<boolean>(false);
@@ -104,16 +100,7 @@ const showDescriptionModal = ref(false);
 const selectedServiceId = ref<number | null>(null);
 const descriptionInput = ref('');
 
-const getFullImageUrls = (imageString: string | null | undefined): string[] => {
-  if (!imageString || imageString.trim() === '') {
-    return ['https://via.placeholder.com/400x250'];
-  }
-  const baseUrl = 'https://localhost:7232/';
-  const images = imageString.split(';').filter(img => img.trim() !== '');
-  return images.map(img => `${baseUrl}${img}`);
-};
-
-// Hàm lấy dữ liệu
+// Hàm lấy danh sách game
 const fetchGames = async () => {
   try {
     isLoading.value = true;
@@ -135,12 +122,16 @@ const fetchGames = async () => {
   }
 };
 
+// Hàm lấy danh sách tài khoản game với phân trang
 const fetchAccounts = async () => {
+  console.log('Fetching accounts for page:', accountsPage.value);
   try {
     isLoading.value = true;
-    const response = await gameAccountApi.getAll();
+    const response = await gameAccountApi.getAllPaged(accountsPage.value, itemsPerPage);
+    console.log('API response:', response.data);
     if (response.data?.result?.isSuccess && response.data.result.data) {
-      const accountPromises = response.data.result.data.map(async (account: any) => {
+      const pagedResult = response.data.result.data;
+      accounts.value = await Promise.all(pagedResult.items.map(async (account: any) => {
         let sellerName = 'Không xác định';
         let sellerId: string | null = null;
         let gameName = 'Không xác định';
@@ -204,19 +195,22 @@ const fetchAccounts = async () => {
           priceMin: account.priceMin || 0,
           createdDate: account.createdDate || 'Không xác định',
         };
-      });
-      accounts.value = await Promise.all(accountPromises);
+      }));
+      console.log('Updated accounts:', accounts.value);
+      totalAccountsPages.value = Math.ceil(pagedResult.totalItems / itemsPerPage);
+      console.log('Total pages:', totalAccountsPages.value);
     } else {
       errorMessage.value = 'Không thể lấy danh sách tài khoản';
     }
   } catch (error) {
     errorMessage.value = 'Lỗi khi gọi API tài khoản';
-    console.error(error);
+    console.error('Error fetching accounts:', error);
   } finally {
     isLoading.value = false;
   }
 };
 
+// Hàm lấy danh sách dịch vụ
 const fetchServices = async () => {
   try {
     isLoading.value = true;
@@ -247,10 +241,23 @@ const fetchServices = async () => {
   }
 };
 
+// Gọi các hàm khi component được mounted
 onMounted(() => {
   fetchGames().then(() => fetchAccounts());
   fetchServices();
 });
+
+// Hàm xử lý URL hình ảnh
+const getFullImageUrls = (imageString: string | null | undefined): string[] => {
+  if (!imageString || imageString.trim() === '') {
+    return ['https://via.placeholder.com/400x250'];
+  }
+  const baseUrl = 'https://localhost:7232/';
+  const images = imageString.split(';').filter(img => img.trim() !== '');
+  return images.map(img => `${baseUrl}${img}`);
+};
+
+// Hàm định dạng thời gian tương đối
 const formatRelativeTime = (dateStr: string): string => {
   if (!dateStr || dateStr === 'Không xác định') {
     return 'Thời gian không xác định';
@@ -272,7 +279,7 @@ const formatRelativeTime = (dateStr: string): string => {
   if (seconds < 60) {
     return 'Vừa đăng';
   } else if (minutes < 60) {
-    return `${minutes} phút trước`; 
+    return `${minutes} phút trước`;
   } else if (hours < 24) {
     return `${hours} giờ trước`;
   } else if (days < 30) {
@@ -283,36 +290,39 @@ const formatRelativeTime = (dateStr: string): string => {
     return `${years} năm trước`;
   }
 };
+
+// Hàm kiểm tra thời gian theo bộ lọc
 const isWithinTimeFilter = (dateStr: string, filter: string): boolean => {
   if (!dateStr || dateStr === 'Không xác định') {
-    return filter === 'all'; }
+    return filter === 'all';
+  }
 
   const created = new Date(dateStr);
   if (isNaN(created.getTime())) {
-    return filter === 'all'; 
+    return filter === 'all';
   }
 
   const now = new Date();
-  const diff = now.getTime() - created.getTime(); 
-  switch(filter) {
+  const diff = now.getTime() - created.getTime();
+  switch (filter) {
     case 'just_now':
       return diff < 60000;
-    case 'minutes': // Vài phút trước (>=1 minute and <1 hour)
+    case 'minutes':
       return diff >= 60000 && diff < 3600000;
-    case 'hours': // Vài tiếng trước (>=1 hour and <24 hours)
+    case 'hours':
       return diff >= 3600000 && diff < 86400000;
-    case 'days': // Vài ngày trước (>=24 hours and <7 days)
+    case 'days':
       return diff >= 86400000 && diff < 604800000;
-    case 'months': // Vài tháng trước (>=7 days and <30 days)
+    case 'months':
       return diff >= 604800000 && diff < 2592000000;
-    case 'years': // Vài năm trước (>=30 days)
+    case 'years':
       return diff >= 2592000000;
     default:
       return true;
   }
 };
 
-// Lọc và phân trang cho tài khoản
+// Lọc danh sách tài khoản
 const filteredAccounts = computed(() => {
   let result = accounts.value;
   if (accountsFilters.value.game !== 'All') {
@@ -332,11 +342,9 @@ const filteredAccounts = computed(() => {
       account.fields.some(field => field.fieldValue.toLowerCase().includes(searchLower))
     );
   }
-  // NEW: filter by createdDate using the timeFilter value
   if (accountsFilters.value.timeFilter !== 'all') {
     result = result.filter(account => isWithinTimeFilter(account.createdDate, accountsFilters.value.timeFilter));
   }
-  // Sắp xếp tài khoản để "Còn hàng" lên trên
   result.sort((a, b) => {
     if (a.status === 'Còn hàng' && b.status !== 'Còn hàng') return -1;
     if (a.status !== 'Còn hàng' && b.status === 'Còn hàng') return 1;
@@ -345,15 +353,15 @@ const filteredAccounts = computed(() => {
   return result;
 });
 
+// Hiển thị danh sách tài khoản đã lọc
 const displayedAccounts = computed(() => {
-  const start = (accountsPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return filteredAccounts.value.slice(start, end);
+  console.log('Displayed accounts:', filteredAccounts.value);
+  return filteredAccounts.value;
 });
 
-const accountsTotalPages = computed(() => Math.ceil(filteredAccounts.value.length / itemsPerPage));
+const accountsTotalPages = computed(() => totalAccountsPages.value);
 
-// Lọc và phân trang cho dịch vụ
+// Lọc danh sách dịch vụ
 const filteredServices = computed(() => {
   let result = services.value;
   if (servicesFilters.value.game !== 'All') {
@@ -375,7 +383,6 @@ const filteredServices = computed(() => {
       service.decription?.toLowerCase().includes(searchLower)
     );
   }
-  // NEW: if service.createdDate exists, filter by time as well
   result = result.filter(service => {
     if (service.createdDate && servicesFilters.value.timeFilter !== 'all') {
       return isWithinTimeFilter(service.createdDate, servicesFilters.value.timeFilter);
@@ -385,6 +392,7 @@ const filteredServices = computed(() => {
   return result;
 });
 
+// Hiển thị danh sách dịch vụ với phân trang
 const displayedServices = computed(() => {
   const start = (servicesPage.value - 1) * itemsPerPage;
   const end = start + itemsPerPage;
@@ -393,9 +401,10 @@ const displayedServices = computed(() => {
 
 const servicesTotalPages = computed(() => Math.ceil(filteredServices.value.length / itemsPerPage));
 
-// Theo dõi thay đổi bộ lọc để reset trang
+// Theo dõi thay đổi bộ lọc để reset trang và tải lại dữ liệu
 watch(accountsFilters, () => {
   accountsPage.value = 1;
+  fetchAccounts();
 }, { deep: true });
 
 watch(servicesFilters, () => {
@@ -411,6 +420,7 @@ const isOwnService = (service: Service) => {
   return user.value && service.createrID === user.value.id;
 };
 
+// Hàm mua tài khoản
 const buyAccount = async (accountId: number) => {
   if (!user.value) {
     purchaseStatus.value = 'error';
@@ -558,7 +568,6 @@ const rentService = async () => {
 
 <template>
   <div class="cosmo-trade-zone">
-    
     <!-- Hiệu ứng nền không gian -->
     <div class="stars-container">
       <div class="stars stars-small"></div>
@@ -707,7 +716,7 @@ const rentService = async () => {
                   <span>{{ account.seller }}</span>
                   <div class="timer-layout">
                     <i class="fas fa-clock time"></i>
-                  <span style="margin-left: 5px">{{ formatRelativeTime(account.createdDate) }}</span>
+                    <span style="margin-left: 5px">{{ formatRelativeTime(account.createdDate) }}</span>
                   </div>
                 </div>
                 <div class="account-details">
@@ -749,7 +758,7 @@ const rentService = async () => {
             </div>
           </div>
           <div class="pagination">
-            <button v-for="page in accountsTotalPages" :key="page" @click="accountsPage = page" :class="{ active: accountsPage === page }">{{ page }}</button>
+            <button v-for="page in accountsTotalPages" :key="page" @click="accountsPage = page; fetchAccounts()" :class="{ active: accountsPage === page }">{{ page }}</button>
           </div>
         </div>
 
@@ -1583,7 +1592,7 @@ h1, h2, h3, h4, .banner-title {
   padding: 0 20px;
   position: relative;
   z-index: 2;
-  min-height: 60vh;
+  min-height: 180vh;
 }
 
 .loading-container {
@@ -1695,6 +1704,7 @@ h1, h2, h3, h4, .banner-title {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+  overflow: hidden; /* Loại bỏ hoàn toàn scrollbar */
 }
 
 /* Account Card Styling */
@@ -1970,9 +1980,11 @@ h1, h2, h3, h4, .banner-title {
 .own-account-message {
   color: #00E0AA;
 }
-.timer-layout{
+
+.timer-layout {
   margin-left: auto;
 }
+
 /* Service Card */
 .service-card {
   background: linear-gradient(135deg, #1a1a2e, #16213e);

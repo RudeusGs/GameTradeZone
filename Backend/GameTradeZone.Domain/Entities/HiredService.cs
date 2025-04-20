@@ -9,7 +9,7 @@ namespace GameTradeZone.Domain.Entities
         public int? UserID { get; set; } // ID người thuê dịch vụ
         public string? Status { get; set; } // Đã xong, chưa xong, đang chờ nhận, từ chối
         public string? Reason { get; set; } // Lý do từ chối
-        public string? Decription { get; set; }
+        public string? Decriptions { get; set; }
         public string? Image { get; set; }
         public bool? IsDelete { get; set; }
     }
