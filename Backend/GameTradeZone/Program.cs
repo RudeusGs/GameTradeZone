@@ -92,7 +92,7 @@ namespace GameTradeZone
             {
                 options.AddPolicy("AllowAnyCorsPolicy",
                     policy => policy
-                        .WithOrigins("http://localhost:5173", "https://localhost:5173", "https://localhost:7232") // Thay bằng URL frontend của bạn
+                        .SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials());

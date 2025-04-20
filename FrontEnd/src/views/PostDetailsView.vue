@@ -298,27 +298,6 @@ onMounted(() => {
 <template>
   <div class="neon-theme">
     <div class="layout">
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <nav class="nav-menu">
-          <router-link to="/" class="nav-item">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-text">Home</span>
-          </router-link>
-          <router-link to="/forum" class="nav-item active">
-            <span class="nav-icon">💬</span>
-            <span class="nav-text">Forum</span>
-          </router-link>
-          <router-link to="/marketplace" class="nav-item">
-            <span class="nav-icon">🛒</span>
-            <span class="nav-text">Marketplace</span>
-          </router-link>
-          <router-link to="/support" class="nav-item">
-            <span class="nav-icon">📞</span>
-            <span class="nav-text">Support</span>
-          </router-link>
-        </nav>
-      </div>
 
       <!-- Main Content -->
       <main class="main-content">
@@ -824,10 +803,8 @@ button {
 .main-content {
   flex: 1;
   padding: 1.5rem;
-  overflow-y: auto; /* Allow scrolling if content overflows */
-  max-height: calc(
-    100vh - 61px
-  ); /* Prevent content from pushing below viewport */
+  overflow-y: visible; /* Allow scrolling if content overflows */
+  max-height: none;
 }
 
 /* Breadcrumb Styles */

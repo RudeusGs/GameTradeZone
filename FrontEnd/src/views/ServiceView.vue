@@ -1,4 +1,3 @@
-@@ -1,11 +1,368 @@
 <template>
   <div class="service-history-container">
     <!-- Particle Background -->
@@ -15,27 +14,40 @@
     <!-- Tabs -->
     <div class="tabs">
       <button
-        :class="{ 'tab-button': true, active: tab === 'hired' }"
-        @click="tab = 'hired'"
-      >
-        Dịch vụ đang thuê
-      </button>
-      <button
-        :class="{ 'tab-button': true, active: tab === 'providing' }"
-        @click="tab = 'providing'"
-      >
-        Dịch vụ đang làm
-      </button>
-      <button
         :class="{ 'tab-button': true, active: tab === 'myServices' }"
         @click="tab = 'myServices'"
       >
         Dịch vụ của tôi
       </button>
+      <button
+        :class="{ 'tab-button': true, active: tab === 'hired' }"
+        @click="tab = 'hired'"
+      >
+        Dịch vụ đang thuê
+      </button>
     </div>
 
     <!-- Content -->
     <section class="service-table">
+      <!-- Tab: Dịch vụ của tôi -->
+      <div v-if="tab === 'myServices'">
+        <div v-if="myServices.length === 0" class="empty-message">
+          Bạn chưa có dịch vụ nào
+        </div>
+        <div v-else class="card-container">
+          <div v-for="service in myServices" :key="service.id" class="service-card">
+            <h3 class="service-name">{{ service.serviceName }}</h3>
+            <p class="service-description">{{ service.decription }}</p>
+            <div class="service-price">{{ service.servicePrice.toLocaleString() }} VNĐ</div>
+            <div class="service-status">{{ service.isDelete ? 'Đã xóa' : 'Hoạt động' }}</div>
+            <div class="service-level"><i class="fas fa-star"></i> Cấp độ: {{ service.serviceLevel }}</div>
+            <div class="service-time"><i class="fas fa-clock"></i> Thời gian: {{ service.serviceTime }}</div>
+            <div class="service-rented"><i class="fas fa-users"></i> Số người thuê: {{ service.rentedC }} lần</div>
+            <div class="service-feedback"><i class="fas fa-comment"></i> Phản hồi: {{ service.feedback || 'N/A' }}</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: Dịch vụ đang thuê -->
       <div v-if="tab === 'hired'">
         <div v-if="hiredServices.length === 0" class="empty-message">
@@ -57,7 +69,7 @@
               <tr v-for="service in hiredServices" :key="service.id">
                 <td>{{ service.id }}</td>
                 <td>{{ service.serviceID }}</td>
-                <td>{{ service.decriptions }}</td>
+                <td>{{ service.descriptions }}</td>
                 <td>{{ service.status }}</td>
                 <td>{{ service.reason || 'N/A' }}</td>
                 <td>
@@ -74,101 +86,90 @@
           </table>
         </div>
       </div>
-
-      <!-- Tab: Dịch vụ đang làm -->
-      <div v-if="tab === 'providing'">
-        <div v-if="providingServices.length === 0" class="empty-message">
-          Không có dịch vụ đang làm
-        </div>
-        <div v-else class="table-wrapper">
-          <table class="service-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Service ID</th>
-                <th>Mô tả</th>
-                <th>Trạng thái</th>
-                <th>Lý do</th>
-                <th>Phản hồi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="service in providingServices" :key="service.id">
-                <td>{{ service.id }}</td>
-                <td>{{ service.serviceID }}</td>
-                <td>{{ service.decriptions }}</td>
-                <td>{{ service.status }}</td>
-                <td>{{ service.reason || 'N/A' }}</td>
-                <td>{{ service.feedBack || 'N/A' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Tab: Dịch vụ của tôi -->
-      <div v-if="tab === 'myServices'" class="empty-message">
-        Chưa triển khai
-      </div>
     </section>
   </div>
 </template>
-
-<script  lang="ts">
-import { ref, onMounted } from 'vue';
+<script lang="ts">
+import { defineComponent, ref, onMounted } from 'vue';
 import { userStore } from '@/stores/auth';
-import hiredServiceApi from '@/api/hiredservice.api';
+import serviceApi from '@/api/service.api';
 import ongoingServiceApi from '@/api/ongoingservice.api';
 
-// Dữ liệu và trạng thái
-const store = userStore();
-const userId = store.user?.id || JSON.parse(localStorage.getItem('user') || '{}').id;
-const tab = ref('hired');
-interface Service {
-  id: number;
-  serviceID: string;
-  decriptions: string;
-  status: string;
-  reason?: string;
-  image?: string;
-  feedBack?: string;
-}
+export default defineComponent({
+  name: 'ServiceView',
+  setup() {
+    const store = userStore();
+    const userId = store.user?.id || JSON.parse(localStorage.getItem('user') || '{}').id;
 
-const hiredServices = ref<Service[]>([]);
-const providingServices = ref<Service[]>([]);
+    const tab = ref('myServices');
 
-// Gọi API để lấy dữ liệu
-const fetchHiredServices = async () => {
-  try {
-    const response = await hiredServiceApi.getAllByUserId(userId);
-    console.log('Hired Services Response:', response);
-    if (response.data?.result?.isSuccess && response.data.result.data) {
-      hiredServices.value = response.data.result.data;
+    interface MyService {
+      id: number;
+      serviceName: string;
+      decription: string;
+      servicePrice: number;
+      isDelete: boolean;
+      serviceLevel?: number;
+      serviceTime?: string;
+      rentedC?: number;
+      feedback?: string;
     }
-  } catch (error) {
-    console.error('Lỗi khi lấy dịch vụ đang thuê:', error);
-  }
-};
 
-const fetchProvidingServices = async () => {
-  try {
-    const response = await ongoingServiceApi.getAllByUserId(userId);
-    console.log('Providing Services Response:', response);
-    if (response.data?.result?.isSuccess && response.data.result.data) {
-      providingServices.value = response.data.result.data;
+    interface HiredService {
+      id: number;
+      serviceID: string;
+      descriptions: string;
+      status: string;
+      reason?: string;
+      image?: string;
     }
-  } catch (error) {
-    console.error('Lỗi khi lấy dịch vụ đang làm:', error);
-  }
-};
 
-// Gọi dữ liệu khi component được mount
-onMounted(() => {
-  fetchHiredServices();
-  fetchProvidingServices();
+    const myServices = ref<MyService[]>([]);
+    const hiredServices = ref<HiredService[]>([]);
+
+    const fetchMyServices = async () => {
+      if (!userId) {
+        console.warn('Không tìm thấy userId, không thể lấy dịch vụ của tôi');
+        return;
+      }
+      try {
+        const response = await serviceApi.getAllByUserId(userId);
+        if (response.data?.result?.isSuccess && response.data.result.data) {
+          myServices.value = response.data.result.data;
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy dịch vụ của tôi:', error);
+      }
+    };
+
+    const fetchHiredServices = async () => {
+      if (!userId) {
+        console.warn('Không tìm thấy userId, không thể lấy dịch vụ đang thuê');
+        return;
+      }
+      try {
+        const response = await ongoingServiceApi.getAllByUserId(userId);
+        if (response.data?.result?.isSuccess && response.data.result.data) {
+          hiredServices.value = response.data.result.data;
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy dịch vụ đang thuê:', error);
+      }
+    };
+
+    onMounted(() => {
+      fetchMyServices();
+      fetchHiredServices();
+    });
+
+    return {
+      tab,
+      myServices,
+      hiredServices,
+    };
+  },
 });
 </script>
-
 <style scoped>
 .service-history-container {
   min-height: 100vh;
@@ -176,7 +177,7 @@ onMounted(() => {
   font-family: 'Arial', sans-serif;
   color: #e0e0e0;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
   padding-top: 60px;
 }
 
@@ -300,7 +301,7 @@ onMounted(() => {
   background: rgba(28, 37, 38, 0.9);
   border-radius: 8px;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .service-table {
@@ -337,6 +338,80 @@ onMounted(() => {
   border-radius: 4px;
 }
 
+/* Card styling for "Dịch vụ của tôi" */
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  padding: 20px;
+}
+
+.service-card {
+  background: linear-gradient(135deg, #0d1b2a 0%, #1a0933 100%);
+  border: 1px solid #00ffff;
+  border-radius: 8px;
+  padding: 20px;
+  width: 250px;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.service-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.service-id {
+  font-size: 0.9rem;
+  color: #b0b0b0;
+  margin-bottom: 10px;
+}
+
+.service-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #00ffff;
+  margin-bottom: 10px;
+}
+
+.service-description {
+  font-size: 0.9rem;
+  color: #e0e0e0;
+  margin-bottom: 10px;
+}
+
+.service-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #00ff00;
+  margin-bottom: 10px;
+}
+
+.service-status {
+  font-size: 0.9rem;
+  color: #ff0000;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.service-level,
+.service-time,
+.service-rented,
+.service-feedback {
+  font-size: 0.9rem;
+  color: #e0e0e0;
+  margin-bottom: 10px;
+}
+
+.service-level i,
+.service-time i,
+.service-rented i,
+.service-feedback i {
+  color: #00ffff;
+  margin-right: 5px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .header-title {
@@ -363,6 +438,10 @@ onMounted(() => {
   }
   .tab-button {
     padding: 8px 15px;
+  }
+  .service-card {
+    width: 100%;
+    max-width: 300px;
   }
 }
 </style>

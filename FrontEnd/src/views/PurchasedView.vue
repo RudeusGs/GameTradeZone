@@ -760,6 +760,7 @@ async function fetchAllAccounts() {
     loading.value = true;
 
     const purchasedResponse = await purchasedApi.getAllByUserID(userId);
+    console.log('Purchased Response:', purchasedResponse);
     if (purchasedResponse.data.result.isSuccess) {
       const data = purchasedResponse.data.result.data ?? [];
       purchasedAccounts.value = Array.isArray(data) ? data.filter(account => account !== null) : [];

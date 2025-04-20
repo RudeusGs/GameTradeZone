@@ -43,6 +43,20 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [Authorize]
+        [HttpGet("Get-All-By-UserId")]
+        public async Task<IActionResult> GetAllByUserId(int id)
+        {
+            try
+            {
+                var result = await _iServiceService.GetAllByUserId(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
 
         [Authorize]
         [HttpPost("Add")]

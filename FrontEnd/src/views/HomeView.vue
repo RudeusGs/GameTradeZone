@@ -42,14 +42,7 @@ interface Service {
   isDelete?: boolean;
   createdDate?: string;
 }
-const isLoading1 = ref(true);
-async function loadData() {
-  await new Promise(resolve => setTimeout(resolve, 3000));
-}
-onMounted(async () => {
-  await loadData();
-  isLoading.value = false; 
-});
+
 interface BuyAccountGameModel {
   Id: number;
 }
@@ -70,7 +63,7 @@ const accountsFilters = ref({
   minPrice: null as number | null,
   maxPrice: null as number | null,
   search: '',
-  timeFilter: 'all',  // NEW: time filter for accounts
+  timeFilter: 'all',
 });
 
 const servicesFilters = ref({
@@ -78,7 +71,7 @@ const servicesFilters = ref({
   minPrice: null as number | null,
   maxPrice: null as number | null,
   search: '',
-  timeFilter: 'all',  // NEW: time filter for services
+  timeFilter: 'all',
 });
 
 const isLoading = ref<boolean>(false);
@@ -91,7 +84,6 @@ const services = ref<Service[]>([]);
 const showImageModal = ref(false);
 const selectedAccount = ref<Account | null>(null);
 const currentImageIndex = ref(0);
-
 const showPurchaseModal = ref(false);
 const purchaseStatus = ref<'success' | 'error'>('success');
 const purchaseMessage = ref<string>('');
@@ -104,6 +96,7 @@ const showDescriptionModal = ref(false);
 const selectedServiceId = ref<number | null>(null);
 const descriptionInput = ref('');
 
+// Hàm lấy URL ảnh đầy đủ
 const getFullImageUrls = (imageString: string | null | undefined): string[] => {
   if (!imageString || imageString.trim() === '') {
     return ['https://via.placeholder.com/400x250'];
@@ -140,7 +133,8 @@ const fetchAccounts = async () => {
     isLoading.value = true;
     const response = await gameAccountApi.getAll();
     if (response.data?.result?.isSuccess && response.data.result.data) {
-      const accountPromises = response.data.result.data.map(async (account: any) => {
+      const allAccounts = response.data.result.data;
+      const accountPromises = allAccounts.map(async (account: any) => {
         let sellerName = 'Không xác định';
         let sellerId: string | null = null;
         let gameName = 'Không xác định';
@@ -235,6 +229,7 @@ const fetchServices = async () => {
         feedback: service.feedback,
         image: service.image,
         isDelete: service.isDelete,
+        createdDate: service.createdDate,
       }));
     } else {
       errorMessage.value = 'Không thể lấy danh sách dịch vụ';
@@ -251,6 +246,8 @@ onMounted(() => {
   fetchGames().then(() => fetchAccounts());
   fetchServices();
 });
+
+// Hàm định dạng thời gian tương đối
 const formatRelativeTime = (dateStr: string): string => {
   if (!dateStr || dateStr === 'Không xác định') {
     return 'Thời gian không xác định';
@@ -272,7 +269,7 @@ const formatRelativeTime = (dateStr: string): string => {
   if (seconds < 60) {
     return 'Vừa đăng';
   } else if (minutes < 60) {
-    return `${minutes} phút trước`; 
+    return `${minutes} phút trước`;
   } else if (hours < 24) {
     return `${hours} giờ trước`;
   } else if (days < 30) {
@@ -283,29 +280,32 @@ const formatRelativeTime = (dateStr: string): string => {
     return `${years} năm trước`;
   }
 };
+
+// Hàm kiểm tra thời gian trong bộ lọc
 const isWithinTimeFilter = (dateStr: string, filter: string): boolean => {
   if (!dateStr || dateStr === 'Không xác định') {
-    return filter === 'all'; }
+    return filter === 'all';
+  }
 
   const created = new Date(dateStr);
   if (isNaN(created.getTime())) {
-    return filter === 'all'; 
+    return filter === 'all';
   }
 
   const now = new Date();
-  const diff = now.getTime() - created.getTime(); 
-  switch(filter) {
+  const diff = now.getTime() - created.getTime();
+  switch (filter) {
     case 'just_now':
       return diff < 60000;
-    case 'minutes': // Vài phút trước (>=1 minute and <1 hour)
+    case 'minutes':
       return diff >= 60000 && diff < 3600000;
-    case 'hours': // Vài tiếng trước (>=1 hour and <24 hours)
+    case 'hours':
       return diff >= 3600000 && diff < 86400000;
-    case 'days': // Vài ngày trước (>=24 hours and <7 days)
+    case 'days':
       return diff >= 86400000 && diff < 604800000;
-    case 'months': // Vài tháng trước (>=7 days and <30 days)
+    case 'months':
       return diff >= 604800000 && diff < 2592000000;
-    case 'years': // Vài năm trước (>=30 days)
+    case 'years':
       return diff >= 2592000000;
     default:
       return true;
@@ -332,11 +332,9 @@ const filteredAccounts = computed(() => {
       account.fields.some(field => field.fieldValue.toLowerCase().includes(searchLower))
     );
   }
-  // NEW: filter by createdDate using the timeFilter value
   if (accountsFilters.value.timeFilter !== 'all') {
     result = result.filter(account => isWithinTimeFilter(account.createdDate, accountsFilters.value.timeFilter));
   }
-  // Sắp xếp tài khoản để "Còn hàng" lên trên
   result.sort((a, b) => {
     if (a.status === 'Còn hàng' && b.status !== 'Còn hàng') return -1;
     if (a.status !== 'Còn hàng' && b.status === 'Còn hàng') return 1;
@@ -375,7 +373,6 @@ const filteredServices = computed(() => {
       service.decription?.toLowerCase().includes(searchLower)
     );
   }
-  // NEW: if service.createdDate exists, filter by time as well
   result = result.filter(service => {
     if (service.createdDate && servicesFilters.value.timeFilter !== 'all') {
       return isWithinTimeFilter(service.createdDate, servicesFilters.value.timeFilter);
@@ -558,7 +555,6 @@ const rentService = async () => {
 
 <template>
   <div class="cosmo-trade-zone">
-    
     <!-- Hiệu ứng nền không gian -->
     <div class="stars-container">
       <div class="stars stars-small"></div>
@@ -707,7 +703,7 @@ const rentService = async () => {
                   <span>{{ account.seller }}</span>
                   <div class="timer-layout">
                     <i class="fas fa-clock time"></i>
-                  <span style="margin-left: 5px">{{ formatRelativeTime(account.createdDate) }}</span>
+                    <span style="margin-left: 5px">{{ formatRelativeTime(account.createdDate) }}</span>
                   </div>
                 </div>
                 <div class="account-details">
@@ -785,6 +781,25 @@ const rentService = async () => {
                   <span>{{ service.createrID }}</span>
                 </div>
                 <p class="service-desc">{{ service.decription }}</p>
+                <!-- Phần thông tin bổ sung -->
+                <div class="service-meta">
+                  <div class="meta-item">
+                    <i class="fas fa-star"></i>
+                    <span>Cấp độ: {{ service.serviceLevel }}</span>
+                  </div>
+                  <div class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    <span>Thời gian: {{ service.serviceTime }}</span>
+                  </div>
+                  <div class="meta-item">
+                    <i class="fas fa-users"></i>
+                    <span>Đã thuê: {{ service.rentedC }} lần</span>
+                  </div>
+                  <div class="meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Đăng: {{ formatRelativeTime(service.createdDate || 'Không xác định') }}</span>
+                  </div>
+                </div>
                 <div class="service-price">
                   <span class="price-label">Giá dịch vụ:</span>
                   <span class="price-value">{{ service.servicePrice.toLocaleString() }} VNĐ</span>
@@ -792,9 +807,6 @@ const rentService = async () => {
                 <button v-if="!isOwnService(service)" class="hire-btn" @click="openConfirmModal(service.id)">
                   <i class="fas fa-handshake"></i> Thuê ngay
                 </button>
-                <div v-else class="own-service-message">
-                  <i class="fas fa-info-circle"></i> Dịch vụ của bạn
-                </div>
               </div>
             </div>
           </div>
@@ -2276,7 +2288,24 @@ h1, h2, h3, h4, .banner-title {
 .animated {
   animation: fadeInScale 0.3s ease;
 }
+.service-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 15px;
+  color: #b0b5c3;
+  font-size: 0.9rem;
+}
 
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.meta-item i {
+  color: #7A4EFE;
+}
 @keyframes fadeInScale {
   from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }

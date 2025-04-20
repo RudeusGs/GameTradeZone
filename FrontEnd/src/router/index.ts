@@ -15,6 +15,7 @@ import ListAuctionView from "@/views/ListAuctionView.vue";
 import DetailAuctionView from "@/views/DetailAuctionView.vue";
 import AddPostView from "@/views/Add-PostView.vue";
 import AllPostsView from "@/views/AllPostsView.vue";
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -84,10 +85,10 @@ const router = createRouter({
       component: ListAuctionView,
     },
     {
-      path: '/auction/:id', // Thêm :id để nhận tham số động
+      path: '/auction/:id',
       name: 'detail-auction',
       component: DetailAuctionView,
-      props: true, // Chuyển đổi tham số thành props
+      props: true,
     },
     {
       path: "/add-post",
@@ -107,7 +108,7 @@ const router = createRouter({
     {
       path: '/transactions',
       name: 'transactions',
-      component: () => import('@/views/ServiceView.vue'), 
+      component: () => import('@/views/ServiceView.vue'),
     },
   ],
 });
