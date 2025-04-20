@@ -13,6 +13,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> GetAllUserDataStat();
         Task<ApiResult> GetAllByUserID(int UserId);
         Task<ApiResult> GetInforUser(int id);
+        Task<ApiResult> GetAllPaged(int pageIndex, int pageSize);
 
     }
 }

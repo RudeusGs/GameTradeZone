@@ -131,7 +131,7 @@ namespace GameTradeZone.Service.Services
             var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {
-                hiredService.Decription = model.Decription;
+                hiredService.Decriptions = model.Decription;
                 _dataContext.HiredServices.Update(hiredService);
                 await _dataContext.SaveChangesAsync();
                 if (model.Files != null && model.Files.Any())

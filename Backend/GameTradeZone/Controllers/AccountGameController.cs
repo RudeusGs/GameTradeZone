@@ -133,5 +133,18 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [HttpGet("Get-All-Paged")]
+        public async Task<IActionResult> GetAllPaged(int pageIndex = 1, int pageSize = 8)
+        {
+            try
+            {
+                var result = await _accountGameService.GetAllPaged(pageIndex, pageSize);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }

@@ -174,7 +174,11 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = "Không đủ tiền!" };
             }
-
+            var createdService = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == service.CreaterID);
+            if(createdService == null)
+            {
+                return new ApiResult { Message = "Không tìm thấy User tạo dịch vụ" };
+            }    
             var existingOnGoing = await _dataContext.OnGoingServices
                 .FirstOrDefaultAsync(x => x.ServiceID == model.Id && x.UserID == _userService.UserId && x.Status != "Hoàn thành");
             if (existingOnGoing != null)
@@ -207,10 +211,10 @@ namespace GameTradeZone.Service.Services
                 var newHired = new HiredService
                 {
                     ServiceID = model.Id,
-                    UserID = _userService.UserId,
+                    UserID = createdService.Id,
                     Status = "Vui lòng xác nhận",
                     Reason = null,
-                    Decription = model.Decription,
+                    Decriptions = model.Decription,
                     CreatedDate = DateTime.Now,
                     IsDelete = false,
                 };

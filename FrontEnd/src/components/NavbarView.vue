@@ -6,8 +6,8 @@
         <div class="logo-section">
           <span class="cosmo-logo menu-toggle" @click="toggleSlidePanel">
             <a href="/" @click.prevent>GTZ</a>
+            <i :class="['fas', isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down', 'caret-icon']"></i>
             <div class="logo-glow"></div>
-            <i :class="['fas', isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down', 'cosmo-arrow-icon']"></i>
           </span>
           <a href="/" class="cosmo-home">
             <img style="width: 40px; margin-left: 10px" src="../assets/logo_web.png" />
@@ -21,38 +21,12 @@
               <div class="slide-grid">
                 <div class="grid-column">
                   <div class="column-header">
-                    <i class="fas fa-gamepad column-icon"></i>
-                    <h4 class="column-title">TRÒ CHƠI</h4>
-                  </div>
-                  <ul class="column-list">
-                    <li><span class="hover-indicator"></span>Tài khoản của tôi</li>
-                    <li><span class="hover-indicator"></span>Tài khoản đã mua</li>
-                    <li><span class="hover-indicator"></span>Đấu Trường Chân Lý</li>
-                    <li><span class="hover-indicator"></span>Valorant</li>
-                    <li><span class="hover-indicator"></span>Huyền Thoại Runeterra</li>
-                  </ul>
-                </div>
-                <div class="grid-column">
-                  <div class="column-header">
-                    <i class="fas fa-headset column-icon"></i>
-                    <h4 class="column-title">DỊCH VỤ GAME</h4>
-                  </div>
-                  <ul class="column-list">
-                    <li><span class="hover-indicator"></span>Dịch vụ của tôi</li>
-                    <li><span class="hover-indicator"></span>Dịch vụ đã thuê</li>
-                    <li><span class="hover-indicator"></span>Song of Nunu</li>
-                    <li><span class="hover-indicator"></span>Trò Chơi Của Riot Forge</li>
-                  </ul>
-                </div>
-                <div class="grid-column">
-                  <div class="column-header">
                     <i class="fas fa-gavel column-icon"></i>
                     <h4 class="column-title">ĐẤU GIÁ</h4>
                   </div>
                   <ul class="column-list">
                     <li><span class="hover-indicator"></span><a href="/list-auction">Danh sách</a></li>
                     <li><span class="hover-indicator"></span>Phần thưởng</li>
-                    <li><span class="hover-indicator"></span>Riot Games Music</li>
                   </ul>
                 </div>
                 <div class="grid-column">
@@ -62,9 +36,7 @@
                   </div>
                   <ul class="column-list">
                     <li @click="$router.push('/forums')"><span class="hover-indicator"></span>Diễn đàn</li>
-                    <li><span class="hover-indicator"></span>LOL Esports</li>
-                    <li><span class="hover-indicator"></span>Valorant Esports</li>
-                    <li><span class="hover-indicator"></span>Hỗ Trợ Riot</li>
+                    <li><span class="hover-indicator"></span>Bài viết của tôi</li>
                   </ul>
                 </div>
               </div>
@@ -75,18 +47,11 @@
 
       <!-- Right Section -->
       <div class="topbar-right">
-        <!-- Recharge Button -->
-        <button class="cosmo-btn recharge-btn" @click="handleRechargeClick">
-          <i class="fas fa-coins"></i>
-          <span>Nạp Tiền</span>
-        </button>
-
         <!-- Add Button -->
         <div class="dropdown-container">
-          <button class="cosmo-btn add-btn menu-toggle" @click.stop="toggleAddMenu">
-            <i class="fas fa-plus"></i>
-            <span>Thêm</span>
-          </button>
+          <div class="icon-container menu-toggle" @click.stop="toggleAddMenu">
+            <i class="fas fa-square-plus cosmo-icon"></i>
+          </div>
           <transition name="dropdown">
             <div v-if="isAddMenuOpen" class="dropdown-menu add-menu">
               <div class="menu-item" @click="handleAddAccountClick">
@@ -110,16 +75,30 @@
           ></i>
         </div>
 
-        <!-- Transaction Icon -->
-        <div class="icon-container" @click="handleTransactionClick">
-          <i class="fas fa-credit-card cosmo-icon"></i>
+        <!-- Transaction Icon with Dropdown -->
+        <div class="dropdown-container">
+          <div class="icon-container menu-toggle" @click.stop="toggleTransactionMenu">
+            <i class="fas fa-handshake cosmo-icon"></i>
+          </div>
+          <transition name="dropdown">
+            <div v-if="isTransactionMenuOpen" class="dropdown-menu transaction-menu">
+              <div class="menu-item" @click="handleTransactionAccountClick">
+                <i class="fas fa-user"></i>
+                <span>Tài khoản</span>
+              </div>
+              <div class="menu-item" @click="handleTransactionServiceClick">
+                <i class="fas fa-gamepad"></i>
+                <span>Dịch vụ</span>
+              </div>
+            </div>
+          </transition>
         </div>
 
         <!-- Notification Icon -->
         <div class="dropdown-container">
           <div class="icon-container menu-toggle" @click.stop="toggleNotifications">
             <i class="fas fa-bell cosmo-icon">
-              <span v-if="notifications" class="cosmo-badge">{{ notifications }}</span>
+              <span v-if="notifications > 0" class="cosmo-badge">{{ notifications }}</span>
             </i>
           </div>
           <transition name="dropdown">
@@ -128,23 +107,76 @@
                 <h4>Thông báo</h4>
               </div>
               <div class="menu-content">
-                <p>Không có thông báo mới</p>
+                <div v-if="isLoadingNotifications" class="loading">
+                  <p>Đang tải...</p>
+                </div>
+                <div v-else-if="notificationList.length === 0" class="no-notifications">
+                  <p>Không có thông báo mới</p>
+                </div>
+                <div v-else class="notification-list">
+                  <div
+                    v-for="notification in notificationList"
+                    :key="notification.id"
+                    class="notification-item"
+                    :class="{ 'read': notification.isRead }"
+                    @click="markAsRead(notification)"
+                  >
+                    <div class="notification-content">
+                      <h5>{{ notification.title }}</h5>
+                      <p>{{ notification.message }}</p>
+                      <span class="notification-time">{{ formatTime(notification.createdAt) }}</span>
+                    </div>
+                    <i
+                      class="fas fa-trash notification-delete"
+                      @click.stop="deleteNotification(notification.id)"
+                    ></i>
+                  </div>
+                </div>
               </div>
             </div>
           </transition>
         </div>
 
-        <!-- Balance (if logged in) -->
-        <div v-if="isLoggedIn" class="cosmo-balance">
-          <i class="fas fa-coins"></i>
-          <span>{{ formatCurrency(balance) }}</span>
+        <!-- Balance (if logged in) with Dropdown -->
+        <div v-if="isLoggedIn" class="dropdown-container">
+          <div class="cosmo-balance menu-toggle" @click.stop="toggleBalanceMenu">
+            <i class="fas fa-coins"></i>
+            <span>{{ formatCurrency(balance) }}</span>
+          </div>
+          <transition name="dropdown">
+            <div v-if="isBalanceMenuOpen" class="dropdown-menu balance-menu">
+              <div class="menu-header">
+                <h4>Số Dư</h4>
+                <div class="balance-display">
+                  <i class="fas fa-coins"></i>
+                  <span>{{ formatCurrency(balance) }}</span>
+                </div>
+              </div>
+              <div class="menu-divider"></div>
+              <div class="menu-actions">
+                <div class="menu-item" @click="handleRechargeClick">
+                  <i class="fas fa-plus-circle"></i>
+                  <span>Nạp Tiền</span>
+                </div>
+                <div class="menu-item" @click="handleWithdrawClick">
+                  <i class="fas fa-minus-circle"></i>
+                  <span>Rút Tiền</span>
+                </div>
+              </div>
+              <div class="menu-divider"></div>
+              <div class="menu-item" @click="handleStatisticsClick">
+                <i class="fas fa-chart-line"></i>
+                <span>Thống Kê</span>
+              </div>
+            </div>
+          </transition>
         </div>
 
         <!-- User Not Logged In -->
         <div v-if="!isLoggedIn" class="dropdown-container">
           <div class="user-avatar menu-toggle" @click.stop="toggleAccountMenu">
             <i class="fas fa-user cosmo-icon"></i>
-            <i :class="['fas', isAccountMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'cosmo-arrow-icon']"></i>
+            <i :class="['fas', isAccountMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'caret-icon']"></i>
           </div>
           <transition name="dropdown">
             <div v-if="isAccountMenuOpen" class="dropdown-menu user-menu">
@@ -169,7 +201,7 @@
               </div>
             </div>
             <span class="cosmo-user-name" :title="fullName">{{ fullName }}</span>
-            <i :class="['fas', isUserMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'cosmo-arrow-icon']"></i>
+            <i :class="['fas', isUserMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'caret-icon']"></i>
           </div>
           <transition name="dropdown">
             <div v-if="isUserMenuOpen" class="dropdown-menu user-menu">
@@ -190,7 +222,7 @@
               </div>
               <div class="menu-item" @click="goToSettings">
                 <i class="fas fa-cog"></i>
-                <span>Giao dịch tài khoản</span>
+                <span>Cài đặt</span>
               </div>
               <div class="menu-divider"></div>
               <div class="menu-item logout" @click="logout">
@@ -202,31 +234,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Modal -->
-    <transition name="modal">
-      <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 class="modal-title">{{ modalTitle }}</h2>
-            <button class="close-btn" @click="closeModal">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="modal-body">
-            <p class="modal-message">{{ modalMessage }}</p>
-          </div>
-          <div class="modal-footer">
-            <button class="modal-btn login-btn" @click="modalAction">
-              {{ modalActionText }}
-            </button>
-            <button class="modal-btn cancel-btn" @click="closeModal">
-              Hủy
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -235,6 +242,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import authenticateApi from "@/api/authenticate.api";
 import userApi from "@/api/websiteaccount.api";
+import notificationApi from "@/api/notification.api";
 import { userStore } from "@/stores/auth.ts";
 
 export default {
@@ -243,17 +251,16 @@ export default {
     const router = useRouter();
     const store = userStore();
     const isUserMenuOpen = ref(false);
-    const notifications = ref(3);
+    const notifications = ref(0);
+    const notificationList = ref([]);
     const isSlidePanelOpen = ref(false);
     const isNotificationOpen = ref(false);
     const isAddMenuOpen = ref(false);
     const isAccountMenuOpen = ref(false);
-    const showModal = ref(false);
-    const modalTitle = ref("Thông báo");
-    const modalMessage = ref("");
-    const modalActionText = ref("Đăng nhập");
-    const modalAction = ref(() => {});
+    const isTransactionMenuOpen = ref(false);
+    const isBalanceMenuOpen = ref(false);
     const balance = ref(0);
+    const isLoadingNotifications = ref(false);
 
     const isLoggedIn = computed(() => !!store.user);
     const fullName = computed(() => store.user?.fullName || "");
@@ -266,6 +273,14 @@ export default {
       }).format(amount);
     };
 
+    const formatTime = (dateString) => {
+      const date = new Date(dateString);
+      return date.toLocaleString("vi-VN", {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+    };
+
     const fetchUserBalance = async () => {
       if (!isLoggedIn.value || !userId.value) return;
       try {
@@ -276,18 +291,76 @@ export default {
         localStorage.setItem("user", JSON.stringify(userData));
       } catch (error) {
         console.error("Failed to fetch user balance:", error);
-        showCustomModal(
-          "Lỗi",
-          "Không thể tải thông tin số dư. Vui lòng thử lại sau.",
-          "Đóng",
-          closeModal
+        // Không hiển thị modal, chỉ ghi log lỗi
+      }
+    };
+
+    const fetchNotifications = async () => {
+      if (!isLoggedIn.value || !userId.value) {
+        console.log("User not logged in or userId missing:", { isLoggedIn: isLoggedIn.value, userId: userId.value });
+        return;
+      }
+      isLoadingNotifications.value = true;
+      try {
+        console.log("Fetching notifications for userId:", userId.value);
+        const response = await notificationApi.getAllByUserId(userId.value);
+        console.log("API Response:", response);
+        const rawNotifications = response.data.result.data || [];
+        console.log("Raw Notifications:", rawNotifications);
+        notificationList.value = rawNotifications
+          .filter((noti) => !noti.isDelete)
+          .map((noti) => ({
+            id: noti.id,
+            title: noti.typeNoti,
+            message: noti.content,
+            createdAt: noti.createdDate,
+            isRead: noti.isRead,
+          }));
+        console.log("Transformed Notifications:", notificationList.value);
+        notifications.value = notificationList.value.filter(
+          (notification) => !notification.isRead
+        ).length;
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+        // Không hiển thị modal, chỉ ghi log lỗi
+      } finally {
+        isLoadingNotifications.value = false;
+      }
+    };
+
+    const markAsRead = async (notification) => {
+      if (notification.isRead) return;
+      try {
+        await notificationApi.read(notification.id);
+        notification.isRead = true;
+        notifications.value = notificationList.value.filter(
+          (n) => !n.isRead
+        ).length;
+      } catch (error) {
+        console.error("Failed to mark notification as read:", error);
+        // Không hiển thị modal, chỉ ghi log lỗi
+      }
+    };
+
+    const deleteNotification = async (id) => {
+      try {
+        await notificationApi.delete(id);
+        notificationList.value = notificationList.value.filter(
+          (notification) => notification.id !== id
         );
+        notifications.value = notificationList.value.filter(
+          (n) => !n.isRead
+        ).length;
+      } catch (error) {
+        console.error("Failed to delete notification:", error);
+        // Không hiển thị modal, chỉ ghi log lỗi
       }
     };
 
     onMounted(() => {
       store.init();
       fetchUserBalance();
+      fetchNotifications();
       document.addEventListener("click", handleClickOutside);
     });
 
@@ -297,16 +370,20 @@ export default {
         isUserMenuOpen.value = false;
         isNotificationOpen.value = false;
         isAccountMenuOpen.value = false;
+        isTransactionMenuOpen.value = false;
+        isBalanceMenuOpen.value = false;
       }
     };
 
     const toggleNotifications = () => {
       isNotificationOpen.value = !isNotificationOpen.value;
       if (isNotificationOpen.value) {
-        notifications.value = 0;
+        fetchNotifications();
         isUserMenuOpen.value = false;
         isAddMenuOpen.value = false;
         isAccountMenuOpen.value = false;
+        isTransactionMenuOpen.value = false;
+        isBalanceMenuOpen.value = false;
       }
     };
 
@@ -316,6 +393,8 @@ export default {
         isNotificationOpen.value = false;
         isAddMenuOpen.value = false;
         isAccountMenuOpen.value = false;
+        isTransactionMenuOpen.value = false;
+        isBalanceMenuOpen.value = false;
       }
     };
 
@@ -325,6 +404,30 @@ export default {
         isNotificationOpen.value = false;
         isAddMenuOpen.value = false;
         isUserMenuOpen.value = false;
+        isTransactionMenuOpen.value = false;
+        isBalanceMenuOpen.value = false;
+      }
+    };
+
+    const toggleTransactionMenu = () => {
+      isTransactionMenuOpen.value = !isTransactionMenuOpen.value;
+      if (isTransactionMenuOpen.value) {
+        isNotificationOpen.value = false;
+        isAddMenuOpen.value = false;
+        isUserMenuOpen.value = false;
+        isAccountMenuOpen.value = false;
+        isBalanceMenuOpen.value = false;
+      }
+    };
+
+    const toggleBalanceMenu = () => {
+      isBalanceMenuOpen.value = !isBalanceMenuOpen.value;
+      if (isBalanceMenuOpen.value) {
+        isNotificationOpen.value = false;
+        isAddMenuOpen.value = false;
+        isUserMenuOpen.value = false;
+        isAccountMenuOpen.value = false;
+        isTransactionMenuOpen.value = false;
       }
     };
 
@@ -348,7 +451,7 @@ export default {
     };
 
     const goToSettings = () => {
-      router.push("/purchased");
+      router.push("/");
       closeAllMenus();
     };
 
@@ -357,6 +460,8 @@ export default {
         await authenticateApi.logout();
         store.logout();
         balance.value = 0;
+        notificationList.value = [];
+        notifications.value = 0;
         closeAllMenus();
         router.push("/login");
       } catch (error) {
@@ -366,17 +471,29 @@ export default {
 
     const handleRechargeClick = () => {
       if (!isLoggedIn.value) {
-        showModal.value = true;
-        modalTitle.value = "Thông báo";
-        modalMessage.value = "Vui lòng đăng nhập để tiếp tục nạp tiền.";
-        modalActionText.value = "Đăng nhập";
-        modalAction.value = () => {
-          closeModal();
-          router.push("/login");
-        };
+        router.push("/login");
       } else {
         router.push("/recharge");
       }
+      closeAllMenus();
+    };
+
+    const handleWithdrawClick = () => {
+      if (!isLoggedIn.value) {
+        router.push("/login");
+      } else {
+        router.push("/withdraw");
+      }
+      closeAllMenus();
+    };
+
+    const handleStatisticsClick = () => {
+      if (!isLoggedIn.value) {
+        router.push("/login");
+      } else {
+        router.push("/statistics");
+      }
+      closeAllMenus();
     };
 
     const handleAddAccountClick = () => {
@@ -391,20 +508,22 @@ export default {
       closeAllMenus();
     };
 
-    const handleTransactionClick = () => {
+    const handleTransactionAccountClick = () => {
       if (!isLoggedIn.value) {
-        showCustomModal(
-          "Thông báo",
-          "Vui lòng đăng nhập để xem giao dịch.",
-          "Đăng nhập",
-          () => {
-            closeModal();
-            router.push("/login");
-          }
-        );
+        router.push("/login");
+      } else {
+        router.push("/purchased");
+      }
+      closeAllMenus();
+    };
+
+    const handleTransactionServiceClick = () => {
+      if (!isLoggedIn.value) {
+        router.push("/login");
       } else {
         router.push("/transactions");
       }
+      closeAllMenus();
     };
 
     const bounceIcon = (event) => {
@@ -421,6 +540,8 @@ export default {
       isNotificationOpen.value = false;
       isSlidePanelOpen.value = false;
       isAccountMenuOpen.value = false;
+      isTransactionMenuOpen.value = false;
+      isBalanceMenuOpen.value = false;
     };
 
     const handleClickOutside = (event) => {
@@ -429,38 +550,28 @@ export default {
       closeAllMenus();
     };
 
-    const closeModal = () => {
-      showModal.value = false;
-    };
-
-    const showCustomModal = (title, message, actionText, action) => {
-      showModal.value = true;
-      modalTitle.value = title;
-      modalMessage.value = message;
-      modalActionText.value = actionText;
-      modalAction.value = action;
-    };
-
     return {
       isUserMenuOpen,
       notifications,
+      notificationList,
       isSlidePanelOpen,
       isNotificationOpen,
       isAddMenuOpen,
       isAccountMenuOpen,
+      isTransactionMenuOpen,
+      isBalanceMenuOpen,
       isLoggedIn,
       fullName,
       balance,
       formatCurrency,
-      showModal,
-      modalTitle,
-      modalMessage,
-      modalActionText,
-      modalAction,
+      formatTime,
+      isLoadingNotifications,
       toggleAddMenu,
       toggleNotifications,
       toggleUserMenu,
       toggleAccountMenu,
+      toggleTransactionMenu,
+      toggleBalanceMenu,
       toggleSlidePanel,
       goToLogin,
       goToRegister,
@@ -468,15 +579,18 @@ export default {
       goToSettings,
       logout,
       handleRechargeClick,
+      handleWithdrawClick,
+      handleStatisticsClick,
       handleAddAccountClick,
       handleAddServiceClick,
-      handleTransactionClick,
+      handleTransactionAccountClick,
+      handleTransactionServiceClick,
+      markAsRead,
+      deleteNotification,
       bounceIcon,
       resetIcon,
       closeAllMenus,
       handleClickOutside,
-      closeModal,
-      showCustomModal,
     };
   },
   beforeUnmount() {
@@ -512,7 +626,8 @@ export default {
   padding: 0 20px;
 }
 
-.topbar-left, .topbar-right {
+.topbar-left,
+.topbar-right {
   display: flex;
   align-items: center;
 }
@@ -567,17 +682,6 @@ a {
   opacity: 1;
 }
 
-.cosmo-arrow-icon {
-  font-size: 0.8rem;
-  color: #00ffff;
-  margin-left: 5px;
-  transition: transform 0.3s ease;
-}
-
-.cosmo-logo:hover .cosmo-arrow-icon {
-  color: #ff00ff;
-}
-
 .cosmo-home {
   margin-left: 15px;
   transition: transform 0.3s ease;
@@ -585,6 +689,18 @@ a {
 
 .cosmo-home:hover {
   transform: scale(1.1);
+}
+
+/* Caret Icon for GTZ Logo */
+.cosmo-logo .caret-icon {
+  margin-left: 8px;
+  font-size: 1rem;
+  color: #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.cosmo-logo:hover .caret-icon {
+  color: #00ffff;
 }
 
 /* Slide Panel */
@@ -736,10 +852,6 @@ a {
   left: 100%;
 }
 
-.recharge-btn {
-  margin-left: 15px;
-}
-
 .add-btn {
   margin-left: 10px;
 }
@@ -798,6 +910,7 @@ a {
   margin-left: 10px;
   border: 1px solid rgba(0, 255, 255, 0.3);
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .cosmo-balance:hover {
@@ -835,10 +948,34 @@ a {
   border-color: rgba(0, 255, 255, 0.3);
 }
 
+.user-profile .caret-icon {
+  margin-left: 8px;
+  font-size: 0.9rem;
+  color: #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.user-profile:hover .caret-icon {
+  color: #00ffff;
+}
+
 .user-avatar {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar .caret-icon {
+  margin-left: 8px;
+  font-size: 0.9rem;
+  color: #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.user-avatar:hover .caret-icon {
+  color: #00ffff;
 }
 
 .avatar-circle {
@@ -884,7 +1021,8 @@ a {
     transform: scale(0.8);
     opacity: 0.8;
   }
-  75%, 100% {
+  75%,
+  100% {
     transform: scale(2);
     opacity: 0;
   }
@@ -923,6 +1061,49 @@ a {
   flex-direction: column;
 }
 
+.notification-menu {
+  min-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  /* Firefox Scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 255, 0.5) rgba(10, 10, 32, 0.95);
+}
+
+/* WebKit Scrollbar (Chrome, Safari, Edge) */
+.notification-menu::-webkit-scrollbar {
+  width: 8px; /* Thinner scrollbar */
+}
+
+/* Track */
+.notification-menu::-webkit-scrollbar-track {
+  background: rgba(10, 10, 32, 0.95); /* Match dropdown background */
+  border-radius: 10px;
+}
+
+/* Handle */
+.notification-menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.5); /* Cyan thumb */
+  border-radius: 10px;
+  border: 2px solid rgba(10, 10, 32, 0.95); /* Match track background */
+  box-shadow: inset 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+/* Handle on hover */
+.notification-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.8); /* Brighter cyan on hover */
+  box-shadow: inset 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+/* Remove scrollbar buttons (arrows) in WebKit */
+.notification-menu::-webkit-scrollbar-button {
+  display: none;
+}
+
+.balance-menu {
+  min-width: 400px;
+}
+
 .dropdown-menu::before {
   content: '';
   position: absolute;
@@ -938,7 +1119,6 @@ a {
 
 .menu-header {
   padding: 15px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
 }
 
 .menu-header h4 {
@@ -948,10 +1128,124 @@ a {
   font-weight: 600;
 }
 
+.balance-display {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  background: rgba(0, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.balance-display i {
+  color: #00ffff;
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+.balance-display span {
+  color: #e0e0e0;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.menu-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+}
+
+.menu-actions .menu-item {
+  flex: 1;
+  margin: 0 5px;
+  padding: 8px 10px;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(0, 255, 255, 0.05);
+}
+
+.menu-actions .menu-item:hover {
+  background: rgba(0, 255, 255, 0.15);
+  padding-left: 10px;
+}
+
 .menu-content {
   padding: 15px;
   color: #e0e0e0;
   font-size: 0.95rem;
+}
+
+.no-notifications {
+  text-align: center;
+  color: #e0e0e0;
+}
+
+.loading {
+  text-align: center;
+  color: #00ffff;
+}
+
+.notification-list {
+  width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.notification-item.read {
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0.7;
+}
+
+.notification-item:hover {
+  background: rgba(0, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-content h5 {
+  margin: 0 0 5px;
+  color: #00ffff;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.notification-content p {
+  margin: 0 0 5px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.notification-time {
+  color: #b0b0b0;
+  font-size: 0.8rem;
+}
+
+.notification-delete {
+  color: #ff5e5e;
+  font-size: 0.9rem;
+  padding: 5px;
+  transition: all 0.3s ease;
+}
+
+.notification-delete:hover {
+  color: #ff0000;
+  transform: scale(1.1);
 }
 
 .menu-item {
@@ -1044,7 +1338,11 @@ a {
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {
@@ -1059,149 +1357,26 @@ a {
   animation: bounce 1.5s infinite;
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.modal-content {
-  background: linear-gradient(135deg, #0a0a20, #1a0933);
-  border-radius: 15px;
-  width: 90%;
-  max-width: 450px;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 255, 255, 0.3);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  overflow: hidden;
-  position: relative;
-}
-
-.modal-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 30%, rgba(0, 255, 255, 0.1), transparent 70%),
-    radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.1), transparent 70%);
-  pointer-events: none;
-}
-
-.modal-header {
-  padding: 20px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-  position: relative;
-  text-align: center;
-}
-
-.modal-title {
-  margin: 0;
-  color: #00ffff;
-  font-size: 1.5rem;
-  font-weight: 600;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-}
-
-.close-btn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(255, 0, 0, 0.1);
-  border: none;
-  color: #ff5e5e;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.close-btn:hover {
-  background: rgba(255, 0, 0, 0.2);
-  transform: rotate(90deg);
-  color: #ff0000;
-}
-
-.modal-body {
-  padding: 20px;
-  color: #e0e0e0;
-  text-align: center;
-}
-
-.modal-message {
-  font-size: 1.1rem;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.modal-footer {
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-
-.modal-btn {
-  padding: 10px 25px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  min-width: 120px;
-}
-
-.login-btn {
-  background: linear-gradient(135deg, #00ffff, #0088ff);
-  color: #0a0a20;
-}
-
-.login-btn:hover {
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
-  transform: translateY(-3px);
-}
-
-.cancel-btn {
-  background: rgba(255, 94, 94, 0.2);
-  color: #ff5e5e;
-  border: 1px solid rgba(255, 94, 94, 0.4);
-}
-
-.cancel-btn:hover {
-  background: rgba(255, 94, 94, 0.3);
-  transform: translateY(-3px);
-}
-
-.modal-enter-active,
-.modal-leave-active {
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
 /* Responsive Styles */
 @media (max-width: 992px) {
   .slide-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .notification-menu {
+    min-width: 250px;
+  }
+
+  .balance-menu {
+    min-width: 250px;
+  }
+
+  .menu-actions {
+    flex-direction: column;
+  }
+
+  .menu-actions .menu-item {
+    margin: 5px 0;
   }
 }
 
@@ -1209,61 +1384,94 @@ a {
   .cosmo-topbar {
     height: 60px;
   }
-  
+
   .topbar-container {
     padding: 0 10px;
   }
-  
+
   .cosmo-logo {
     font-size: 1.8rem;
   }
-  
+
+  .cosmo-logo .caret-icon {
+    font-size: 0.9rem;
+  }
+
   .slide-panel {
     top: 60px;
   }
-  
+
   .slide-content {
     padding: 20px 10px;
   }
-  
+
   .slide-grid {
     gap: 10px;
   }
-  
+
   .grid-column {
     padding: 15px;
   }
-  
+
   .column-title {
     font-size: 1rem;
   }
-  
+
   .column-list li {
     font-size: 0.9rem;
     padding: 8px 0 8px 15px;
   }
-  
+
   .cosmo-btn {
     padding: 6px 12px;
     font-size: 0.85rem;
   }
-  
+
   .cosmo-btn span {
     display: none;
   }
-  
+
   .cosmo-icon {
     width: 35px;
     height: 35px;
     font-size: 1rem;
   }
-  
+
   .cosmo-user-name {
     max-width: 80px;
   }
-  
+
   .cosmo-balance span {
     font-size: 0.85rem;
+  }
+
+  .notification-menu {
+    min-width: 200px;
+  }
+
+  .notification-content h5 {
+    font-size: 0.9rem;
+  }
+
+  .notification-content p {
+    font-size: 0.85rem;
+  }
+
+  .notification-time {
+    font-size: 0.75rem;
+  }
+
+  .notification-delete {
+    font-size: 0.8rem;
+  }
+
+  .balance-menu {
+    min-width: 200px;
+  }
+
+  .user-profile .caret-icon,
+  .user-avatar .caret-icon {
+    font-size: 0.8rem;
   }
 }
 
@@ -1271,26 +1479,43 @@ a {
   .cosmo-topbar {
     height: 50px;
   }
-  
+
   .cosmo-logo {
     font-size: 1.5rem;
   }
-  
+
+  .cosmo-logo .caret-icon {
+    font-size: 0.8rem;
+  }
+
   .slide-panel {
     top: 50px;
   }
-  
+
   .slide-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .cosmo-btn {
     padding: 5px 10px;
   }
-  
+
   .cosmo-icon {
     width: 30px;
     height: 30px;
+  }
+
+  .notification-menu {
+    min-width: 180px;
+  }
+
+  .balance-menu {
+    min-width: 180px;
+  }
+
+  .user-profile .caret-icon,
+  .user-avatar .caret-icon {
+    font-size: 0.7rem;
   }
 }
 </style>
