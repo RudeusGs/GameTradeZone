@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import userImage from '@/assets/user.png'; // Giả sử bạn có ảnh avatar trong assets
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import userImage from "@/assets/user.png"; // Giả sử bạn có ảnh avatar trong assets
 
 // Props
 defineProps<{
@@ -10,13 +10,13 @@ defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  (e: 'toggle'): void;
+  (e: "toggle"): void;
 }>();
 
 // State
 const router = useRouter();
-const username = ref<string>('Admin');
-const userRole = ref<string>('Quản trị viên');
+const username = ref<string>("Admin");
+const userRole = ref<string>("Quản trị viên");
 const userAvatar = ref<string>(userImage);
 
 // Quick Stats (Ví dụ)
@@ -32,15 +32,15 @@ const dropdownStates = ref({
 });
 
 // Hàm toggle dropdown
-const toggleDropdown = (key: 'gameAccount' | 'transactions') => {
+const toggleDropdown = (key: "gameAccount" | "transactions") => {
   dropdownStates.value[key] = !dropdownStates.value[key];
 };
 
 // Logout
 const logout = () => {
-  localStorage.removeItem('token');
-  router.push('/login');
-  alert('Đăng xuất thành công!');
+  localStorage.removeItem("token");
+  router.push("/login");
+  alert("Đăng xuất thành công!");
 };
 </script>
 
@@ -53,7 +53,9 @@ const logout = () => {
         <i class="material-icons app-icon" v-else>store</i>
       </div>
       <button class="toggle-btn" @click="emit('toggle')">
-        <i class="material-icons">{{ isCollapsed ? 'chevron_right' : 'chevron_left' }}</i>
+        <i class="material-icons">{{
+          isCollapsed ? "chevron_right" : "chevron_left"
+        }}</i>
       </button>
     </div>
 
@@ -115,7 +117,7 @@ const logout = () => {
           <i class="material-icons">games</i>
           <span class="menu-text">Game</span>
           <i class="material-icons dropdown-icon">
-            {{ dropdownStates.gameAccount ? 'expand_less' : 'expand_more' }}
+            {{ dropdownStates.gameAccount ? "expand_less" : "expand_more" }}
           </i>
         </div>
         <ul class="submenu" v-show="dropdownStates.gameAccount">
@@ -160,7 +162,7 @@ const logout = () => {
           <i class="material-icons">payment</i>
           <span class="menu-text">Giao dịch</span>
           <i class="material-icons dropdown-icon">
-            {{ dropdownStates.transactions ? 'expand_less' : 'expand_more' }}
+            {{ dropdownStates.transactions ? "expand_less" : "expand_more" }}
           </i>
         </div>
         <ul class="submenu" v-show="dropdownStates.transactions">
@@ -175,19 +177,21 @@ const logout = () => {
           <li>
             <router-link
               to="/admin/transactions/withdraw"
-              :class="{ active: $route.path === '/admin/transactions/withdraw' }"
+              :class="{
+                active: $route.path === '/admin/transactions/withdraw',
+              }"
             >
               Rút tiền
             </router-link>
           </li>
-          <li>
+          <!-- <li>
             <router-link
               to="/admin/transactions/withdraw"
               :class="{ active: $route.path === '/admin/transactions/withdraw' }"
             >
               Giao dịch tài khoản
             </router-link>
-          </li>
+          </li> -->
         </ul>
       </li>
       <li v-else>

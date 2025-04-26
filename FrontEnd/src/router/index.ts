@@ -15,7 +15,7 @@ import ListAuctionView from "@/views/ListAuctionView.vue";
 import DetailAuctionView from "@/views/DetailAuctionView.vue";
 import AddPostView from "@/views/Add-PostView.vue";
 import AllPostsView from "@/views/AllPostsView.vue";
-
+import TransactionHistoryView from "@/views/TransactionHistoryView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -85,8 +85,8 @@ const router = createRouter({
       component: ListAuctionView,
     },
     {
-      path: '/auction/:id',
-      name: 'detail-auction',
+      path: "/auction/:id",
+      name: "detail-auction",
       component: DetailAuctionView,
       props: true,
     },
@@ -101,14 +101,19 @@ const router = createRouter({
       component: AllPostsView,
     },
     {
-      path: '/callback',
-      name: 'OAuthCallback',
-      component: LoginView, 
+      path: "/callback",
+      name: "OAuthCallback",
+      component: LoginView,
     },
     {
-      path: '/transactions',
-      name: 'transactions',
-      component: () => import('@/views/ServiceView.vue'),
+      path: "/transactions",
+      name: "transactions",
+      component: () => import("@/views/ServiceView.vue"),
+    },
+    {
+      path: "/transaction-history",
+      name: "transaction-history",
+      component: TransactionHistoryView,
     },
   ],
 });

@@ -13,6 +13,9 @@ namespace GameTradeZone.Service.Interfaces
     {
         Task<ApiResult> GetAllRechargeBankTransactions();
   
-
+        Task<ApiResult> WithdrawMoneyRequest(WithdrawMoneyModel model);
+        Task<ApiResult> WithdrawMoneyConfirmRequest(int id);
+        Task<ApiResult> GetAllWithDrawTransactionsByUser();
+        Task<ApiResult> GetAllRechargeBankTransactionsByUser();
     }
 }
