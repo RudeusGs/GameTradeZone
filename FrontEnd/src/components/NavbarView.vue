@@ -4,13 +4,23 @@
       <!-- Left Section -->
       <div class="navbar-left">
         <div class="logo-section">
-          <div class="cosmo-logo menu-toggle" @click="toggleSlidePanel">
-            <div class="logo-text">GTZ</div>
+          <span class="cosmo-logo menu-toggle" @click="toggleSlidePanel">
+            <a href="/" @click.prevent>GTZ</a>
+            <i
+              :class="[
+                'fas',
+                isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down',
+                'caret-icon',
+              ]"
+            ></i>
             <div class="logo-glow"></div>
             <i :class="['fas', isSlidePanelOpen ? 'fa-chevron-up' : 'fa-chevron-down', 'caret-icon']"></i>
           </div>
           <a href="/" class="cosmo-home">
-            <img style="width: 40px; margin-left: 10px" src="../assets/logo_web.png" alt="Logo" />
+            <img
+              style="width: 40px; margin-left: 10px"
+              src="../assets/logo_web.png"
+            />
           </a>
         </div>
 
@@ -135,12 +145,18 @@
 
         <!-- Transaction Icon with Dropdown -->
         <div class="dropdown-container">
-          <div class="icon-container menu-toggle" @click.stop="toggleTransactionMenu">
+          <div
+            class="icon-container menu-toggle"
+            @click.stop="toggleTransactionMenu"
+          >
             <i class="fas fa-handshake cosmo-icon"></i>
             <div class="icon-tooltip">Giao dịch</div>
           </div>
           <transition name="dropdown">
-            <div v-if="isTransactionMenuOpen" class="dropdown-menu transaction-menu">
+            <div
+              v-if="isTransactionMenuOpen"
+              class="dropdown-menu transaction-menu"
+            >
               <div class="menu-item" @click="handleTransactionAccountClick">
                 <i class="fas fa-user"></i>
                 <span>Tài khoản</span>
@@ -159,14 +175,22 @@
         
         <!-- Notification Icon -->
         <div class="dropdown-container">
-          <div class="icon-container menu-toggle" @click.stop="toggleNotifications">
+          <div
+            class="icon-container menu-toggle"
+            @click.stop="toggleNotifications"
+          >
             <i class="fas fa-bell cosmo-icon">
-              <span v-if="notifications > 0" class="cosmo-badge">{{ notifications }}</span>
+              <span v-if="notifications > 0" class="cosmo-badge">{{
+                notifications
+              }}</span>
             </i>
             <div class="icon-tooltip">Thông báo</div>
           </div>
           <transition name="dropdown">
-            <div v-if="isNotificationOpen" class="dropdown-menu notification-menu">
+            <div
+              v-if="isNotificationOpen"
+              class="dropdown-menu notification-menu"
+            >
               <div class="menu-header">
                 <h4>Thông báo</h4>
                 <div class="notification-actions">
@@ -184,7 +208,6 @@
                   <p>Đang tải...</p>
                 </div>
                 <div v-else-if="notificationList.length === 0" class="no-notifications">
-                  <i class="fas fa-bell-slash"></i>
                   <p>Không có thông báo mới</p>
                 </div>
                 <div v-else class="notification-list">
@@ -192,7 +215,7 @@
                     v-for="notification in notificationList"
                     :key="notification.id"
                     class="notification-item"
-                    :class="{ 'read': notification.isRead }"
+                    :class="{ read: notification.isRead }"
                     @click="markAsRead(notification)"
                   >
                     <div class="notification-icon" :class="getNotificationIconClass(notification.title)">
@@ -201,7 +224,9 @@
                     <div class="notification-content">
                       <h5>{{ notification.title }}</h5>
                       <p>{{ notification.message }}</p>
-                      <span class="notification-time">{{ formatTime(notification.createdAt) }}</span>
+                      <span class="notification-time">{{
+                        formatTime(notification.createdAt)
+                      }}</span>
                     </div>
                     <i
                       class="fas fa-trash notification-delete"
@@ -216,7 +241,10 @@
 
         <!-- Balance (if logged in) with Dropdown -->
         <div v-if="isLoggedIn" class="dropdown-container">
-          <div class="cosmo-balance menu-toggle" @click.stop="toggleBalanceMenu">
+          <div
+            class="cosmo-balance menu-toggle"
+            @click.stop="toggleBalanceMenu"
+          >
             <i class="fas fa-coins"></i>
             <span>{{ formatCurrency(balance) }}</span>
           </div>
@@ -253,7 +281,7 @@
         <div v-if="!isLoggedIn" class="dropdown-container">
           <div class="user-avatar menu-toggle" @click.stop="toggleAccountMenu">
             <i class="fas fa-user cosmo-icon"></i>
-            <i :class="['fas', isAccountMenuOpen ? 'fa-chevron-up' : 'fa-chevron-down', 'caret-icon']"></i>
+            <i :class="['fas', isAccountMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'caret-icon']"></i>
           </div>
           <transition name="dropdown">
             <div v-if="isAccountMenuOpen" class="dropdown-menu user-menu">
@@ -278,7 +306,7 @@
               </div>
             </div>
             <span class="cosmo-user-name" :title="fullName">{{ fullName }}</span>
-            <i :class="['fas', isUserMenuOpen ? 'fa-chevron-up' : 'fa-chevron-down', 'caret-icon']"></i>
+            <i :class="['fas', isUserMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'caret-icon']"></i>
           </div>
           <transition name="dropdown">
             <div v-if="isUserMenuOpen" class="dropdown-menu user-menu">
@@ -300,6 +328,10 @@
               <div class="menu-item" @click="goToProfile">
                 <i class="fas fa-user"></i>
                 <span>Thông tin</span>
+              </div>
+              <div class="menu-item" @click="goToTransactionHistory">
+                <i class="fas fa-cog"></i>
+                <span>Lịch sử giao dịch</span>
               </div>
               <div class="menu-item" @click="goToSettings">
                 <i class="fas fa-cog"></i>
@@ -412,7 +444,10 @@ export default {
 
     const fetchNotifications = async () => {
       if (!isLoggedIn.value || !userId.value) {
-        console.log("User not logged in or userId missing:", { isLoggedIn: isLoggedIn.value, userId: userId.value });
+        console.log("User not logged in or userId missing:", {
+          isLoggedIn: isLoggedIn.value,
+          userId: userId.value,
+        });
         return;
       }
       isLoadingNotifications.value = true;
@@ -672,7 +707,14 @@ export default {
     const resetIcon = (event) => {
       event.target.classList.remove("animate-bounce");
     };
-
+    const goToTransactionHistory = () => {
+      if (!isLoggedIn.value) {
+        router.push("/login");
+      } else {
+        router.push("/transaction-history");
+      }
+      closeAllMenus();
+    };
     const closeAllMenus = () => {
       isUserMenuOpen.value = false;
       isAddMenuOpen.value = false;
@@ -685,7 +727,11 @@ export default {
 
     const handleClickOutside = (event) => {
       if (event.target.closest(".menu-toggle")) return;
-      if (event.target.closest(".dropdown-menu") || event.target.closest(".slide-panel")) return;
+      if (
+        event.target.closest(".dropdown-menu") ||
+        event.target.closest(".slide-panel")
+      )
+        return;
       closeAllMenus();
     };
 
@@ -718,6 +764,7 @@ export default {
       goToRegister,
       goToProfile,
       goToSettings,
+      goToTransactionHistory,
       logout,
       handleRechargeClick,
       handleWithdrawClick,
@@ -748,7 +795,7 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@400;500;700&family=Exo+2:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@400;500;700&display=swap');
 
 /* Base Styles */
 .cosmo-navbar {
@@ -759,9 +806,9 @@ export default {
   left: 0;
   width: 100%;
   z-index: 1050;
-  font-family: 'Exo 2', sans-serif;
-  box-shadow: 0 4px 20px rgba(128, 0, 255, 0.3);
-  border-bottom: 1px solid rgba(128, 0, 255, 0.3);
+  font-family: 'Rajdhani', sans-serif;
+  box-shadow: 0 4px 20px rgba(0, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
 
 .navbar-container {
@@ -797,7 +844,7 @@ a {
 
 .cosmo-logo {
   position: relative;
-  font-family: 'Orbitron', sans-serif;
+  font-family: "Orbitron", sans-serif;
   font-size: 2.2rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -826,7 +873,7 @@ a {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, rgba(157, 78, 221, 0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 255, 255, 0.2) 0%, transparent 70%);
   filter: blur(8px);
   z-index: -1;
   opacity: 0;
@@ -1025,7 +1072,31 @@ a {
   z-index: 1;
 }
 
-/* Buttons and Icons */
+.cosmo-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.cosmo-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
+}
+
+.cosmo-btn:hover::before {
+  left: 100%;
+}
+
+.add-btn {
+  margin-left: 10px;
+}
+
 .icon-container {
   position: relative;
   margin: 0 10px;
@@ -1209,6 +1280,30 @@ a {
   transform: scale(1.05);
 }
 
+.user-avatar::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #ff4757;
+  border-radius: 50%;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
 .cosmo-user-name {
   color: #e0e0e0;
   font-size: 0.95rem;
@@ -1301,7 +1396,7 @@ a {
 }
 
 .dropdown-menu::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -5px;
   right: 20px;
