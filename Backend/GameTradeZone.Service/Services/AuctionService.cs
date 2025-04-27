@@ -154,7 +154,7 @@ namespace GameTradeZone.Service.Services
                 await _dataContext.SaveChangesAsync();
 
                 await tran.CommitAsync();
-                return new ApiResult { Data = bid };
+                return new ApiResult ();
 
             }
             catch (Exception ex)

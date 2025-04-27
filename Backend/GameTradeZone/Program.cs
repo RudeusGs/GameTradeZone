@@ -90,12 +90,17 @@ namespace GameTradeZone
 
             builder.Services.AddCors(options =>
             {
+                //options.AddPolicy("AllowAnyCorsPolicy",
+                //    policy => policy
+                //        .SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
+                //        .AllowAnyMethod()
+                //        .AllowAnyHeader()
+                //        .AllowCredentials());
                 options.AddPolicy("AllowAnyCorsPolicy",
                     policy => policy
-                        .SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
+                        .AllowAnyOrigin() // Cho phép tất cả các nguồn gốc
                         .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .AllowCredentials());
+                        .AllowAnyHeader());
             });
 
             // Register Application Services
@@ -126,8 +131,8 @@ namespace GameTradeZone
             app.UseCors("AllowAnyCorsPolicy");
             app.UseAuthentication();
             app.MapHub<TransactionHub>("/transactionHub");
-            app.MapHub<AuctionHub>("/auctionHub");
             app.UseAuthorization();
+            app.MapHub<AuctionHub>("/auctionHub");
             app.MapControllers();
             app.Run();
         }

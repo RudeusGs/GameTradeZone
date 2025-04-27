@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\GameTradeZone.Infrastructure\GameTradeZone.Infrastructure.csproj" />
 	<PackageReference Include="CloudinaryDotNet" Version="1.27.3" />
+	<PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>

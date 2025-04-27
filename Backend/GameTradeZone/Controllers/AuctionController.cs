@@ -79,27 +79,27 @@ namespace GameTradeZone.Controllers
 
         [Authorize]
         [HttpPost("Add-Auction-Detail")]
-        public async Task<IActionResult> AddAuctionDetail([FromForm]AddAuctionDetailModel model)
+        public async Task<IActionResult> AddAuctionDetail([FromBody]AddAuctionDetailModel model)
         {
             try
             {
                 var result = await _auctionService.AddAuctionDetail(model);
-                if (result.IsSuccess)
-                {
-                    var auctionDetail = result.Data as AuctionDetail;
-                    if (auctionDetail != null)
-                    {
-                        await _hubContext.Clients.Group("AuctionDetailGroup")
-                            .SendAsync("AuctionDetailAdded", new
-                            {
-                                Id = auctionDetail.Id,
-                                AuctionId = auctionDetail.AuctionId,
-                                UserId = auctionDetail.UserId,
-                                RaisePrice = auctionDetail.RaisePrice,
-                                RaiseDateTime = auctionDetail.RaiseDateTime
-                            });
-                    }
-                }
+                //if (result.IsSuccess)
+                //{
+                //    var auctionDetail = result.Data as AuctionDetail;
+                //    if (auctionDetail != null)
+                //    {
+                //        await _hubContext.Clients.Group("AuctionDetailGroup")
+                //            .SendAsync("AuctionDetailAdded", new
+                //            {
+                //                Id = auctionDetail.Id,
+                //                AuctionId = auctionDetail.AuctionId,
+                //                UserId = auctionDetail.UserId,
+                //                RaisePrice = auctionDetail.RaisePrice,
+                //                RaiseDateTime = auctionDetail.RaiseDateTime
+                //            });
+                //    }
+                //}
                 return Response(result);
             }
             catch (Exception e)

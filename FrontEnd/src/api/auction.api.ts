@@ -10,11 +10,14 @@ const auction = {
     getAllAuctionPrize: async () => {
         return await baseApi.get('Auction/Get-All_AuctionPrize');
     },
-    AddAuction: async (FormData: FormData) => {
-        return await baseApi.get('Auction/Add_Auction');
+    AddAuction: async (formData: FormData) => {
+        return await baseApi.post('Auction/Add_Auction', formData);
     },
-    AddAuctionDetail: async (FormData: FormData) => {
-        return await baseApi.get('Auction/Add-Auction_Detail');
+    // AddAuctionDetail: async (formData: FormData) => {
+    //     return await baseApi.post('Auction/Add-Auction-Detail', formData);
+    // },
+    AddAuctionDetail: async (data: { AuctionId: number; RaisePrice: string }) => {
+        return await baseApi.post('Auction/Add-Auction-Detail', data);
     },
     GetAuctionById: async (id: number) => {
         return await baseApi.get(`Auction/Get-Auction-By-Id?id=${id}`);

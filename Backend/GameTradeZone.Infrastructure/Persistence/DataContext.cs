@@ -34,6 +34,7 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<Auction> Auctions { get; set; }
         public DbSet<AuctionDetail> AuctionDetails { get; set; }
         public DbSet<AuctionPrize> AuctionPrizes { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
