@@ -13,6 +13,7 @@ namespace GameTradeZone.Domain.Entities
         public string? Avatar { get; set; }
         public string BankName { get; set; }
         public string BankNumber { get; set; }
+        public bool IsAuthen { get; set; } = false;
         public virtual DateTime? CreatedDate { get; set; }
         public virtual DateTime? UpdatedDate { get; set; }
         public virtual DateTime? DeleteDate { get; set; }

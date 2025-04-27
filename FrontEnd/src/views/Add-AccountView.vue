@@ -743,24 +743,20 @@ const toggleGuideModal = () => {
               <div class="guide-section">
                 <h4 class="guide-title">
                   <i class="fas fa-envelope"></i>
-                  Sử dụng Gmail rác
+                  Sử dụng tài khoản trắng thông tin
                 </h4>
                 <p>
-                  Người mua có thể hỏi tên Gmail của tài khoản. Hãy dùng Gmail rác –
-                  loại không chứa thông tin quan trọng – để giữ an toàn. Tốt nhất là liên kết
-                  tài khoản với Gmail dùng một lần trước khi bán.
+                  Sử dụng tài khoản trắng thông tin để đảm bảo giao dịch diễn ra thuận lợi.
                 </p>
               </div>
 
               <div class="guide-section">
                 <h4 class="guide-title">
                   <i class="fas fa-exchange-alt"></i>
-                  Cung cấp thông tin cho người mua
+                  Đúng thông tin với hình ảnh và mô tả tài khoản
                 </h4>
                 <p>
-                  Giao dịch xong xuôi? Hãy gửi đầy đủ và chính xác thông tin như
-                  tên tài khoản, mật khẩu cho người mua. Uy tín của bạn sẽ được củng cố,
-                  và chẳng ai thích tranh cãi sau khi deal xong đâu, đúng không?
+                  Vui lòng cung cấp thông tin chính xác về tài khoản, bao gồm tên tài khoản, mật khẩu và các thuộc tính khác.
                 </p>
               </div>
 

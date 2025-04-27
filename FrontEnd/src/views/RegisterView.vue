@@ -215,11 +215,10 @@ export default {
 
 <style scoped>
 .registration-container {
-  min-height: 100vh;
+  min-height: 120vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #0a0a1f 0%, #1c1c3a 100%);
   position: relative;
   overflow: hidden;
 }

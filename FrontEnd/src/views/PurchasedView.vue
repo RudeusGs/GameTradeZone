@@ -1,6 +1,5 @@
 <template>
   <div class="cyber-vault">
-  </div>
     <!-- Animated Background Elements -->
     <div class="cyber-bg">
       <div class="grid-overlay"></div>
@@ -137,7 +136,11 @@
               <div class="status-badge" :class="getStatusClass(account.statusBuyer ?? undefined)">
                 {{ getStatusText(account.statusBuyer ?? undefined) }}
               </div>
-              <button class="report-btn" @click="openReportModal(account.id)">
+              <button 
+                v-if="account.statusBuyer !== 'Mua thành công'" 
+                class="report-btn" 
+                @click="openReportModal(account.id)"
+              >
                 <i class="fas fa-exclamation-triangle"></i>
               </button>
             </div>
@@ -171,93 +174,23 @@
                     <div class="detail-value price-value">{{ formatPrice(account.price) }}</div>
                   </div>
                 </div>
-                <div class="detail-row">
-                  <div class="detail-icon"><i class="fas fa-envelope"></i></div>
-                  <div class="detail-content">
-                    <div class="detail-label">EMAIL</div>
-                    <div class="detail-value" :class="getEmailStatusClass(account.email ?? undefined)">
-                      {{ getEmailStatusText(account.email ?? undefined) }}
-                    </div>
-                  </div>
-                </div>
-                <div class="detail-row">
-                  <div class="detail-icon"><i class="fas fa-shield-alt"></i></div>
-                  <div class="detail-content">
-                    <div class="detail-label">OTP</div>
-                    <div class="detail-value" :class="getOtpStatusClass(account.otpEmail ?? undefined)">
-                      {{ getOtpStatusText(account.otpEmail ?? undefined) }}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
             <div class="account-actions">
-              <!-- Initial Actions: Request Email or Reject -->
+              <!-- Direct Confirm Button (Chỉ hiển thị khi chưa xác nhận) -->
               <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && !account.email"
-                class="cyber-button email-btn"
-                @click="requestEmail(account.id)"
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối'"
+                class="cyber-button direct-confirm-btn"
+                @click="openDirectConfirmModal(account.id)"
               >
-                <span class="button-content">YÊU CẦU EMAIL</span>
+                <span class="button-content">XÁC NHẬN TRỰC TIẾP</span>
                 <span class="button-glitch"></span>
               </button>
+              <!-- Reject Button (Chỉ hiển thị khi chưa xác nhận) -->
               <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && !account.email"
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối'"
                 class="cyber-button reject-btn"
                 @click="openRejectModal(account.id)"
-              >
-                <span class="button-content">TỪ CHỐI</span>
-                <span class="button-glitch"></span>
-              </button>
-              <!-- After Email Requested but Not Received -->
-              <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email === 'Đang chờ'"
-                class="cyber-button email-btn disabled"
-                disabled
-              >
-                <span class="button-content">ĐANG CHỜ EMAIL</span>
-                <span class="button-glitch"></span>
-              </button>
-              <!-- After Email Received: Request OTP or Request Resend Email -->
-              <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email && account.email !== 'Đang chờ' && !account.otpEmail"
-                class="cyber-button otp-btn"
-                @click="requestOTP(account.id)"
-              >
-                <span class="button-content">YÊU CẦU OTP</span>
-                <span class="button-glitch"></span>
-              </button>
-              <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email && account.email !== 'Đang chờ'"
-                class="cyber-button resend-request-btn"
-                @click="openResendEmailModal(account.id)"
-              >
-                <span class="button-content">YÊU CẦU GỬI LẠI EMAIL</span>
-                <span class="button-glitch"></span>
-              </button>
-              <!-- After OTP Requested but Not Received -->
-              <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.otpEmail === 'Đang chờ'"
-                class="cyber-button otp-btn disabled"
-                disabled
-              >
-                <span class="button-content">ĐANG CHỜ OTP</span>
-                <span class="button-glitch"></span>
-              </button>
-              <!-- After OTP Received: Accept -->
-              <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email && account.email !== 'Đang chờ' && account.otpEmail && account.otpEmail !== 'Đang chờ'"
-                class="cyber-button confirm-btn"
-                @click="openAcceptModal(account.id)"
-              >
-                <span class="button-content">ĐỒNG Ý</span>
-                <span class="button-glitch"></span>
-              </button>
-              <!-- Cannot Reject After Email Requested -->
-              <button
-                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối' && account.email"
-                class="cyber-button reject-btn"
-                @click="openCannotRejectModal"
               >
                 <span class="button-content">TỪ CHỐI</span>
                 <span class="button-glitch"></span>
@@ -320,95 +253,23 @@
                     <div class="detail-value price-value">{{ formatPrice(account.price) }}</div>
                   </div>
                 </div>
-                <div class="detail-row">
-                  <div class="detail-icon"><i class="fas fa-envelope"></i></div>
-                  <div class="detail-content">
-                    <div class="detail-label">EMAIL</div>
-                    <div class="detail-value" :class="getEmailStatusClass(account.email ?? undefined)">
-                      {{ getEmailStatusText(account.email ?? undefined) }}
-                    </div>
-                  </div>
-                </div>
-                <div class="detail-row">
-                  <div class="detail-icon"><i class="fas fa-shield-alt"></i></div>
-                  <div class="detail-content">
-                    <div class="detail-label">OTP</div>
-                    <div class="detail-value" :class="getOtpStatusClass(account.otpEmail ?? undefined)">
-                      {{ getOtpStatusText(account.otpEmail ?? undefined) }}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
             <div class="account-actions">
               <!-- Buyer's Actions -->
               <template v-if="account.userID === userId">
-                <!-- Initial Actions: Request Email or Reject -->
+                <!-- Direct Confirm Button (Chỉ hiển thị khi chưa xác nhận) -->
                 <button
-                  v-if="!account.email"
-                  class="cyber-button email-btn"
-                  @click="requestEmail(account.id)"
+                  class="cyber-button direct-confirm-btn"
+                  @click="openDirectConfirmModal(account.id)"
                 >
-                  <span class="button-content">YÊU CẦU EMAIL</span>
+                  <span class="button-content">XÁC NHẬN TRỰC TIẾP</span>
                   <span class="button-glitch"></span>
                 </button>
+                <!-- Reject Button (Chỉ hiển thị khi chưa xác nhận) -->
                 <button
-                  v-if="!account.email"
                   class="cyber-button reject-btn"
                   @click="openRejectModal(account.id)"
-                >
-                  <span class="button-content">TỪ CHỐI</span>
-                  <span class="button-glitch"></span>
-                </button>
-                <!-- After Email Requested but Not Received -->
-                <button
-                  v-if="account.email === 'Đang chờ'"
-                  class="cyber-button email-btn disabled"
-                  disabled
-                >
-                  <span class="button-content">ĐANG CHỜ EMAIL</span>
-                  <span class="button-glitch"></span>
-                </button>
-                <!-- After Email Received: Request OTP or Request Resend Email -->
-                <button
-                  v-if="account.email && account.email !== 'Đang chờ' && !account.otpEmail"
-                  class="cyber-button otp-btn"
-                  @click="requestOTP(account.id)"
-                >
-                  <span class="button-content">YÊU CẦU OTP</span>
-                  <span class="button-glitch"></span>
-                </button>
-                <button
-                  v-if="account.email && account.email !== 'Đang chờ'"
-                  class="cyber-button resend-request-btn"
-                  @click="openResendEmailModal(account.id)"
-                >
-                  <span class="button-content">YÊU CẦU GỬI LẠI EMAIL</span>
-                  <span class="button-glitch"></span>
-                </button>
-                <!-- After OTP Requested but Not Received -->
-                <button
-                  v-if="account.otpEmail === 'Đang chờ'"
-                  class="cyber-button otp-btn disabled"
-                  disabled
-                >
-                  <span class="button-content">ĐANG CHỜ OTP</span>
-                  <span class="button-glitch"></span>
-                </button>
-                <!-- After OTP Received: Accept -->
-                <button
-                  v-if="account.email && account.email !== 'Đang chờ' && account.otpEmail && account.otpEmail !== 'Đang chờ'"
-                  class="cyber-button confirm-btn"
-                  @click="openAcceptModal(account.id)"
-                >
-                  <span class="button-content">ĐỒNG Ý</span>
-                  <span class="button-glitch"></span>
-                </button>
-                <!-- Cannot Reject After Email Requested -->
-                <button
-                  v-if="account.email"
-                  class="cyber-button reject-btn"
-                  @click="openCannotRejectModal"
                 >
                   <span class="button-content">TỪ CHỐI</span>
                   <span class="button-glitch"></span>
@@ -416,62 +277,19 @@
               </template>
               <!-- Seller's Actions -->
               <template v-else-if="account.sellerID === userId">
-                <div v-if="account.email === 'Đang chờ'" class="input-group">
-                  <input
-                    v-model="emailInput[account.id]"
-                    placeholder="Nhập email"
-                    class="cyber-input"
-                  />
-                  <button
-                    class="cyber-button email-btn"
-                    @click="sendEmailResponse(account.id, emailInput[account.id])"
-                  >
-                    <span class="button-content">GỬI EMAIL</span>
-                    <span class="button-glitch"></span>
-                  </button>
-                </div>
-                <div v-else-if="account.email && account.email !== 'Đang chờ'" class="input-group">
-                  <input
-                    v-if="isEditingEmail[account.id]"
-                    v-model="emailInput[account.id]"
-                    placeholder="Nhập email mới"
-                    class="cyber-input"
-                  />
-                  <span v-else>Đã gửi: {{ account.email }}</span>
-                  <button
-                    class="cyber-button email-btn"
-                    @click="isEditingEmail[account.id] ? resendEmail(account.id, emailInput[account.id]) : enableEmailEdit(account.id)"
-                  >
-                    <span class="button-content">{{ isEditingEmail[account.id] ? 'GỬI LẠI EMAIL' : 'SỬA EMAIL' }}</span>
-                    <span class="button-glitch"></span>
-                  </button>
-                </div>
-                <div v-if="account.otpEmail === 'Đang chờ'" class="input-group">
-                  <input
-                    v-model="otpInput[account.id]"
-                    placeholder="Nhập OTP"
-                    class="cyber-input"
-                  />
-                  <button
-                    class="cyber-button otp-btn"
-                    @click="sendOtpResponse(account.id, otpInput[account.id])"
-                  >
-                    <span class="button-content">GỬI OTP</span>
-                    <span class="button-glitch"></span>
-                  </button>
-                </div>
+                <!-- No actions for seller in this simplified version -->
               </template>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Accept Modal -->
-      <div v-if="showAcceptModal" class="modal-overlay" @click.self="closeAcceptModal">
+      <!-- Direct Confirm Modal -->
+      <div v-if="showDirectConfirmModal" class="modal-overlay" @click.self="closeDirectConfirmModal">
         <div class="cyber-modal decision-modal">
           <div class="modal-header">
-            <h3>XÁC NHẬN ĐỒNG Ý</h3>
-            <button class="close-btn" @click="closeAcceptModal">×</button>
+            <h3>XÁC NHẬN TRỰC TIẾP</h3>
+            <button class="close-btn" @click="closeDirectConfirmModal">×</button>
           </div>
           <div class="modal-content">
             <div class="modal-hologram">
@@ -479,18 +297,18 @@
                 <div class="ring ring-1"></div>
                 <div class="ring ring-2"></div>
               </div>
-              <div class="hologram-icon">
-                <i class="fas fa-check"></i>
+              <div class="hologram-icon warning-icon">
+                <i class="fas fa-exclamation-triangle"></i>
               </div>
             </div>
-            <p>Bạn có chắc chắn muốn đồng ý với tài khoản này?</p>
+            <p>Bạn có chắc chắn muốn xác nhận tài khoản này? Bằng cách xác nhận, bạn đồng ý rằng mọi thông tin đã được thay đổi và chúng tôi sẽ không giải quyết nếu tài khoản xảy ra vấn đề sau đó.</p>
           </div>
           <div class="modal-actions">
-            <button @click="closeAcceptModal" class="cyber-button cancel-btn">
+            <button @click="closeDirectConfirmModal" class="cyber-button cancel-btn">
               <span class="button-content">HỦY</span>
               <span class="button-glitch"></span>
             </button>
-            <button @click="handleAccept" class="cyber-button accept-btn">
+            <button @click="handleDirectConfirm" class="cyber-button confirm-btn">
               <span class="button-content">XÁC NHẬN</span>
               <span class="button-glitch"></span>
             </button>
@@ -536,72 +354,6 @@
         </div>
       </div>
 
-      <!-- Cannot Reject Modal -->
-      <div v-if="showCannotRejectModal" class="modal-overlay" @click.self="closeCannotRejectModal">
-        <div class="cyber-modal result-modal">
-          <div class="modal-header">
-            <h3>THÔNG BÁO</h3>
-            <button class="close-btn" @click="closeCannotRejectModal">×</button>
-          </div>
-          <div class="modal-content">
-            <div class="modal-hologram">
-              <div class="hologram-rings">
-                <div class="ring ring-1"></div>
-                <div class="ring ring-2"></div>
-              </div>
-              <div class="hologram-icon error-icon">
-                <i class="fas fa-exclamation"></i>
-              </div>
-            </div>
-            <p>Bạn đã yêu cầu gửi email, không thể từ chối giao dịch này nữa.</p>
-          </div>
-          <div class="modal-actions">
-            <button @click="closeCannotRejectModal" class="cyber-button ok-btn">
-              <span class="button-content">ĐÓNG</span>
-              <span class="button-glitch"></span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Resend Email Request Modal -->
-      <div v-if="showResendEmailModal" class="modal-overlay" @click.self="cancelResendEmail">
-        <div class="cyber-modal reject-modal">
-          <div class="modal-header">
-            <h3>LÝ DO YÊU CẦU GỬI LẠI EMAIL</h3>
-            <button class="close-btn" @click="cancelResendEmail">×</button>
-          </div>
-          <div class="modal-content">
-            <div class="modal-hologram">
-              <div class="hologram-rings">
-                <div class="ring ring-1"></div>
-                <div class="ring ring-2"></div>
-              </div>
-              <div class="hologram-icon">
-                <i class="fas fa-envelope"></i>
-              </div>
-            </div>
-            <p>Vui lòng nhập lý do yêu cầu gửi lại email:</p>
-            <textarea 
-              v-model="resendEmailReason" 
-              placeholder="Nhập lý do..." 
-              rows="4"
-              class="cyber-textarea"
-            ></textarea>
-          </div>
-          <div class="modal-actions">
-            <button @click="cancelResendEmail" class="cyber-button cancel-btn">
-              <span class="button-content">HỦY BỎ</span>
-              <span class="button-glitch"></span>
-            </button>
-            <button @click="confirmResendEmailRequest" class="cyber-button confirm-reject-btn">
-              <span class="button-content">GỬI YÊU CẦU</span>
-              <span class="button-glitch"></span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- Result Modal -->
       <div v-if="showResultModal" class="modal-overlay" @click.self="closeResultModal">
         <div class="cyber-modal result-modal">
@@ -630,23 +382,28 @@
         </div>
       </div>
 
-      <!-- Report Modal -->
+      <!-- Dispute Report Modal -->
       <div v-if="showReportModal" class="modal-overlay" @click.self="closeReportModal">
         <div class="cyber-modal report-modal">
           <div class="modal-header">
-            <h3>BÁO CÁO</h3>
+            <h3>BÁO CÁO TRANH CHẤP</h3>
             <button class="close-btn" @click="closeReportModal">×</button>
           </div>
           <div class="modal-content">
-            <p>Vui lòng nhập lý do báo cáo:</p>
+            <p>Vui lòng nhập lý do báo cáo và tải lên các file liên quan (nếu có):</p>
             <textarea 
               v-model="reportReason" 
               placeholder="Nhập lý do..." 
               rows="4"
               class="cyber-textarea"
             ></textarea>
+            <input type="file" multiple @change="handleFileUpload" class="file-input" />
           </div>
           <div class="modal-actions">
+            <button @click="closeReportModal" class="cyber-button cancel-btn">
+              <span class="button-content">HỦY</span>
+              <span class="button-glitch"></span>
+            </button>
             <button @click="submitReport" class="cyber-button confirm-btn">
               <span class="button-content">GỬI BÁO CÁO</span>
               <span class="button-glitch"></span>
@@ -654,6 +411,7 @@
           </div>
         </div>
       </div>
+    </div>
   </div>
 </template>
 
@@ -661,6 +419,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { userStore } from '@/stores/auth';
 import purchasedApi from '@/api/purchased.api';
+import disputeApi from '@/api/dispute.api';
 import type { PurchasedAccount } from '@/models/purchased.model';
 
 // Initialize store and retrieve userId
@@ -672,22 +431,17 @@ const purchasedAccounts = ref<PurchasedAccount[]>([]);
 const tradingAccounts = ref<PurchasedAccount[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-const showAcceptModal = ref(false);
+const showDirectConfirmModal = ref(false);
 const showRejectModal = ref(false);
-const showCannotRejectModal = ref(false);
 const showReportModal = ref(false);
-const showResendEmailModal = ref(false);
+const showResultModal = ref(false);
 const selectedAccountId = ref<number | null>(null);
 const rejectionReason = ref('');
-const resendEmailReason = ref('');
 const reportReason = ref('');
-const showResultModal = ref(false);
+const reportFiles = ref<File[]>([]);
 const resultMessage = ref('');
 const resultType = ref<'success' | 'error' | 'info'>('info');
 const activeTab = ref('purchased');
-const emailInput = ref<{ [key: number]: string }>({});
-const otpInput = ref<{ [key: number]: string }>({});
-const isEditingEmail = ref<{ [key: number]: boolean }>({});
 
 // Computed properties
 const resultIconClass = computed(() => {
@@ -719,30 +473,6 @@ function getStatusText(status: string | undefined) {
   return 'ĐANG CHỜ XÁC NHẬN';
 }
 
-function getEmailStatusClass(status: string | undefined) {
-  if (!status) return 'not-requested';
-  if (status === 'Đang chờ') return 'pending';
-  return 'received';
-}
-
-function getEmailStatusText(status: string | undefined) {
-  if (!status) return 'CHƯA YÊU CẦU';
-  if (status === 'Đang chờ') return 'ĐANG CHỜ';
-  return status;
-}
-
-function getOtpStatusClass(status: string | undefined) {
-  if (!status) return 'not-requested';
-  if (status === 'Đang chờ') return 'pending';
-  return 'received';
-}
-
-function getOtpStatusText(status: string | undefined) {
-  if (!status) return 'CHƯA YÊU CẦU';
-  if (status === 'Đang chờ') return 'ĐANG CHỜ';
-  return status;
-}
-
 function formatPrice(price: number) {
   return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
 }
@@ -760,7 +490,6 @@ async function fetchAllAccounts() {
     loading.value = true;
 
     const purchasedResponse = await purchasedApi.getAllByUserID(userId);
-    console.log('Purchased Response:', purchasedResponse);
     if (purchasedResponse.data.result.isSuccess) {
       const data = purchasedResponse.data.result.data ?? [];
       purchasedAccounts.value = Array.isArray(data) ? data.filter(account => account !== null) : [];
@@ -797,13 +526,13 @@ async function switchToTradingTab() {
 }
 
 // Modal functions
-function openAcceptModal(id: number) {
+function openDirectConfirmModal(id: number) {
   selectedAccountId.value = id;
-  showAcceptModal.value = true;
+  showDirectConfirmModal.value = true;
 }
 
-function closeAcceptModal() {
-  showAcceptModal.value = false;
+function closeDirectConfirmModal() {
+  showDirectConfirmModal.value = false;
   selectedAccountId.value = null;
 }
 
@@ -818,30 +547,11 @@ function cancelReject() {
   selectedAccountId.value = null;
 }
 
-function openCannotRejectModal() {
-  showCannotRejectModal.value = true;
-}
-
-function closeCannotRejectModal() {
-  showCannotRejectModal.value = false;
-}
-
-function openResendEmailModal(id: number) {
-  selectedAccountId.value = id;
-  showResendEmailModal.value = true;
-}
-
-function cancelResendEmail() {
-  showResendEmailModal.value = false;
-  resendEmailReason.value = '';
-  selectedAccountId.value = null;
-}
-
-async function handleAccept() {
+async function handleDirectConfirm() {
   if (selectedAccountId.value !== null) {
     const success = await confirmAccount(selectedAccountId.value);
     if (success) {
-      showAcceptModal.value = false;
+      showDirectConfirmModal.value = false;
       selectedAccountId.value = null;
     }
   }
@@ -881,39 +591,6 @@ async function confirmReject() {
   }
 }
 
-async function confirmResendEmailRequest() {
-  if (selectedAccountId.value !== null && resendEmailReason.value.trim() !== '') {
-    try {
-      const response = await purchasedApi.emailRequest(selectedAccountId.value);
-      if (response.data.result.isSuccess) {
-        const account = purchasedAccounts.value.find((a) => a.id === selectedAccountId.value) ||
-                       tradingAccounts.value.find((a) => a.id === selectedAccountId.value);
-        if (account) account.email = 'Đang chờ';
-        resultType.value = 'success';
-        resultMessage.value = 'Yêu cầu gửi lại email đã được gửi thành công!';
-        showResultModal.value = true;
-        await fetchAllAccounts();
-      } else {
-        resultType.value = 'error';
-        resultMessage.value = response.data.result?.message || 'Lỗi khi gửi yêu cầu gửi lại email';
-        showResultModal.value = true;
-      }
-    } catch (err) {
-      resultType.value = 'error';
-      resultMessage.value = 'Lỗi khi gửi yêu cầu gửi lại email: ' + (err as Error).message;
-      showResultModal.value = true;
-    } finally {
-      showResendEmailModal.value = false;
-      resendEmailReason.value = '';
-      selectedAccountId.value = null;
-    }
-  } else {
-    resultType.value = 'error';
-    resultMessage.value = 'Vui lòng nhập lý do yêu cầu gửi lại email';
-    showResultModal.value = true;
-  }
-}
-
 async function confirmAccount(accountId: number) {
   try {
     const model = { id: accountId, status: 'Đồng ý' };
@@ -941,147 +618,11 @@ async function confirmAccount(accountId: number) {
   }
 }
 
-async function requestEmail(accountId: number) {
-  try {
-    const response = await purchasedApi.emailRequest(accountId);
-    if (response.data.result.isSuccess) {
-      const account = purchasedAccounts.value.find((a) => a.id === accountId) ||
-                     tradingAccounts.value.find((a) => a.id === accountId);
-      if (account) account.email = 'Đang chờ';
-      resultType.value = 'success';
-      resultMessage.value = 'Yêu cầu gửi email thành công!';
-      showResultModal.value = true;
-    } else {
-      resultType.value = 'error';
-      resultMessage.value = response.data.result?.message || 'Lỗi khi yêu cầu gửi email';
-      showResultModal.value = true;
-    }
-  } catch (err) {
-    resultType.value = 'error';
-    resultMessage.value = 'Lỗi khi yêu cầu gửi email';
-    showResultModal.value = true;
-  }
-}
-
-async function resendEmail(accountId: number, email: string) {
-  if (!email) {
-    resultType.value = 'error';
-    resultMessage.value = 'Vui lòng nhập email!';
-    showResultModal.value = true;
-    return;
-  }
-  try {
-    const response = await purchasedApi.resendEmail(accountId, email);
-    if (response.data.result.isSuccess) {
-      const account = tradingAccounts.value.find((a) => a.id === accountId) ||
-                     purchasedAccounts.value.find((a) => a.id === accountId);
-      if (account) account.email = email;
-      resultType.value = 'success';
-      resultMessage.value = 'Đã gửi lại email thành công!';
-      showResultModal.value = true;
-      emailInput.value[accountId] = '';
-      isEditingEmail.value[accountId] = false;
-    } else {
-      resultType.value = 'error';
-      resultMessage.value = response.data.result?.message || 'Lỗi khi gửi lại email';
-      showResultModal.value = true;
-    }
-  } catch (err) {
-    resultType.value = 'error';
-    resultMessage.value = 'Lỗi khi gửi lại email: ' + (err as Error).message;
-    showResultModal.value = true;
-  }
-}
-
-function enableEmailEdit(accountId: number) {
-  isEditingEmail.value[accountId] = true;
-  emailInput.value[accountId] = '';
-}
-
-async function requestOTP(accountId: number) {
-  try {
-    const response = await purchasedApi.otpRequest(accountId);
-    if (response.data.result.isSuccess) {
-      const account = purchasedAccounts.value.find((a) => a.id === accountId) ||
-                     tradingAccounts.value.find((a) => a.id === accountId);
-      if (account) account.otpEmail = 'Đang chờ';
-      resultType.value = 'success';
-      resultMessage.value = 'Yêu cầu gửi OTP thành công!';
-      showResultModal.value = true;
-    } else {
-      resultType.value = 'error';
-      resultMessage.value = response.data.result?.message || 'Lỗi khi yêu cầu gửi OTP';
-      showResultModal.value = true;
-    }
-  } catch (err) {
-    resultType.value = 'error';
-    resultMessage.value = 'Lỗi khi yêu cầu gửi OTP';
-    showResultModal.value = true;
-  }
-}
-
-async function sendEmailResponse(accountId: number, email: string) {
-  if (!email) {
-    resultType.value = 'error';
-    resultMessage.value = 'Vui lòng nhập email!';
-    showResultModal.value = true;
-    return;
-  }
-  try {
-    const response = await purchasedApi.emailResponse(accountId, email);
-    if (response.data.result.isSuccess) {
-      const account = tradingAccounts.value.find((a) => a.id === accountId) ||
-                     purchasedAccounts.value.find((a) => a.id === accountId);
-      if (account) account.email = email;
-      resultType.value = 'success';
-      resultMessage.value = 'Đã gửi email thành công!';
-      showResultModal.value = true;
-      emailInput.value[accountId] = '';
-    } else {
-      resultType.value = 'error';
-      resultMessage.value = response.data.result?.message || 'Lỗi khi gửi email';
-      showResultModal.value = true;
-    }
-  } catch (err) {
-    resultType.value = 'error';
-    resultMessage.value = 'Lỗi khi gửi email: ' + (err as Error).message;
-    showResultModal.value = true;
-  }
-}
-
-async function sendOtpResponse(accountId: number, otp: string) {
-  if (!otp) {
-    resultType.value = 'error';
-    resultMessage.value = 'Vui lòng nhập OTP!';
-    showResultModal.value = true;
-    return;
-  }
-  try {
-    const response = await purchasedApi.otpResponse(accountId, otp);
-    if (response.data.result.isSuccess) {
-      const account = tradingAccounts.value.find((a) => a.id === accountId) ||
-                     purchasedAccounts.value.find((a) => a.id === accountId);
-      if (account) account.otpEmail = otp;
-      resultType.value = 'success';
-      resultMessage.value = 'Đã gửi OTP thành công!';
-      showResultModal.value = true;
-      otpInput.value[accountId] = '';
-    } else {
-      resultType.value = 'error';
-      resultMessage.value = response.data.result?.message || 'Lỗi khi gửi OTP';
-      showResultModal.value = true;
-    }
-  } catch (err) {
-    resultType.value = 'error';
-    resultMessage.value = 'Lỗi khi gửi OTP: ' + (err as Error).message;
-    showResultModal.value = true;
-  }
-}
-
 function closeResultModal() {
   showResultModal.value = false;
 }
 
+// Dispute-related functions
 function openReportModal(id: number) {
   selectedAccountId.value = id;
   showReportModal.value = true;
@@ -1090,6 +631,14 @@ function openReportModal(id: number) {
 function closeReportModal() {
   showReportModal.value = false;
   reportReason.value = '';
+  reportFiles.value = [];
+}
+
+function handleFileUpload(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target.files) {
+    reportFiles.value = Array.from(target.files);
+  }
 }
 
 async function submitReport() {
@@ -1099,10 +648,38 @@ async function submitReport() {
     showResultModal.value = true;
     return;
   }
-  resultType.value = 'success';
-  resultMessage.value = 'Báo cáo đã được gửi thành công!';
-  showResultModal.value = true;
-  closeReportModal();
+
+  if (selectedAccountId.value === null) {
+    resultType.value = 'error';
+    resultMessage.value = 'Không thể xác định tài khoản để báo cáo!';
+    showResultModal.value = true;
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('purchasedAccountID', selectedAccountId.value.toString());
+  formData.append('reason', reportReason.value);
+  reportFiles.value.forEach((file, index) => {
+    formData.append(`files[${index}]`, file);
+  });
+
+  try {
+    const response = await disputeApi.add(formData);
+    if (response.data.result.isSuccess) {
+      resultType.value = 'success';
+      resultMessage.value = 'Báo cáo tranh chấp đã được gửi thành công!';
+      showResultModal.value = true;
+      closeReportModal();
+    } else {
+      resultType.value = 'error';
+      resultMessage.value = response.data.result?.message || 'Lỗi khi gửi báo cáo tranh chấp';
+      showResultModal.value = true;
+    }
+  } catch (err) {
+    resultType.value = 'error';
+    resultMessage.value = 'Lỗi khi gửi báo cáo tranh chấp: ' + (err as Error).message;
+    showResultModal.value = true;
+  }
 }
 
 function initParticles() {
@@ -1659,6 +1236,12 @@ onMounted(() => {
   animation: pulse 3s infinite alternate;
 }
 
+.warning-icon {
+  background: rgba(255, 165, 0, 0.2);
+  color: #ffa500;
+  box-shadow: 0 0 30px rgba(255, 165, 0, 0.5);
+}
+
 .empty-title {
   font-size: 2rem;
   color: #ffffff;
@@ -1914,41 +1497,12 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.not-requested { color: #b0b0cc; }
-.pending {
-  color: #ffc107;
-  animation: blink 2s infinite;
-}
-.received { color: #00ff7f; }
-
 /* Account Actions */
 .account-actions {
   padding: 0 1.5rem 1.5rem;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-}
-
-/* Input Group */
-.input-group {
-  display: flex;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.cyber-input {
-  flex: 1;
-  padding: 0.5rem;
-  background: rgba(0, 255, 255, 0.1);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  color: #ffffff;
-  border-radius: 4px;
-}
-
-.cyber-input:focus {
-  outline: none;
-  border-color: #00ffff;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 /* Cyber Button */
@@ -1991,34 +1545,16 @@ onMounted(() => {
 
 .cyber-button:hover .button-glitch { transform: translateX(100%); }
 
-.confirm-btn {
-  background: rgba(0, 255, 255, 0.2);
-  border-color: rgba(0, 255, 255, 0.5);
+.direct-confirm-btn {
+  background: rgba(255, 165, 0, 0.2);
+  border-color: rgba(255, 165, 0, 0.5);
+  color: #ffa500;
 }
 
-.email-btn {
-  background: rgba(0, 128, 255, 0.2);
-  border-color: rgba(0, 128, 255, 0.5);
-  color: #0080ff;
-}
-
-.email-btn .button-glitch {
+.direct-confirm-btn .button-glitch {
   background: linear-gradient(90deg, 
     transparent, 
-    rgba(0, 128, 255, 0.2), 
-    transparent);
-}
-
-.otp-btn {
-  background: rgba(255, 0, 255, 0.2);
-  border-color: rgba(255, 0, 255, 0.5);
-  color: #ff00ff;
-}
-
-.otp-btn .button-glitch {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 0, 255, 0.2), 
+    rgba(255, 165, 0, 0.2), 
     transparent);
 }
 
@@ -2029,54 +1565,6 @@ onMounted(() => {
   70% { box-shadow: 0 0 0 10px rgba(0, 255, 255, 0); }
   100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); }
 }
-
-/* Selling Section */
-.section-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.5rem;
-  color: #00ffff;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-}
-
-.pending-selling { margin-bottom: 3rem; }
-
-/* Cyber Table */
-.cyber-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: rgba(0, 20, 40, 0.7);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.cyber-table th,
-.cyber-table td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-}
-
-.cyber-table th {
-  background: rgba(0, 255, 255, 0.1);
-  color: #00ffff;
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.9rem;
-}
-
-.cyber-table td {
-  color: #ffffff;
-  font-size: 0.9rem;
-}
-
-.cyber-table tr:hover { background: rgba(0, 255, 255, 0.05); }
-.cyber-table td.success { color: #00ff7f; }
-.cyber-table td.rejected { color: #ff4b2b; }
-.cyber-table td.pending { color: #ffc107; }
 
 /* Modal Styles */
 .modal-overlay {
@@ -2161,25 +1649,6 @@ onMounted(() => {
   justify-content: center;
 }
 
-.hologram-rings {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-}
-
-.hologram-icon {
-  width: 60px;
-  height: 60px;
-  background: rgba(0, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #00ffff;
-  font-size: 2rem;
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
-}
-
 .modal-actions {
   display: flex;
   justify-content: center;
@@ -2202,6 +1671,12 @@ onMounted(() => {
   outline: none;
   border-color: #00ffff;
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.file-input {
+  margin-top: 1rem;
+  width: 100%;
+  color: #00ffff;
 }
 
 /* Centering Adjustments */

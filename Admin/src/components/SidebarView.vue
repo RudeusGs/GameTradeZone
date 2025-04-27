@@ -121,8 +121,8 @@ const logout = () => {
         <ul class="submenu" v-show="dropdownStates.gameAccount">
           <li>
             <router-link
-              to="/admin/game-accounts"
-              :class="{ active: $route.path === '/admin/game-accounts' }"
+              to="/game-account"
+              :class="{ active: $route.path === '/game-account' }"
             >
               Tài khoản người chơi
             </router-link>
@@ -134,22 +134,14 @@ const logout = () => {
             >
               Trò chơi
             </router-link>
-          </li>
-          <li>
-            <router-link
-              to="/admin/attributes"
-              :class="{ active: $route.path === '/admin/attributes' }"
-            >
-              Thuộc tính
-            </router-link>
-          </li>
+          </li>       
         </ul>
       </li>
       <li v-else>
         <router-link
-          to="/admin/game-accounts"
+          to="/game-account"
           class="menu-link"
-          :class="{ active: $route.path === '/admin/game-accounts' }"
+          :class="{ active: $route.path === '/game-account' }"
         >
           <i class="material-icons">games</i>
         </router-link>
@@ -178,14 +170,6 @@ const logout = () => {
               :class="{ active: $route.path === '/admin/transactions/withdraw' }"
             >
               Rút tiền
-            </router-link>
-          </li>
-          <li>
-            <router-link
-              to="/admin/transactions/withdraw"
-              :class="{ active: $route.path === '/admin/transactions/withdraw' }"
-            >
-              Giao dịch tài khoản
             </router-link>
           </li>
         </ul>

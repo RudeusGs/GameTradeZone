@@ -106,6 +106,21 @@ namespace GameTradeZone.Controllers
             }
         }
 
+        [Authorize]
+        [HttpPost("AccountCheck")]
+        public async Task<IActionResult> AccountCheck(int id)
+        {
+            try
+            {
+                var result = await _accountGameService.CheckAccount(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
         [HttpGet("Get-Infor-User")]
         public async Task<IActionResult> GetInforUser(int id)
         {

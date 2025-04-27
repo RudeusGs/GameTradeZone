@@ -17,6 +17,7 @@ export interface UserInfoModel {
   bankName: string; 
   bankNumber: string; 
   avatar?: string | null;
+  isAuthen?: boolean;
   createdDate?: string | null;
 }   
   

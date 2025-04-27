@@ -14,10 +14,13 @@ export interface Service extends IEntityBase {
   isDelete?: boolean;
 }
 
-export interface UpdateServiceModel extends IEntityBase {
-  name: string;
-  description?: string;
-  price: number;
+export interface UpdateServiceModel {
+  id: number;           
+  gameInforID: string; 
+  Servicename: string;
+  decription?: string;
+  Serviceprice: number;
+  ServiceTime: string;
 }
 
 export interface RentServiceModel {

@@ -22,7 +22,33 @@ namespace GameTradeZone.Controllers
             _authenticateService = authenticateService;
             _signInManager = signInManager;
         }
+        [HttpPost("send-otp-email-verification")]
+        [Authorize]
+        public async Task<IActionResult> SendOtpForEmailVerification()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized();
 
+            var result = await _authenticateService.SendOtpForEmailVerificationAsync(email);
+            if (result.Data != null)
+                return Ok(result.Data);
+            return BadRequest(result.Message);
+        }
+        [HttpPost("verify-otp-email-verification")]
+        [Authorize]
+        public async Task<IActionResult> VerifyOtpForEmailVerification([FromBody] VerifyOtpModel model)
+        {
+            var userName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userName))
+                return Unauthorized();
+
+            model.UserName = userName;
+            var result = await _authenticateService.VerifyOtpForEmailVerificationAsync(model);
+            if (result.Data != null)
+                return Ok(result.Data);
+            return BadRequest(result.Message);
+        }
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginModel request)
         {

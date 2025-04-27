@@ -274,5 +274,23 @@ namespace GameTradeZone.Service.Services
             }
         }
 
+        public async Task<ApiResult> CheckAccount(int id)
+        {
+            var account = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.Id == id);
+            if(account == null || account.IsDelete == true)
+            {
+                return new ApiResult { Message = "Không tìm thấy tài khoản này!" };
+            }
+            if(account.IsCheck == true)
+            {
+                return new ApiResult { Message = "Tài khoản này đã được kiểm tra" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            account.IsCheck = true;
+            _dataContext.AccountGames.Update(account);
+            await _dataContext.SaveChangesAsync();
+            await tran.CommitAsync();
+            return new ApiResult();
+        }
     }
 }

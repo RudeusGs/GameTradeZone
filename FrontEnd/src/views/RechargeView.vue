@@ -284,7 +284,6 @@ onUnmounted(() => {
 /* Modern payment design */
 .recharge-container {
   min-height: 100vh;
-  background: #0f1222;
   color: #f0f0f0;
   font-family: 'Segoe UI', 'Roboto', sans-serif;
   display: flex;
@@ -299,7 +298,6 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #0a101f, #171e3c);
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
   opacity: 0.8;

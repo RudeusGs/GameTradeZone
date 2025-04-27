@@ -1,3 +1,4 @@
+// service.api.ts
 import baseApi from './base.api';
 import type { AxiosResponse } from 'axios';
 import type { ApiResult } from '@/models/api-result.model';
@@ -30,8 +31,8 @@ export default {
   },
 
   // Cập nhật dịch vụ
-  update: async (model: UpdateServiceModel): Promise<AxiosResponse<ApiResult<any>>> => {
-    return await baseApi.post('Service/Update', model);
+  update: async (formData: FormData): Promise<AxiosResponse<ApiResult<any>>> => {
+    return await baseApi.postForm('Service/Update', formData);
   },
 
   // Thuê dịch vụ

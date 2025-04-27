@@ -32,12 +32,27 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+
         [HttpGet("Get-All-By-User-Id")]
         public async Task<IActionResult> GetAllByUserID(int id)
         {
             try
             {
                 var result = await _onGoingServiceService.GetAllByUserID(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+
+        [HttpGet("Get-ServiceName")]
+        public async Task<IActionResult> GetServiceName(int id)
+        {
+            try
+            {
+                var result = await _onGoingServiceService.GetNameServiceByServiceId(id);
                 return Response(result);
             }
             catch (Exception e)
@@ -82,6 +97,34 @@ namespace GameTradeZone.Controllers
             try
             {
                 var result = await _onGoingServiceService.GetAllByServiceID(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
+        
+        [Authorize]
+        [HttpPost("Confirm-Extension")]
+        public async Task<IActionResult> ConfirmExtension(int id, bool approve, TimeSpan? approvedTime = null)
+        {
+            try
+            {
+                var result = await _onGoingServiceService.ConfirmExtension(id, approve, approvedTime);
+                return Ok(result);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, new ApiResult { Message = e.Message });
+            }
+        }
+        [HttpGet("Get-Remaining-Time")]
+        public async Task<IActionResult> GetRemainingTime(int id)
+        {
+            try
+            {
+                var result = await _onGoingServiceService.GetRemainingTime(id);
                 return Response(result);
             }
             catch (Exception e)

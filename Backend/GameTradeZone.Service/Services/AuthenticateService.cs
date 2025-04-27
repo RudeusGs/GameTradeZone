@@ -12,6 +12,9 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Net.Mail;
+using System.Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameTradeZone.Service.Services
 {
@@ -200,8 +203,17 @@ namespace GameTradeZone.Service.Services
             using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
-                var userExist = await _userManager.FindByNameAsync(model.UserName);
-                if (userExist != null)
+                var userExistByUsername = await _userManager.FindByNameAsync(model.UserName);
+                if (userExistByUsername != null)
+                {
+                    return new ApiResult()
+                    {
+                        Message = $"{model.UserName} đã được sử dụng. Vui lòng thử lại!"
+                    };
+                }
+
+                var userExistByEmail = await _userManager.FindByEmailAsync(model.Email);
+                if (userExistByEmail != null)
                 {
                     return new ApiResult()
                     {
@@ -223,6 +235,7 @@ namespace GameTradeZone.Service.Services
                     Experience = 0,
                     Status = false,
                     CreatedDate = DateTime.Now,
+                    IsAuthen = false
                 };
 
                 var newUserResult = await _userManager.CreateAsync(user, model.Password);
@@ -243,9 +256,7 @@ namespace GameTradeZone.Service.Services
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return new ApiResult()
-                {
-                };
+                return new ApiResult();
             }
             catch (Exception e)
             {
@@ -369,6 +380,112 @@ namespace GameTradeZone.Service.Services
             catch (Exception ex)
             {
                 return new ApiResult { Message = $"Lỗi khi cập nhật thông tin: {ex.Message}" };
+            }
+        }
+        private string GenerateOtp()
+        {
+            var random = new Random();
+            return random.Next(100000, 999999).ToString();
+        }
+        private void SendOtpEmail(string email, string otp)
+        {
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress("gametradezone.gtz@gmail.com"),
+                Subject = "Your OTP Code",
+                Body = $"Your OTP code is {otp}. It will expire in 5 minutes.",
+                IsBodyHtml = true
+            };
+            mailMessage.To.Add(email);
+
+            var smtpClient = new SmtpClient("smtp.gmail.com")
+            {
+                Port = 587,
+                Credentials = new NetworkCredential("gametradezone.gtz@gmail.com", "vgcz gkhd xoic rgmd"),
+                EnableSsl = true
+            };
+
+            smtpClient.Send(mailMessage);
+        }
+        public async Task<ApiResult> SendOtpForEmailVerificationAsync(string email)
+        {
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    return new ApiResult { Message = "User not found" };
+                }
+
+                if (user.IsAuthen)
+                {
+                    return new ApiResult { Message = "Email is already verified." };
+                }
+
+                var otpCode = GenerateOtp();
+                var existingOtps = await _dbContext.OTPs
+                    .Where(o => o.UserId == user.Id)
+                    .ToListAsync();
+                _dbContext.OTPs.RemoveRange(existingOtps);
+
+                var otpEntity = new OTPs
+                {
+                    UserId = user.Id,
+                    OTP = otpCode,
+                    Email = email,
+                    ExpirationTime = DateTime.Now.AddMinutes(5)
+                };
+
+                await _dbContext.OTPs.AddAsync(otpEntity);
+                await _dbContext.SaveChangesAsync();
+                SendOtpEmail(email, otpCode);
+
+                return new ApiResult()
+                {
+                    Data = new { Message = "OTP sent successfully." }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult { Message = $"An error occurred while sending OTP: {ex.Message}" };
+            }
+        }
+        public async Task<ApiResult> VerifyOtpForEmailVerificationAsync(VerifyOtpModel model)
+        {
+            try
+            {
+                var user = await _userManager.FindByNameAsync(model.UserName);
+                if (user == null || user.DeleteDate.HasValue)
+                {
+                    return new ApiResult { Message = "User not found or has been deleted." };
+                }
+
+                var otpRecord = await _dbContext.OTPs
+                    .Where(o => o.UserId == user.Id && o.OTP == model.OTP && o.ExpirationTime > DateTime.Now)
+                    .FirstOrDefaultAsync();
+
+                if (otpRecord == null)
+                {
+                    return new ApiResult { Message = "Invalid or expired OTP." };
+                }
+
+                user.IsAuthen = true;
+                var updateResult = await _userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
+                {
+                    return new ApiResult { Message = "Error updating user verification status." };
+                }
+                _dbContext.OTPs.Remove(otpRecord);
+                await _dbContext.SaveChangesAsync();
+
+                return new ApiResult()
+                {
+                    Data = new { Message = "Email verified successfully." }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult { Message = $"An error occurred while verifying OTP: {ex.Message}" };
             }
         }
     }

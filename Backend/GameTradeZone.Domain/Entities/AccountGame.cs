@@ -14,6 +14,7 @@ namespace GameTradeZone.Domain.Entities
         public string? Status { get; set; }
         public string? Image { get; set; }
         public string? CustomerFeedback { get; set; }
+        public bool? IsCheck { get; set; } = false;
         public bool? IsDelete { get; set; }
     }
 }

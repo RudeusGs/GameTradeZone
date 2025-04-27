@@ -48,6 +48,9 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<string>("Image")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool?>("IsCheck")
+                        .HasColumnType("bit");
+
                     b.Property<bool?>("IsDelete")
                         .HasColumnType("bit");
 
@@ -457,6 +460,9 @@ namespace GameTradeZone.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<TimeSpan?>("ApprovedExtensionTime")
+                        .HasColumnType("time");
+
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -466,17 +472,35 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("ExtensionApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ExtensionRequested")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("FeedBack")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Image")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsDelete")
                         .HasColumnType("bit");
 
+                    b.Property<int>("OnGoingServiceId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<TimeSpan?>("RequestedExtensionTime")
+                        .HasColumnType("time");
+
                     b.Property<int?>("ServiceID")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartTime")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .HasColumnType("nvarchar(max)");
@@ -566,6 +590,33 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("GameTradeZone.Domain.Entities.OTPs", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ExpirationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OTP")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OTPs");
+                });
+
             modelBuilder.Entity("GameTradeZone.Domain.Entities.OnGoingService", b =>
                 {
                     b.Property<int>("Id")
@@ -583,8 +634,8 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FeedBack")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool?>("IsDelete")
                         .HasColumnType("bit");
@@ -992,6 +1043,9 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsAuthen")
+                        .HasColumnType("bit");
+
                     b.Property<int>("Level")
                         .HasColumnType("int");
 
@@ -1035,6 +1089,10 @@ namespace GameTradeZone.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("[Email] IS NOT NULL");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");

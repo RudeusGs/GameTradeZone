@@ -19,16 +19,37 @@ namespace GameTradeZone.Service.Services
             _ftpDirectoryService = ftpDirectoryService;
             _fileUploadService = fileUploadService;
         }
-
+        public async Task<ApiResult> GetRemainingTime(int hiredServiceId)
+        {
+            var hiredService = await _dataContext.HiredServices
+                .FirstOrDefaultAsync(x => x.Id == hiredServiceId && x.IsDelete == false);
+            if (hiredService == null || hiredService.StartTime == null)
+            {
+                return new ApiResult { Message = "Không tìm thấy dịch vụ hoặc dịch vụ chưa bắt đầu" };
+            }
+            var service = await _dataContext.Services
+                .FirstOrDefaultAsync(x => x.Id == hiredService.ServiceID);
+            if (service == null)
+            {
+                return new ApiResult { Message = "Dịch vụ không tồn tại" };
+            }
+            var endTime = hiredService.StartTime + service.ServiceTime;
+            var remainingTime = endTime - DateTime.UtcNow;
+            if (remainingTime <= TimeSpan.Zero)
+            {
+                return new ApiResult ();
+            }
+            return new ApiResult { Data = remainingTime };
+        }
         public async Task<ApiResult> ConfirmService(AcceptServiceModel model)
         {
             var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.Id == model.Id);
-            if (hiredService == null || hiredService.IsDelete == true) 
+            if (hiredService == null || hiredService.IsDelete == true)
             {
                 return new ApiResult { Message = "Không tìm thấy thành phần này!" };
             }
             var user = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == hiredService.UserID);
-            if(user == null)
+            if (user == null)
             {
                 return new ApiResult { Message = "Người dùng không tồn tại!" };
             }
@@ -37,29 +58,34 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = "Dịch vụ không tồn tại" };
             }
-            var ongoingService = await _dataContext.OnGoingServices.FirstOrDefaultAsync(x => x.Id == hiredService.Id);
-            if (ongoingService == null) 
+            var ongoingService = await _dataContext.OnGoingServices.FirstOrDefaultAsync(x => x.Id == hiredService.OnGoingServiceId);
+            if (ongoingService == null)
             {
                 return new ApiResult { Message = "Không tìm thấy thành phần này!" };
             }
             var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {
-                if(model.Status == "Từ chối")
+                if (model.Status == "Từ chối")
                 {
                     user.Balance += service.ServicePrice;
+                    hiredService.Status = "Đã từ chối";
                     ongoingService.Status = "Từ chối nhận";
                     ongoingService.Reason = model.Reason;
                     _dataContext.Users.Update(user);
+                    _dataContext.HiredServices.Update(hiredService);
                     _dataContext.OnGoingServices.Update(ongoingService);
                     await _dataContext.SaveChangesAsync();
                     await tran.CommitAsync();
                     return new ApiResult();
                 }
-                else if(model.Status == "Đồng ý")
+                else if (model.Status == "Đồng ý")
                 {
                     hiredService.Status = "Trạng thái chờ";
+                    hiredService.StartTime = DateTime.UtcNow;
                     ongoingService.Status = "Đã duyệt, vui lòng chờ";
+                    ongoingService.EndTime = hiredService.StartTime + service.ServiceTime;
+                    _dataContext.HiredServices.Update(hiredService);
                     _dataContext.OnGoingServices.Update(ongoingService);
                     await _dataContext.SaveChangesAsync();
                     await tran.CommitAsync();
@@ -67,9 +93,9 @@ namespace GameTradeZone.Service.Services
                 }
                 else
                 {
-                    return new ApiResult { Message = "Trạng thái không đúng!" }; 
+                    return new ApiResult { Message = "Trạng thái không đúng!" };
                 }
-                
+
             }
             catch (Exception e)
             {
@@ -81,7 +107,7 @@ namespace GameTradeZone.Service.Services
         public async Task<ApiResult> Delete(int id)
         {
             var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.Id == id);
-            if(hiredService == null || hiredService.IsDelete == true)
+            if (hiredService == null || hiredService.IsDelete == true)
             {
                 return new ApiResult { Message = "Không tìm thấy thành phần này!" };
             }
@@ -94,7 +120,79 @@ namespace GameTradeZone.Service.Services
                 _dataContext.HiredServices.Update(hiredService);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult ();
+                return new ApiResult();
+            }
+            catch (Exception e)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Error: {e.Message}" };
+            }
+        }
+
+        public async Task<ApiResult> DoneService(int id)
+        {
+            var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.Id == id);
+            if (hiredService == null)
+            {
+                return new ApiResult { Message = "Không tìm thấy dịch vụ này" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            var ongoingService = await _dataContext.OnGoingServices.FirstOrDefaultAsync(x => x.Id == hiredService.OnGoingServiceId);
+            if (ongoingService == null)
+            {
+                return new ApiResult { Message = "Không tìm thấy dich vụ này" };
+            }
+            try
+            {
+                hiredService.Status = "Thành công";
+                ongoingService.Status = "Dịch vụ đã xong, vui lòng kiểm tra trước khi xác nhận";
+                hiredService.UpdatedDate = DateTime.Now;
+                ongoingService.UpdatedDate = DateTime.Now;
+                _dataContext.HiredServices.Update(hiredService);
+                _dataContext.OnGoingServices.Update(ongoingService);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
+
+            }
+            catch (Exception e)
+            {
+                await tran.RollbackAsync();
+                return new ApiResult { Message = $"Error: {e.Message}" };
+            }
+        }
+
+        public async Task<ApiResult> ExtendTime(int onGoingServiceId, TimeSpan extensionTime)
+        {
+            var onGoingService = await _dataContext.OnGoingServices
+                .FirstOrDefaultAsync(x => x.Id == onGoingServiceId && x.IsDelete == false);
+            if (onGoingService == null)
+            {
+                return new ApiResult { Message = "Không tìm thấy dịch vụ này" };
+            }
+            if (onGoingService.Status != "Đã duyệt, vui lòng chờ")
+            {
+                return new ApiResult { Message = "Dịch vụ không ở trạng thái có thể gia hạn" };
+            }
+            var hiredService = await _dataContext.HiredServices
+                .FirstOrDefaultAsync(x => x.OnGoingServiceId == onGoingServiceId && x.IsDelete == false);
+            if (hiredService == null)
+            {
+                return new ApiResult { Message = "Không tìm thấy dịch vụ thuê tương ứng" };
+            }
+            if (hiredService.ExtensionRequested)
+            {
+                return new ApiResult { Message = "Đã có yêu cầu gia hạn đang chờ xử lý" };
+            }
+            var tran = await _dataContext.Database.BeginTransactionAsync();
+            try
+            {
+                hiredService.ExtensionRequested = true;
+                hiredService.RequestedExtensionTime = extensionTime;
+                _dataContext.HiredServices.Update(hiredService);
+                await _dataContext.SaveChangesAsync();
+                await tran.CommitAsync();
+                return new ApiResult();
             }
             catch (Exception e)
             {
@@ -124,7 +222,7 @@ namespace GameTradeZone.Service.Services
         public async Task<ApiResult> SendProof(ProofDoneService model)
         {
             var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.Id == model.Id);
-            if(hiredService == null || hiredService.IsDelete == true)
+            if (hiredService == null || hiredService.IsDelete == true)
             {
                 return new ApiResult { Message = "Không tìm thấy thành phần này" };
             }
@@ -156,4 +254,3 @@ namespace GameTradeZone.Service.Services
         }
     }
 }
-

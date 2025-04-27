@@ -180,14 +180,14 @@ namespace GameTradeZone.Service.Services
                 return new ApiResult { Message = "Không tìm thấy User tạo dịch vụ" };
             }    
             var existingOnGoing = await _dataContext.OnGoingServices
-                .FirstOrDefaultAsync(x => x.ServiceID == model.Id && x.UserID == _userService.UserId && x.Status != "Hoàn thành");
+                .FirstOrDefaultAsync(x => x.ServiceID == model.Id && x.UserID == _userService.UserId && x.Status != "Hoàn tất" && x.Status != "Từ chối nhận");
             if (existingOnGoing != null)
             {
                 return new ApiResult { Message = "Bạn đã thuê dịch vụ này và nó đang trong quá trình xử lý." };
             }
 
             var existingHired = await _dataContext.HiredServices
-                .FirstOrDefaultAsync(x => x.ServiceID == model.Id && x.UserID == _userService.UserId && x.Status != "Hoàn thành");
+                .FirstOrDefaultAsync(x => x.ServiceID == model.Id && x.UserID == _userService.UserId && x.Status != "Hoàn tất" && x.Status != "Đã từ chối");
             if (existingHired != null)
             {
                 return new ApiResult { Message = "Dịch vụ này đã được thuê và đang chờ xử lý." };
@@ -203,24 +203,25 @@ namespace GameTradeZone.Service.Services
                     UserID = _userService.UserId,
                     Status = "Chờ xác nhận",
                     Reason = null,
-                    FeedBack = null,
                     Decriptions = model.Decription,
                     CreatedDate = DateTime.Now,
                     IsDelete = false,
                 };
+                _dataContext.OnGoingServices.Add(newOnGoing);
+                await _dataContext.SaveChangesAsync();
                 var newHired = new HiredService
                 {
                     ServiceID = model.Id,
                     UserID = createdService.Id,
                     Status = "Vui lòng xác nhận",
-                    Reason = null,
+                    FeedBack = null,
                     Decriptions = model.Decription,
                     CreatedDate = DateTime.Now,
                     IsDelete = false,
+                    OnGoingServiceId = newOnGoing.Id
                 };
                 service.RentedC += 1;
                 _dataContext.Services.Update(service);
-                _dataContext.OnGoingServices.Add(newOnGoing);
                 _dataContext.HiredServices.Add(newHired);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();

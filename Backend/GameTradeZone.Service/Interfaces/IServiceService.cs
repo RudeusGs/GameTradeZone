@@ -1,6 +1,5 @@
 ﻿using GameTradeZone.Service.Models;
 using GameTradeZone.Service.Models.Service;
-using System.Runtime.CompilerServices;
 
 namespace GameTradeZone.Service.Interfaces
 {

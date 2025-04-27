@@ -303,12 +303,10 @@ export default defineComponent({
 <style scoped>
 /* CSS cho login form */
 .login-container {
-  min-height: 100vh;
+  min-height: 80vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #1e1e2f 0%, #2a2a40 100%);
-  position: relative;
   overflow: hidden;
 }
 

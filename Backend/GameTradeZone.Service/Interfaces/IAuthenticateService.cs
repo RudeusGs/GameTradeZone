@@ -11,5 +11,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> GetUserRoles(int userId);
         Task<ApiResult> ExternalLoginAsync(ExternalLoginInfo info);
         Task<ApiResult> UpdateUser(string userId, UpdateUserModel model);
-    }
+        Task<ApiResult> SendOtpForEmailVerificationAsync(string email);
+        Task<ApiResult> VerifyOtpForEmailVerificationAsync(VerifyOtpModel model);
+    } 
 }

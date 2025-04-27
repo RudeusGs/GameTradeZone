@@ -6,6 +6,7 @@ import gameAccountApi from '@/api/gameaccount.api';
 import gamefieldApi from '@/api/gamefield.api';
 import serviceApi from '@/api/service.api';
 import GamingLoader from '@/components/LoadingPage.vue';
+import SellerTooltip from '@/components/SellerTooltip.vue'; // Import SellerTooltip
 import { userStore } from '@/stores/auth';
 
 interface Game {
@@ -700,7 +701,9 @@ const rentService = async () => {
               <div class="card-content">
                 <div class="seller-info">
                   <i class="fas fa-user-circle"></i>
-                  <span>{{ account.seller }}</span>
+                  <SellerTooltip :sellerId="Number(account.sellerId)">
+                    <span>{{ account.seller }}</span>
+                  </SellerTooltip>
                   <div class="timer-layout">
                     <i class="fas fa-clock time"></i>
                     <span style="margin-left: 5px">{{ formatRelativeTime(account.createdDate) }}</span>
@@ -781,7 +784,6 @@ const rentService = async () => {
                   <span>{{ service.createrID }}</span>
                 </div>
                 <p class="service-desc">{{ service.decription }}</p>
-                <!-- Phần thông tin bổ sung -->
                 <div class="service-meta">
                   <div class="meta-item">
                     <i class="fas fa-star"></i>
@@ -803,6 +805,15 @@ const rentService = async () => {
                 <div class="service-price">
                   <span class="price-label">Giá dịch vụ:</span>
                   <span class="price-value">{{ service.servicePrice.toLocaleString() }} VNĐ</span>
+                </div>
+                <div class="feedback-section">
+                  <h4>Feedback</h4>
+                  <div v-if="service.feedback && service.feedback.trim() !== ''" class="feedback-item">
+                    <div class="feedback-text">{{ service.feedback }}</div>
+                  </div>
+                  <div v-else>
+                    <p>Chưa có phản hồi.</p>
+                  </div>
                 </div>
                 <button v-if="!isOwnService(service)" class="hire-btn" @click="openConfirmModal(service.id)">
                   <i class="fas fa-handshake"></i> Thuê ngay
@@ -925,7 +936,9 @@ const rentService = async () => {
               <div class="game-info-header">
                 <div class="game-seller-badge">
                   <i class="fas fa-user-circle"></i>
-                  <span>{{ selectedAccount.seller }}</span>
+                  <SellerTooltip :sellerId="Number(selectedAccount.sellerId)">
+                    <span>{{ selectedAccount.seller }}</span>
+                  </SellerTooltip>
                 </div>
                 <div class="game-status-badge" :class="{ 'sold-status': selectedAccount.status === 'Đã bán' }">
                   {{ selectedAccount.status }}
@@ -987,7 +1000,6 @@ const rentService = async () => {
   font-family: 'Open Sans', sans-serif;
   color: #e1e7ef;
   min-height: 100vh;
-  background-color: #050A15;
   position: relative;
   overflow-x: hidden;
 }
@@ -1307,7 +1319,10 @@ h1, h2, h3, h4, .banner-title {
   height: 500px;
   animation: fadeInRight 1s ease;
 }
-
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @keyframes fadeInLeft {
   from { opacity: 0; transform: translateX(-50px); }
   to { opacity: 1; transform: translateX(0); }
@@ -1713,11 +1728,12 @@ h1, h2, h3, h4, .banner-title {
 .account-card {
   background: linear-gradient(135deg, #1a1a2e, #16213e);
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   border: 1px solid rgba(122, 78, 254, 0.2);
+  margin-bottom: 20px;
 }
 
 .account-card:hover {
@@ -1771,6 +1787,7 @@ h1, h2, h3, h4, .banner-title {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1;
   color: #fff;
   font-size: 24px;
   font-weight: 700;
@@ -1803,6 +1820,7 @@ h1, h2, h3, h4, .banner-title {
   border-radius: 8px;
   padding: 8px 16px;
   font-size: 13px;
+  z-index: 10;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2083,7 +2101,49 @@ h1, h2, h3, h4, .banner-title {
   transform: translateY(-3px);
   box-shadow: 0 8px 15px rgba(0, 224, 170, 0.4);
 }
+.feedback-section {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(26, 34, 52, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(122, 78, 254, 0.2);
+}
 
+.feedback-section h4 {
+  font-size: 1.1em;
+  margin-bottom: 10px;
+  color: #e1e7ef;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.feedback-item {
+  padding: 10px;
+  background: #16213e;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 224, 170, 0.2);
+  transition: all 0.3s ease;
+}
+
+.feedback-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 224, 170, 0.2);
+}
+
+.feedback-text {
+  font-size: 0.9em;
+  line-height: 1.5;
+  color: #e1e7ef;
+  word-break: break-word;
+}
+
+.feedback-section p {
+  color: #b0b5c3;
+  font-style: italic;
+  font-size: 0.9em;
+  text-align: center;
+}
 .own-service-message {
   text-align: center;
   color: #00E0AA;
@@ -2318,36 +2378,43 @@ h1, h2, h3, h4, .banner-title {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(5, 10, 21, 0.95);
+  background: rgba(10, 10, 30, 0.85);
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
   padding: 20px;
+  animation: fadeIn 0.3s ease;
 }
 
 .game-modal-container {
   width: 90%;
-  max-width: 1200px;
+  max-width: 1300px;
   max-height: 90vh;
-  background: #0a0e17;
-  border-radius: 16px;
+  background: linear-gradient(135deg, #1e1033, #2d1b4e);
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 0 40px rgba(122, 78, 254, 0.3);
-  border: 1px solid #7A4EFE;
+  box-shadow: 
+    0 0 40px rgba(187, 134, 252, 0.4),
+    0 0 100px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(187, 134, 252, 0.5);
   display: flex;
   flex-direction: column;
+  animation: scaleIn 0.3s ease;
 }
-
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 .game-modal-header {
-  background: linear-gradient(to right, #000000, #000000);
-  padding: 20px;
+  background: linear-gradient(90deg, #2d1b4e, #3d2a6e);
+  padding: 18px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #00E0AA;
+  border-bottom: 1px solid rgba(187, 134, 252, 0.5);
 }
-
 .game-modal-title {
   display: flex;
   align-items: center;
@@ -2362,21 +2429,24 @@ h1, h2, h3, h4, .banner-title {
 }
 
 .game-badge-modal {
-  background: #00E0AA;
+  background: linear-gradient(90deg, #bb86fc, #7c4dff);
   color: #fff;
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 1rem;
   font-weight: 600;
-  border: 1px solid #00E0AA;
-  box-shadow: 0 0 10px rgba(0, 224, 170, 0.3);
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 15px rgba(187, 134, 252, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-transform: uppercase;
 }
 
 .game-close-btn {
-  background: #ff4b4b;
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  border: none;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2384,21 +2454,32 @@ h1, h2, h3, h4, .banner-title {
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 1rem;
+  position: relative;
+  overflow: hidden;
 }
 
 .game-close-btn:hover {
-  background: #ff1a1a;
+  background: #ff4b4b;
   transform: rotate(90deg);
-  box-shadow: 0 0 15px rgba(255, 0, 76, 0.5);
+  box-shadow: 0 0 15px rgba(255, 75, 75, 0.5);
 }
 
 .game-modal-body {
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
   max-height: calc(90vh - 80px);
 }
-
+.game-close-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+  border-radius: 50%;
+}
 @media (min-width: 992px) {
   .game-modal-body {
     flex-direction: row;

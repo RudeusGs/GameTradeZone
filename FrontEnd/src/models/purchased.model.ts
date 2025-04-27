@@ -13,5 +13,6 @@ export interface PurchasedAccount extends IEntityBase {
   statusBuyer?: string | null;
   statusSeller?: string | null;
   reason?: string | null;
+  OTPSentTime?: string | null;
   isDelete?: boolean | null;
 }

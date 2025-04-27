@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using GameTradeZone.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace GameTradeZone.Infrastructure.Persistence
 {
@@ -9,8 +10,8 @@ namespace GameTradeZone.Infrastructure.Persistence
     {
         public DataContext(DbContextOptions<DataContext> options) : base(options)
         {
-
         }
+
         public DbSet<GameInfor> GameInfors { get; set; }
         public DbSet<GameField> GameFields { get; set; }
         public DbSet<AccountGame> AccountGames { get; set; }
@@ -18,7 +19,7 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<HiredService> HiredServices { get; set; }
         public DbSet<LevelIcon> LevelIcons { get; set; }
         public DbSet<Notification> Notifications { get; set; }
-        public DbSet<OnGoingService> OnGoingServices { get; set;}
+        public DbSet<OnGoingService> OnGoingServices { get; set; }
         public DbSet<PurchasedAccount> PurchasedAccounts { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<PostInfo> PostInfos { get; set; }
@@ -34,11 +35,16 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<Auction> Auctions { get; set; }
         public DbSet<AuctionDetail> AuctionDetails { get; set; }
         public DbSet<AuctionPrize> AuctionPrizes { get; set; }
+        public DbSet<OTPs> OTPs { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
             builder.Entity<SepayWebHooksReceiver>().ToTable("SepayWebHooksReceivers");
+            builder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
         }
     }
 }

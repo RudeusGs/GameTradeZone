@@ -1,16 +1,16 @@
 <template>
-  <div class="cosmo-topbar">
-    <div class="topbar-container">
+  <div class="cosmo-navbar">
+    <div class="navbar-container">
       <!-- Left Section -->
-      <div class="topbar-left">
+      <div class="navbar-left">
         <div class="logo-section">
-          <span class="cosmo-logo menu-toggle" @click="toggleSlidePanel">
-            <a href="/" @click.prevent>GTZ</a>
-            <i :class="['fas', isSlidePanelOpen ? 'fa-caret-up' : 'fa-caret-down', 'caret-icon']"></i>
+          <div class="cosmo-logo menu-toggle" @click="toggleSlidePanel">
+            <div class="logo-text">GTZ</div>
             <div class="logo-glow"></div>
-          </span>
+            <i :class="['fas', isSlidePanelOpen ? 'fa-chevron-up' : 'fa-chevron-down', 'caret-icon']"></i>
+          </div>
           <a href="/" class="cosmo-home">
-            <img style="width: 40px; margin-left: 10px" src="../assets/logo_web.png" />
+            <img style="width: 40px; margin-left: 10px" src="../assets/logo_web.png" alt="Logo" />
           </a>
         </div>
 
@@ -21,22 +21,74 @@
               <div class="slide-grid">
                 <div class="grid-column">
                   <div class="column-header">
-                    <i class="fas fa-gavel column-icon"></i>
+                    <div class="column-icon-wrapper">
+                      <i class="fas fa-gavel column-icon"></i>
+                    </div>
                     <h4 class="column-title">ĐẤU GIÁ</h4>
                   </div>
                   <ul class="column-list">
-                    <li><span class="hover-indicator"></span><a href="/list-auction">Danh sách</a></li>
-                    <li><span class="hover-indicator"></span>Phần thưởng</li>
+                    <li @click="$router.push('/list-auction')">
+                      <span class="hover-indicator"></span>
+                      <span class="list-item-text">Danh sách</span>
+                    </li>
+                    <li>
+                      <span class="hover-indicator"></span>
+                      <span class="list-item-text">Phần thưởng</span>
+                    </li>
                   </ul>
                 </div>
                 <div class="grid-column">
                   <div class="column-header">
-                    <i class="fas fa-comments column-icon"></i>
+                    <div class="column-icon-wrapper">
+                      <i class="fas fa-comments column-icon"></i>
+                    </div>
                     <h4 class="column-title">DIỄN ĐÀN</h4>
                   </div>
                   <ul class="column-list">
-                    <li @click="$router.push('/forums')"><span class="hover-indicator"></span>Diễn đàn</li>
-                    <li><span class="hover-indicator"></span>Bài viết của tôi</li>
+                    <li @click="$router.push('/forums')">
+                      <span class="hover-indicator"></span>
+                      <span class="list-item-text">Diễn đàn</span>
+                    </li>
+                    <li>
+                      <span class="hover-indicator"></span>
+                      <span class="list-item-text">Bài viết của tôi</span>
+                    </li>
+                  </ul>
+                </div>
+                <div class="grid-column">
+                  <div class="column-header">
+                    <div class="column-icon-wrapper">
+                      <i class="fas fa-chart-line column-icon"></i>
+                    </div>
+                    <h4 class="column-title">THỐNG KÊ</h4>
+                  </div>
+                  <ul class="column-list">
+                    <li>
+                      <span class="hover-indicator"></span>
+                      <span class="list-item-text">Tổng quan</span>
+                    </li>
+                    <li>
+                      <span class="hover-indicator"></span>
+                      <span class="list-item-text">Báo cáo</span>
+                    </li>
+                  </ul>
+                </div>
+                <div class="grid-column">
+                  <div class="column-header">
+                    <div class="column-icon-wrapper">
+                      <i class="fas fa-cog column-icon"></i>
+                    </div>
+                    <h4 class="column-title">CÀI ĐẶT</h4>
+                  </div>
+                  <ul class="column-list">
+                    <li>
+                      <span class="hover-indicator"></span>
+                      <span class="list-item-text">Tài khoản</span>
+                    </li>
+                    <li>
+                      <span class="hover-indicator"></span>
+                      <span class="list-item-text">Giao diện</span>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -45,12 +97,27 @@
         </transition>
       </div>
 
+      <!-- Center Section - Navigation Links -->
+      <div class="navbar-center">
+        <div class="nav-links">
+          <div class="nav-link" @click="$router.push('/list-auction')">
+            <i class="fas fa-gavel"></i>
+            <span>Đấu giá</span>
+          </div>
+          <div class="nav-link" @click="$router.push('/forums')">
+            <i class="fas fa-comments"></i>
+            <span>Diễn đàn</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Right Section -->
-      <div class="topbar-right">
+      <div class="navbar-right">
         <!-- Add Button -->
         <div class="dropdown-container">
           <div class="icon-container menu-toggle" @click.stop="toggleAddMenu">
             <i class="fas fa-square-plus cosmo-icon"></i>
+            <div class="icon-tooltip">Thêm mới</div>
           </div>
           <transition name="dropdown">
             <div v-if="isAddMenuOpen" class="dropdown-menu add-menu">
@@ -66,19 +133,11 @@
           </transition>
         </div>
 
-        <!-- Calendar Icon -->
-        <div class="icon-container">
-          <i
-            class="fas fa-calendar-alt cosmo-icon"
-            @mouseover="bounceIcon($event)"
-            @mouseout="resetIcon($event)"
-          ></i>
-        </div>
-
         <!-- Transaction Icon with Dropdown -->
         <div class="dropdown-container">
           <div class="icon-container menu-toggle" @click.stop="toggleTransactionMenu">
             <i class="fas fa-handshake cosmo-icon"></i>
+            <div class="icon-tooltip">Giao dịch</div>
           </div>
           <transition name="dropdown">
             <div v-if="isTransactionMenuOpen" class="dropdown-menu transaction-menu">
@@ -90,27 +149,42 @@
                 <i class="fas fa-gamepad"></i>
                 <span>Dịch vụ</span>
               </div>
+              <div class="menu-item" @click="handleTransactionHistoryClick">
+                <i class="fas fa-history"></i>
+                <span>Lịch sử giao dịch</span>
+              </div>
             </div>
           </transition>
         </div>
-
+        
         <!-- Notification Icon -->
         <div class="dropdown-container">
           <div class="icon-container menu-toggle" @click.stop="toggleNotifications">
             <i class="fas fa-bell cosmo-icon">
               <span v-if="notifications > 0" class="cosmo-badge">{{ notifications }}</span>
             </i>
+            <div class="icon-tooltip">Thông báo</div>
           </div>
           <transition name="dropdown">
             <div v-if="isNotificationOpen" class="dropdown-menu notification-menu">
               <div class="menu-header">
                 <h4>Thông báo</h4>
+                <div class="notification-actions">
+                  <button class="action-btn" title="Đánh dấu tất cả đã đọc">
+                    <i class="fas fa-check-double"></i>
+                  </button>
+                  <button class="action-btn" title="Làm mới">
+                    <i class="fas fa-sync-alt"></i>
+                  </button>
+                </div>
               </div>
               <div class="menu-content">
                 <div v-if="isLoadingNotifications" class="loading">
+                  <div class="loading-spinner"></div>
                   <p>Đang tải...</p>
                 </div>
                 <div v-else-if="notificationList.length === 0" class="no-notifications">
+                  <i class="fas fa-bell-slash"></i>
                   <p>Không có thông báo mới</p>
                 </div>
                 <div v-else class="notification-list">
@@ -121,6 +195,9 @@
                     :class="{ 'read': notification.isRead }"
                     @click="markAsRead(notification)"
                   >
+                    <div class="notification-icon" :class="getNotificationIconClass(notification.title)">
+                      <i :class="getNotificationIcon(notification.title)"></i>
+                    </div>
                     <div class="notification-content">
                       <h5>{{ notification.title }}</h5>
                       <p>{{ notification.message }}</p>
@@ -176,7 +253,7 @@
         <div v-if="!isLoggedIn" class="dropdown-container">
           <div class="user-avatar menu-toggle" @click.stop="toggleAccountMenu">
             <i class="fas fa-user cosmo-icon"></i>
-            <i :class="['fas', isAccountMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'caret-icon']"></i>
+            <i :class="['fas', isAccountMenuOpen ? 'fa-chevron-up' : 'fa-chevron-down', 'caret-icon']"></i>
           </div>
           <transition name="dropdown">
             <div v-if="isAccountMenuOpen" class="dropdown-menu user-menu">
@@ -201,7 +278,7 @@
               </div>
             </div>
             <span class="cosmo-user-name" :title="fullName">{{ fullName }}</span>
-            <i :class="['fas', isUserMenuOpen ? 'fa-caret-up' : 'fa-caret-down', 'caret-icon']"></i>
+            <i :class="['fas', isUserMenuOpen ? 'fa-chevron-up' : 'fa-chevron-down', 'caret-icon']"></i>
           </div>
           <transition name="dropdown">
             <div v-if="isUserMenuOpen" class="dropdown-menu user-menu">
@@ -212,6 +289,10 @@
                   </div>
                   <div class="user-details">
                     <h4>{{ fullName }}</h4>
+                    <span class="user-status">
+                      <span class="status-dot online"></span>
+                      Online
+                    </span>
                   </div>
                 </div>
               </div>
@@ -234,6 +315,17 @@
         </div>
       </div>
     </div>
+    <!-- Modal for Authentication and Alerts -->
+    <transition name="modal">
+      <div v-if="isModalOpen" class="modal-backdrop" @click="closeModal">
+        <div class="modal-content" @click.stop>
+          <h3>{{ modalTitle }}</h3>
+          <p>{{ modalMessage }}</p>
+          <button @click="modalAction">{{ modalActionText }}</button>
+          <button @click="closeModal">Đóng</button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -246,7 +338,7 @@ import notificationApi from "@/api/notification.api";
 import { userStore } from "@/stores/auth.ts";
 
 export default {
-  name: "CosmoTopbar",
+  name: "CosmoNavbar",
   setup() {
     const router = useRouter();
     const store = userStore();
@@ -261,11 +353,15 @@ export default {
     const isBalanceMenuOpen = ref(false);
     const balance = ref(0);
     const isLoadingNotifications = ref(false);
+    const isModalOpen = ref(false);
+    const modalTitle = ref("");
+    const modalMessage = ref("");
+    const modalActionText = ref("");
+    const modalAction = ref(() => {});
 
     const isLoggedIn = computed(() => !!store.user);
     const fullName = computed(() => store.user?.fullName || "");
     const userId = computed(() => store.user?.id || 0);
-
     const formatCurrency = (amount) => {
       return new Intl.NumberFormat("vi-VN", {
         style: "currency",
@@ -281,6 +377,26 @@ export default {
       });
     };
 
+    const getNotificationIcon = (type) => {
+      const iconMap = {
+        "Thông báo": "fas fa-bell",
+        "Giao dịch": "fas fa-handshake",
+        "Hệ thống": "fas fa-cog",
+        "Đấu giá": "fas fa-gavel"
+      };
+      return iconMap[type] || "fas fa-bell";
+    };
+
+    const getNotificationIconClass = (type) => {
+      const classMap = {
+        "Thông báo": "notification-icon-info",
+        "Giao dịch": "notification-icon-success",
+        "Hệ thống": "notification-icon-warning",
+        "Đấu giá": "notification-icon-primary"
+      };
+      return classMap[type] || "notification-icon-info";
+    };
+
     const fetchUserBalance = async () => {
       if (!isLoggedIn.value || !userId.value) return;
       try {
@@ -291,7 +407,6 @@ export default {
         localStorage.setItem("user", JSON.stringify(userData));
       } catch (error) {
         console.error("Failed to fetch user balance:", error);
-        // Không hiển thị modal, chỉ ghi log lỗi
       }
     };
 
@@ -302,11 +417,8 @@ export default {
       }
       isLoadingNotifications.value = true;
       try {
-        console.log("Fetching notifications for userId:", userId.value);
         const response = await notificationApi.getAllByUserId(userId.value);
-        console.log("API Response:", response);
         const rawNotifications = response.data.result.data || [];
-        console.log("Raw Notifications:", rawNotifications);
         notificationList.value = rawNotifications
           .filter((noti) => !noti.isDelete)
           .map((noti) => ({
@@ -316,13 +428,11 @@ export default {
             createdAt: noti.createdDate,
             isRead: noti.isRead,
           }));
-        console.log("Transformed Notifications:", notificationList.value);
         notifications.value = notificationList.value.filter(
           (notification) => !notification.isRead
         ).length;
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
-        // Không hiển thị modal, chỉ ghi log lỗi
       } finally {
         isLoadingNotifications.value = false;
       }
@@ -338,7 +448,6 @@ export default {
         ).length;
       } catch (error) {
         console.error("Failed to mark notification as read:", error);
-        // Không hiển thị modal, chỉ ghi log lỗi
       }
     };
 
@@ -353,7 +462,6 @@ export default {
         ).length;
       } catch (error) {
         console.error("Failed to delete notification:", error);
-        // Không hiển thị modal, chỉ ghi log lỗi
       }
     };
 
@@ -497,15 +605,25 @@ export default {
     };
 
     const handleAddAccountClick = () => {
-      if (!isLoggedIn.value) router.push("/login");
-      else router.push("/add-account");
-      closeAllMenus();
+      if (!isLoggedIn.value) {
+        router.push("/login");
+      } else if (!store.user?.isAuthen) {
+        showModal("Xác thực tài khoản", "Bạn cần xác thực tài khoản để thêm tài khoản mới.", "Đi đến trang hồ sơ", () => router.push("/profile?authRequired=true"));
+      } else {
+        router.push("/add-account");
+        closeAllMenus();
+      }
     };
 
     const handleAddServiceClick = () => {
-      if (!isLoggedIn.value) router.push("/login");
-      else router.push("/add-service");
-      closeAllMenus();
+      if (!isLoggedIn.value) {
+        router.push("/login");
+      } else if (!store.user?.isAuthen) {
+        showModal("Xác thực tài khoản", "Bạn cần xác thực tài khoản để thêm dịch vụ mới.", "Đi đến trang hồ sơ", () => router.push("/profile?authRequired=true"));
+      } else {
+        router.push("/add-service");
+        closeAllMenus();
+      }
     };
 
     const handleTransactionAccountClick = () => {
@@ -521,9 +639,30 @@ export default {
       if (!isLoggedIn.value) {
         router.push("/login");
       } else {
-        router.push("/transactions");
+        router.push("/service-list");
       }
       closeAllMenus();
+    };
+
+    const handleTransactionHistoryClick = () => {
+      if (!isLoggedIn.value) {
+        router.push("/login");
+      } else {
+        router.push("/hpurcharsed");
+      }
+      closeAllMenus();
+    };
+
+    const showModal = (title, message, actionText, action) => {
+      modalTitle.value = title;
+      modalMessage.value = message;
+      modalActionText.value = actionText;
+      modalAction.value = action;
+      isModalOpen.value = true;
+    };
+
+    const closeModal = () => {
+      isModalOpen.value = false;
     };
 
     const bounceIcon = (event) => {
@@ -566,6 +705,8 @@ export default {
       formatCurrency,
       formatTime,
       isLoadingNotifications,
+      getNotificationIcon,
+      getNotificationIconClass,
       toggleAddMenu,
       toggleNotifications,
       toggleUserMenu,
@@ -585,12 +726,19 @@ export default {
       handleAddServiceClick,
       handleTransactionAccountClick,
       handleTransactionServiceClick,
+      handleTransactionHistoryClick,
       markAsRead,
       deleteNotification,
       bounceIcon,
       resetIcon,
       closeAllMenus,
       handleClickOutside,
+      isModalOpen,
+      modalTitle,
+      modalMessage,
+      modalActionText,
+      modalAction,
+      closeModal,
     };
   },
   beforeUnmount() {
@@ -600,23 +748,23 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@400;500;700&family=Exo+2:wght@400;500;600;700&display=swap');
 
 /* Base Styles */
-.cosmo-topbar {
+.cosmo-navbar {
   height: 70px;
-  background: linear-gradient(90deg, #0a0a20 0%, #1a0933 50%, #0d1b2a 100%);
+  background: linear-gradient(90deg, #0c0c1d 0%, #1e0b45 50%, #0f1e33 100%);
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   z-index: 1050;
-  font-family: 'Rajdhani', sans-serif;
-  box-shadow: 0 4px 20px rgba(0, 255, 255, 0.2);
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  font-family: 'Exo 2', sans-serif;
+  box-shadow: 0 4px 20px rgba(128, 0, 255, 0.3);
+  border-bottom: 1px solid rgba(128, 0, 255, 0.3);
 }
 
-.topbar-container {
+.navbar-container {
   max-width: 1400px;
   margin: 0 auto;
   height: 100%;
@@ -626,10 +774,14 @@ export default {
   padding: 0 20px;
 }
 
-.topbar-left,
-.topbar-right {
+.navbar-left, .navbar-center, .navbar-right {
   display: flex;
   align-items: center;
+}
+
+.navbar-center {
+  flex: 1;
+  justify-content: center;
 }
 
 a {
@@ -656,7 +808,15 @@ a {
   align-items: center;
   padding: 0 10px;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.logo-text {
+  position: relative;
+  background: linear-gradient(to right, #9d4edd, #c77dff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 10px rgba(157, 78, 221, 0.5);
 }
 
 .logo-glow {
@@ -666,7 +826,7 @@ a {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle, rgba(0, 255, 255, 0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(157, 78, 221, 0.3) 0%, transparent 70%);
   filter: blur(8px);
   z-index: -1;
   opacity: 0;
@@ -674,7 +834,6 @@ a {
 }
 
 .cosmo-logo:hover {
-  color: #00ffff;
   transform: scale(1.05);
 }
 
@@ -700,7 +859,53 @@ a {
 }
 
 .cosmo-logo:hover .caret-icon {
-  color: #00ffff;
+  color: #c77dff;
+}
+
+/* Navigation Links */
+.nav-links {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(to right, #9d4edd, #c77dff);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-link:hover {
+  color: #fff;
+  background: rgba(157, 78, 221, 0.1);
+}
+
+.nav-link:hover::before {
+  width: 80%;
+}
+
+.nav-link i {
+  color: #9d4edd;
+  font-size: 1rem;
 }
 
 /* Slide Panel */
@@ -709,10 +914,10 @@ a {
   top: 70px;
   left: 0;
   width: 100%;
-  background: linear-gradient(180deg, #0a0a20 0%, #1a0933 100%);
+  background: linear-gradient(180deg, #0c0c1d 0%, #1e0b45 100%);
   z-index: 1040;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(128, 0, 255, 0.2);
   overflow: hidden;
 }
 
@@ -732,15 +937,15 @@ a {
   background: rgba(10, 10, 32, 0.6);
   border-radius: 12px;
   padding: 20px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(128, 0, 255, 0.1);
   transition: all 0.3s ease;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
 }
 
 .grid-column:hover {
-  border-color: rgba(0, 255, 255, 0.3);
-  box-shadow: 0 8px 25px rgba(0, 255, 255, 0.15);
+  border-color: rgba(128, 0, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(128, 0, 255, 0.15);
   transform: translateY(-5px);
 }
 
@@ -749,25 +954,28 @@ a {
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(128, 0, 255, 0.1);
 }
 
-.column-icon {
-  color: #00ffff;
-  font-size: 1.2rem;
-  margin-right: 10px;
-  width: 30px;
-  height: 30px;
+.column-icon-wrapper {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 50%;
+  background: linear-gradient(135deg, #9d4edd, #c77dff);
+  border-radius: 8px;
+  margin-right: 12px;
+}
+
+.column-icon {
+  color: #fff;
+  font-size: 1rem;
 }
 
 .column-title {
   font-size: 1.1rem;
-  color: #00ffff;
+  color: #c77dff;
   margin: 0;
   font-weight: 600;
   letter-spacing: 1px;
@@ -798,13 +1006,13 @@ a {
   transform: translateY(-50%);
   width: 4px;
   height: 0;
-  background: #00ffff;
+  background: #9d4edd;
   border-radius: 2px;
   transition: height 0.3s ease;
 }
 
 .column-list li:hover {
-  color: #00ffff;
+  color: #c77dff;
   padding-left: 25px;
 }
 
@@ -812,50 +1020,12 @@ a {
   height: 70%;
 }
 
-/* Buttons and Icons */
-.cosmo-btn {
-  background: rgba(0, 255, 255, 0.1);
-  color: #00ffff;
-  padding: 8px 16px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+.list-item-text {
   position: relative;
-  overflow: hidden;
-  letter-spacing: 0.5px;
+  z-index: 1;
 }
 
-.cosmo-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.cosmo-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
-}
-
-.cosmo-btn:hover::before {
-  left: 100%;
-}
-
-.add-btn {
-  margin-left: 10px;
-}
-
+/* Buttons and Icons */
 .icon-container {
   position: relative;
   margin: 0 10px;
@@ -869,25 +1039,62 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 255, 255, 0.1);
+  background: rgba(157, 78, 221, 0.1);
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
 }
 
+.icon-tooltip {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 32, 0.9);
+  color: #e0e0e0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  border: 1px solid rgba(157, 78, 221, 0.3);
+}
+
+.icon-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: rgba(10, 10, 32, 0.9);
+  border-top: 1px solid rgba(157, 78, 221, 0.3);
+  border-left: 1px solid rgba(157, 78, 221, 0.3);
+}
+
+.icon-container:hover .icon-tooltip {
+  opacity: 1;
+  visibility: visible;
+  bottom: -35px;
+}
+
 .cosmo-icon:hover {
-  color: #00ffff;
-  background: rgba(0, 255, 255, 0.2);
+  color: #fff;
+  background: rgba(157, 78, 221, 0.2);
   transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
+  box-shadow: 0 5px 15px rgba(157, 78, 221, 0.2);
 }
 
 .cosmo-badge {
   position: absolute;
   top: -5px;
   right: -5px;
-  background: #ff00ff;
+  background: linear-gradient(135deg, #ff0080, #ff8c00);
   color: white;
   font-size: 0.7rem;
   width: 18px;
@@ -897,29 +1104,29 @@ a {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  box-shadow: 0 2px 5px rgba(255, 0, 255, 0.5);
+  box-shadow: 0 2px 5px rgba(255, 0, 128, 0.5);
 }
 
 /* Balance Display */
 .cosmo-balance {
   display: flex;
   align-items: center;
-  background: rgba(0, 255, 255, 0.1);
+  background: rgba(157, 78, 221, 0.1);
   padding: 8px 15px;
   border-radius: 8px;
   margin-left: 10px;
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border: 1px solid rgba(157, 78, 221, 0.3);
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .cosmo-balance:hover {
-  background: rgba(0, 255, 255, 0.15);
-  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
+  background: rgba(157, 78, 221, 0.15);
+  box-shadow: 0 5px 15px rgba(157, 78, 221, 0.2);
 }
 
 .cosmo-balance i {
-  color: #00ffff;
+  color: #c77dff;
   margin-right: 8px;
   font-size: 1rem;
 }
@@ -939,13 +1146,13 @@ a {
   border-radius: 8px;
   margin-left: 10px;
   transition: all 0.3s ease;
-  background: rgba(0, 255, 255, 0.05);
-  border: 1px solid rgba(0, 255, 255, 0.1);
+  background: rgba(157, 78, 221, 0.05);
+  border: 1px solid rgba(157, 78, 221, 0.1);
 }
 
 .user-profile:hover {
-  background: rgba(0, 255, 255, 0.1);
-  border-color: rgba(0, 255, 255, 0.3);
+  background: rgba(157, 78, 221, 0.1);
+  border-color: rgba(157, 78, 221, 0.3);
 }
 
 .user-profile .caret-icon {
@@ -956,12 +1163,10 @@ a {
 }
 
 .user-profile:hover .caret-icon {
-  color: #00ffff;
+  color: #c77dff;
 }
 
 .user-avatar {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
@@ -975,14 +1180,14 @@ a {
 }
 
 .user-avatar:hover .caret-icon {
-  color: #00ffff;
+  color: #c77dff;
 }
 
 .avatar-circle {
   width: 30px;
   height: 30px;
-  border-radius: 4px !important;
-  background: linear-gradient(135deg, #00ffff, #0088ff);
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #9d4edd, #c77dff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1004,30 +1209,6 @@ a {
   transform: scale(1.05);
 }
 
-.user-avatar::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  background: #ff4757;
-  border-radius: 50%;
-  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-@keyframes ping {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.8;
-  }
-  75%,
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-
 .cosmo-user-name {
   color: #e0e0e0;
   font-size: 0.95rem;
@@ -1037,6 +1218,26 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* User Status */
+.user-status {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #b0b0b0;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.status-dot.online {
+  background: #4ade80;
+  box-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
 }
 
 /* Dropdown Menus */
@@ -1049,12 +1250,12 @@ a {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  min-width: 200px;
+  min-width: 250px;
   background: rgba(10, 10, 32, 0.95);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 255, 255, 0.2);
-  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(157, 78, 221, 0.2);
+  border: 1px solid rgba(157, 78, 221, 0.2);
   backdrop-filter: blur(10px);
   z-index: 1101;
   display: flex;
@@ -1065,43 +1266,38 @@ a {
   min-width: 300px;
   max-height: 400px;
   overflow-y: auto;
-  /* Firefox Scrollbar */
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 255, 0.5) rgba(10, 10, 32, 0.95);
+  scrollbar-color: rgba(157, 78, 221, 0.5) rgba(10, 10, 32, 0.95);
 }
 
-/* WebKit Scrollbar (Chrome, Safari, Edge) */
+/* WebKit Scrollbar */
 .notification-menu::-webkit-scrollbar {
-  width: 8px; /* Thinner scrollbar */
+  width: 8px;
 }
 
-/* Track */
 .notification-menu::-webkit-scrollbar-track {
-  background: rgba(10, 10, 32, 0.95); /* Match dropdown background */
+  background: rgba(10, 10, 32, 0.95);
   border-radius: 10px;
 }
 
-/* Handle */
 .notification-menu::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 255, 0.5); /* Cyan thumb */
+  background: rgba(157, 78, 221, 0.5);
   border-radius: 10px;
-  border: 2px solid rgba(10, 10, 32, 0.95); /* Match track background */
-  box-shadow: inset 0 0 5px rgba(0, 255, 255, 0.3);
+  border: 2px solid rgba(10, 10, 32, 0.95);
+  box-shadow: inset 0 0 5px rgba(157, 78, 221, 0.3);
 }
 
-/* Handle on hover */
 .notification-menu::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 255, 255, 0.8); /* Brighter cyan on hover */
-  box-shadow: inset 0 0 8px rgba(0, 255, 255, 0.5);
+  background: rgba(157, 78, 221, 0.8);
+  box-shadow: inset 0 0 8px rgba(157, 78, 221, 0.5);
 }
 
-/* Remove scrollbar buttons (arrows) in WebKit */
 .notification-menu::-webkit-scrollbar-button {
   display: none;
 }
 
 .balance-menu {
-  min-width: 400px;
+  min-width: 300px;
 }
 
 .dropdown-menu::before {
@@ -1113,32 +1309,59 @@ a {
   height: 10px;
   background: rgba(10, 10, 32, 0.95);
   transform: rotate(45deg);
-  border-top: 1px solid rgba(0, 255, 255, 0.2);
-  border-left: 1px solid rgba(0, 255, 255, 0.2);
+  border-top: 1px solid rgba(157, 78, 221, 0.2);
+  border-left: 1px solid rgba(157, 78, 221, 0.2);
 }
 
 .menu-header {
   padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .menu-header h4 {
   margin: 0;
-  color: #00ffff;
+  color: #c77dff;
   font-size: 1.1rem;
   font-weight: 600;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  background: rgba(157, 78, 221, 0.1);
+  border: 1px solid rgba(157, 78, 221, 0.3);
+  color: #c77dff;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  background: rgba(157, 78, 221, 0.2);
+  transform: translateY(-2px);
 }
 
 .balance-display {
   display: flex;
   align-items: center;
   margin-top: 10px;
-  background: rgba(0, 255, 255, 0.05);
+  background: rgba(157, 78, 221, 0.05);
   padding: 8px 12px;
   border-radius: 6px;
 }
 
 .balance-display i {
-  color: #00ffff;
+  color: #c77dff;
   margin-right: 8px;
   font-size: 1rem;
 }
@@ -1161,11 +1384,11 @@ a {
   padding: 8px 10px;
   justify-content: center;
   border-radius: 6px;
-  background: rgba(0, 255, 255, 0.05);
+  background: rgba(157, 78, 221, 0.05);
 }
 
 .menu-actions .menu-item:hover {
-  background: rgba(0, 255, 255, 0.15);
+  background: rgba(157, 78, 221, 0.15);
   padding-left: 10px;
 }
 
@@ -1178,15 +1401,44 @@ a {
 .no-notifications {
   text-align: center;
   color: #e0e0e0;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.no-notifications i {
+  font-size: 2rem;
+  color: rgba(157, 78, 221, 0.5);
 }
 
 .loading {
   text-align: center;
-  color: #00ffff;
+  color: #c77dff;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(157, 78, 221, 0.3);
+  border-radius: 50%;
+  border-top-color: #c77dff;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .notification-list {
-  width: 500px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1203,13 +1455,45 @@ a {
   position: relative;
 }
 
+.notification-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.notification-icon-info {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+}
+
+.notification-icon-success {
+  background: linear-gradient(135deg, #10b981, #34d399);
+}
+
+.notification-icon-warning {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+}
+
+.notification-icon-primary {
+  background: linear-gradient(135deg, #9d4edd, #c77dff);
+}
+
+.notification-icon i {
+  color: white;
+  font-size: 1rem;
+}
+
 .notification-item.read {
   background: rgba(255, 255, 255, 0.02);
   opacity: 0.7;
 }
 
 .notification-item:hover {
-  background: rgba(0, 255, 255, 0.1);
+  background: rgba(157, 78, 221, 0.1);
   transform: translateY(-2px);
 }
 
@@ -1219,7 +1503,7 @@ a {
 
 .notification-content h5 {
   margin: 0 0 5px;
-  color: #00ffff;
+  color: #c77dff;
   font-size: 1rem;
   font-weight: 600;
 }
@@ -1261,19 +1545,19 @@ a {
 .menu-item i {
   width: 20px;
   margin-right: 10px;
-  color: #00ffff;
+  color: #c77dff;
   font-size: 1rem;
 }
 
 .menu-item:hover {
-  background: rgba(0, 255, 255, 0.1);
-  color: #00ffff;
+  background: rgba(157, 78, 221, 0.1);
+  color: #c77dff;
   padding-left: 20px;
 }
 
 .menu-divider {
   height: 1px;
-  background: rgba(0, 255, 255, 0.1);
+  background: rgba(157, 78, 221, 0.1);
   margin: 5px 0;
   width: 100%;
 }
@@ -1313,6 +1597,73 @@ a {
   text-overflow: ellipsis;
 }
 
+/* Modal Styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #1e0b45, #0c0c1d);
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(157, 78, 221, 0.3);
+  max-width: 400px;
+  width: 90%;
+  color: #e0e0e0;
+}
+
+.modal-content h3 {
+  color: #c77dff;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+
+.modal-content p {
+  margin-bottom: 20px;
+  font-size: 1rem;
+}
+
+.modal-content button {
+  padding: 10px 20px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.modal-content button:first-child {
+  background: linear-gradient(135deg, #9d4edd, #c77dff);
+  color: white;
+}
+
+.modal-content button:first-child:hover {
+  background: linear-gradient(135deg, #c77dff, #9d4edd);
+  transform: translateY(-2px);
+}
+
+.modal-content button:last-child {
+  background: rgba(157, 78, 221, 0.1);
+  color: #c77dff;
+}
+
+.modal-content button:last-child:hover {
+  background: rgba(157, 78, 221, 0.2);
+  transform: translateY(-2px);
+}
+
 /* Animations */
 .dropdown-enter-active,
 .dropdown-leave-active {
@@ -1337,12 +1688,18 @@ a {
   transform: translateY(-20px);
 }
 
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
 @keyframes bounce {
-  0%,
-  20%,
-  50%,
-  80%,
-  100% {
+  0%, 20%, 50%, 80%, 100% {
     transform: translateY(0);
   }
   40% {
@@ -1358,6 +1715,12 @@ a {
 }
 
 /* Responsive Styles */
+@media (max-width: 1200px) {
+  .navbar-center {
+    display: none;
+  }
+}
+
 @media (max-width: 992px) {
   .slide-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1381,11 +1744,11 @@ a {
 }
 
 @media (max-width: 768px) {
-  .cosmo-topbar {
+  .cosmo-navbar {
     height: 60px;
   }
 
-  .topbar-container {
+  .navbar-container {
     padding: 0 10px;
   }
 
@@ -1420,15 +1783,6 @@ a {
   .column-list li {
     font-size: 0.9rem;
     padding: 8px 0 8px 15px;
-  }
-
-  .cosmo-btn {
-    padding: 6px 12px;
-    font-size: 0.85rem;
-  }
-
-  .cosmo-btn span {
-    display: none;
   }
 
   .cosmo-icon {
@@ -1476,7 +1830,7 @@ a {
 }
 
 @media (max-width: 576px) {
-  .cosmo-topbar {
+  .cosmo-navbar {
     height: 50px;
   }
 
@@ -1494,10 +1848,6 @@ a {
 
   .slide-grid {
     grid-template-columns: 1fr;
-  }
-
-  .cosmo-btn {
-    padding: 5px 10px;
   }
 
   .cosmo-icon {

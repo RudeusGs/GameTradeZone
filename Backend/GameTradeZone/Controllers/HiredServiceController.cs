@@ -1,6 +1,7 @@
 ﻿using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models;
 using GameTradeZone.Service.Models.HiredService;
+using GameTradeZone.Service.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -74,6 +75,20 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [Authorize]
+        [HttpPost("Done-Service")]
+        public async Task<IActionResult> DoneService(int id)
+        {
+            try
+            {
+                var result = await _hiredServiceService.DoneService(id);
+                return Response(result);
+            }
+            catch(Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
 
         [Authorize]
         [HttpPost("Confirm-Service")]
@@ -87,6 +102,34 @@ namespace GameTradeZone.Controllers
             catch (Exception e)
             {
                 return Response(e.Message, 500);
+            }
+        }
+
+        [HttpGet("Get-Remaining-Time")]
+        public async Task<IActionResult> GetRemainingTime(int id)
+        {
+            try
+            {
+                var result = await _hiredServiceService.GetRemainingTime(id);
+                return Ok(result);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, new ApiResult { Message = e.Message });
+            }
+        }
+        [Authorize]
+        [HttpPost("Extend-Time")]
+        public async Task<IActionResult> ExtendTime(int id, TimeSpan extensionTime)
+        {
+            try
+            {
+                var result = await _hiredServiceService.ExtendTime(id, extensionTime);
+                return Ok(result);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, new ApiResult { Message = e.Message });
             }
         }
     }

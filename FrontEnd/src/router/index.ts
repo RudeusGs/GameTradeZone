@@ -106,9 +106,18 @@ const router = createRouter({
       component: LoginView, 
     },
     {
-      path: '/transactions',
-      name: 'transactions',
-      component: () => import('@/views/ServiceView.vue'),
+      path: "/service-list",
+      name: "service-list",
+      component: () => import("@/views/ServiceView.vue"),
+    },
+    {
+      path: "/service/:id/hired",
+      name: "hired-service-details",
+      component: () => import("@/views/HiredServiceDetails.vue"),
+      props: (route) => ({
+        serviceId: parseInt(Array.isArray(route.params.id) ? route.params.id[0] : route.params.id),
+        serviceName: route.query.name,
+      }),
     },
   ],
 });

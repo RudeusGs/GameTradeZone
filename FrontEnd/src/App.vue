@@ -1,22 +1,39 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router';
 import NavbarView from './components/NavbarView.vue';
+import HolographicBackground from '@/components/BackGround.vue';
 </script>
 
 <template>
-  <NavbarView />
-
-  <div class="cosmo-content">
-    <RouterView />
+  <div class="app-container">
+    <HolographicBackground />
+    <NavbarView />
+    <div class="cosmo-content">
+      <RouterView />
+    </div>
+    <!-- Messenger Support Icon -->
+    <a href="https://m.me/your-messenger-id" target="_blank" class="messenger-btn" title="Chat hỗ trợ qua Messenger">
+      <i class="fab fa-facebook-messenger"></i>
+    </a>
   </div>
-
-  <!-- Messenger Support Icon -->
-  <a href="https://m.me/your-messenger-id" target="_blank" class="messenger-btn" title="Chat hỗ trợ qua Messenger">
-    <i class="fab fa-facebook-messenger"></i>
-  </a>
 </template>
 
 <style scoped>
+.app-container {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.holographic-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1; /* Đặt background ở phía sau */
+}
+
 .cosmo-content {
   margin-top: 60px; /* Space for NavbarView */
   margin-left: 0;
