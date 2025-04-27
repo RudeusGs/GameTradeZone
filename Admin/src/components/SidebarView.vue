@@ -179,15 +179,15 @@ const logout = () => {
       </li>
       <li>
         <router-link
-          to="/admin/statistics"
+          to="/static"
           class="menu-link"
-          :class="{ active: $route.path === '/admin/statistics' }"
+          :class="{ active: $route.path === '/static' }"
         >
           <i class="material-icons">bar_chart</i>
           <span class="menu-text" v-if="!isCollapsed">Thống kê</span>
         </router-link>
       </li>
-      <!-- Icon -->
+
       <li>
         <router-link
           to="/admin/icons"

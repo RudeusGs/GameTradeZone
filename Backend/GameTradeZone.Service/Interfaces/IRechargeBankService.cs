@@ -17,5 +17,7 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> WithdrawMoneyConfirmRequest(int id);
         Task<ApiResult> GetAllWithDrawTransactionsByUser();
         Task<ApiResult> GetAllRechargeBankTransactionsByUser();
+        Task<ApiResult> GetStaticForAllUser();
+        Task<ApiResult> GetIncomeAndOutcome();
     }
 }

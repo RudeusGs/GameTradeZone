@@ -1,11 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import WithdrawRequestsView from "@/views/WithdrawRequestsView.vue";
-import HomeView from '../views/HomeView.vue'; // Trang admin hoặc home
-import LoginView from '@/views/LoginView.vue';
-import AdminWebsiteAccount from '@/views/AdminWebsiteAccount.vue';
-import GameInforView from '@/views/GameInforView.vue';
-import GameAccountView from '@/views/GameAccountView.vue';
-
+import StaticView from "@/views/StaticView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -38,11 +33,6 @@ const router = createRouter({
       path: "/withdraw-requests",
       name: "withdraw-requests",
       component: WithdrawRequestsView,
-    },
-    {
-      path: '/game-account',
-      name: 'game-account',
-      component: GameAccountView,
     },
   ],
 });
