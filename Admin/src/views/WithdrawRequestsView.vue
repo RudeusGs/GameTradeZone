@@ -3,7 +3,6 @@ import { ref, onMounted, computed } from "vue";
 import transactionApi from "@/api/transaction.api"; // Adjust path if needed
 import { format } from "date-fns"; // For date formatting
 
-// Define interface for a withdrawal request based on expected API response
 interface WithdrawRequest {
   id: number;
   userID: number; // Or string, depending on your API/DB

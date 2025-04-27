@@ -26,6 +26,9 @@ const transactionApi = {
   getUserRechargeHistory: async () => {
     return await baseApi.get("/RechargeBank/recharge");
   },
+  getUserStatics: async () => {
+    return await baseApi.get("/RechargeBank/static");
+  },
 };
 
 export default transactionApi;

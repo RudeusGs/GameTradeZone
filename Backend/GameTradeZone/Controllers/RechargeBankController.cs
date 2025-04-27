@@ -99,4 +99,17 @@ public class RechargeBankController : BaseController
             return BadRequest(ex.Message);
         }
     }
+    [HttpGet("static")]
+    public async Task<IActionResult> GetStaticForAllUser()
+    {
+        try
+        {
+            var result = await _rechargeBankService.GetStaticForAllUser();
+            return Response(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

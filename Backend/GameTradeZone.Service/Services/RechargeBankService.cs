@@ -272,7 +272,72 @@ public class RechargeBankService : IRechargeBankService
             return new ApiResult { Message = $"An error occurred: {ex.Message}" };
         }
     }
-  
+    public async Task<ApiResult> GetStaticForAllUser()
+    {
+        try
+        {
+            var totalUsers = await _context.Users.CountAsync();
+            var totalWithdrawals = await _context.WithDrawnMoneys.CountAsync();
+            var totalRechargeTransactions = await _context.TransactionInfors.CountAsync();
+
+            // Calculate income, outcome, and include current balance for each user
+            var userIncomeOutcome = await _context.Users
+                .Select(user => new
+                {
+                    UserId = user.Id,
+                    UserName = user.UserName,
+                    CurrentBalance = user.Balance ?? 0, // Include current balance
+                    TotalIncome = _context.WithDrawnMoneys
+                        .Where(w => w.UserID == user.Id)
+                        .Sum(w => (decimal?)w.Amount) ?? 0,
+                    TotalOutcome = _context.TransactionInfors
+                        .Where(t => t.UserId == user.Id)
+                        .Sum(t => (decimal?)t.TransferAmount) ?? 0
+                })
+                .ToListAsync();
+
+            var staticData = new
+            {
+                TotalUsers = totalUsers,
+                TotalWithdrawals = totalWithdrawals,
+                TotalRechargeTransactions = totalRechargeTransactions,
+                UserIncomeOutcome = userIncomeOutcome
+            };
+
+            return new ApiResult
+            {
+                Data = staticData,
+                Message = "Static data retrieved successfully, including income, outcome, and current balance for each user."
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResult { Message = $"An error occurred: {ex.Message}" };
+        }
+    }
+
+    public async Task<ApiResult> GetIncomeAndOutcome()
+    {
+        try
+        {
+            var totalIncome = await _context.WithDrawnMoneys.SumAsync(w => w.Amount);
+            var totalOutcome = await _context.TransactionInfors.SumAsync(t => t.TransferAmount);
+            var incomeAndOutcome = new
+            {
+                TotalIncome = totalIncome,
+                TotalOutcome = totalOutcome
+            };
+            return new ApiResult
+            {
+                Data = incomeAndOutcome,
+                Message = "Income and outcome data retrieved successfully."
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResult { Message = $"An error occurred: {ex.Message}" };
+        }
+    }
 
 
 }
