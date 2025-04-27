@@ -2,6 +2,7 @@
 import type { IEntityBase } from '@/models/basemodel';
 
 export interface GameAccount extends IEntityBase {
+  gameName: string;
   gameInforID?: number | null;
   userID?: number | null;
   accountName?: string | null;

@@ -1,10 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import HomeView from "../views/HomeView.vue"; // Trang admin hoặc home
-import LoginView from "@/views/LoginView.vue";
-import AdminWebsiteAccount from "@/views/AdminWebsiteAccount.vue";
-import GameInforView from "@/views/GameInforView.vue";
 import WithdrawRequestsView from "@/views/WithdrawRequestsView.vue";
-import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue'; // Trang admin hoặc home
 import LoginView from '@/views/LoginView.vue';
 import AdminWebsiteAccount from '@/views/AdminWebsiteAccount.vue';

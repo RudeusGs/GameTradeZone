@@ -118,9 +118,6 @@ const router = createRouter({
         serviceId: parseInt(Array.isArray(route.params.id) ? route.params.id[0] : route.params.id),
         serviceName: route.query.name,
       }),
-      path: "/transactions",
-      name: "transactions",
-      component: () => import("@/views/ServiceView.vue"),
     },
     {
       path: "/transaction-history",

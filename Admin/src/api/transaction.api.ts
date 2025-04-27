@@ -1,7 +1,4 @@
-import baseApi from "./base.api"; // Assuming you have a baseApi setup
-
-// Define interfaces based on C# models if needed, e.g.:
-// interface WithdrawMoneyModel { ... }
+import baseApi from "./base.api";
 
 const transactionApi = {
   getAllTransactions: async () => {

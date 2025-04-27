@@ -82,16 +82,6 @@ const logout = () => {
       </li>
       <li>
         <router-link
-          to="/admin/roles"
-          class="menu-link"
-          :class="{ active: $route.path === '/admin/roles' }"
-        >
-          <i class="material-icons">security</i>
-          <span class="menu-text" v-if="!isCollapsed">Bài đăng</span>
-        </router-link>
-      </li>
-      <li>
-        <router-link
           to="/admin/products"
           class="menu-link"
           :class="{ active: $route.path === '/admin/products' }"
@@ -158,14 +148,6 @@ const logout = () => {
           </i>
         </div>
         <ul class="submenu" v-show="dropdownStates.transactions">
-          <li>
-            <router-link
-              to="/admin/transactions/deposit"
-              :class="{ active: $route.path === '/admin/transactions/deposit' }"
-            >
-              Nạp tiền
-            </router-link>
-          </li>
           <li>
             <router-link
               to="/withdraw-requests"

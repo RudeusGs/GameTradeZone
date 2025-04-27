@@ -14,8 +14,7 @@
               ]"
             ></i>
             <div class="logo-glow"></div>
-            <i :class="['fas', isSlidePanelOpen ? 'fa-chevron-up' : 'fa-chevron-down', 'caret-icon']"></i>
-          </div>
+          </span>
           <a href="/" class="cosmo-home">
             <img
               style="width: 40px; margin-left: 10px"
@@ -172,7 +171,7 @@
             </div>
           </transition>
         </div>
-        
+
         <!-- Notification Icon -->
         <div class="dropdown-container">
           <div
@@ -328,10 +327,6 @@
               <div class="menu-item" @click="goToProfile">
                 <i class="fas fa-user"></i>
                 <span>Thông tin</span>
-              </div>
-              <div class="menu-item" @click="goToTransactionHistory">
-                <i class="fas fa-cog"></i>
-                <span>Lịch sử giao dịch</span>
               </div>
               <div class="menu-item" @click="goToSettings">
                 <i class="fas fa-cog"></i>
@@ -707,6 +702,7 @@ export default {
     const resetIcon = (event) => {
       event.target.classList.remove("animate-bounce");
     };
+
     const goToTransactionHistory = () => {
       if (!isLoggedIn.value) {
         router.push("/login");
@@ -715,6 +711,7 @@ export default {
       }
       closeAllMenus();
     };
+
     const closeAllMenus = () => {
       isUserMenuOpen.value = false;
       isAddMenuOpen.value = false;
