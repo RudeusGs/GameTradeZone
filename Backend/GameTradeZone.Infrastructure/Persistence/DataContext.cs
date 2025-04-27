@@ -36,6 +36,7 @@ namespace GameTradeZone.Infrastructure.Persistence
         public DbSet<AuctionDetail> AuctionDetails { get; set; }
         public DbSet<AuctionPrize> AuctionPrizes { get; set; }
         public DbSet<OTPs> OTPs { get; set; }
+        public DbSet<EmailLog> EmailLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -45,6 +46,27 @@ namespace GameTradeZone.Infrastructure.Persistence
             builder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
+            builder.Entity<EmailLog>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<EmailLog>()
+                .Property(e => e.Subject)
+                .HasMaxLength(255);
+
+            builder.Entity<EmailLog>()
+                .Property(e => e.SenderEmail)
+                .HasMaxLength(255);
+
+            builder.Entity<EmailLog>()
+                .Property(e => e.ReceiverEmail)
+                .HasMaxLength(255);
+
+            builder.Entity<EmailLog>()
+                .Property(e => e.ErrorMessage)
+                .HasMaxLength(1000);
         }
     }
 }

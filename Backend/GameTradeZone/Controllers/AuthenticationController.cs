@@ -125,5 +125,27 @@ namespace GameTradeZone.Controllers
                 return Ok(result.Data);
             return BadRequest(result.Message);
         }
+        [HttpPost("send-custom-email")]
+        [Authorize]
+        public async Task<IActionResult> SendCustomEmail(SendCustomEmailRequest model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest("Invalid request data.");
+            }
+
+            var result = await _authenticateService.SendCustomEmailAsync(model.UserId, model.Subject, model.MessageBody);
+            if (result.Data != null)
+            {
+                return Ok(result.Data);
+            }
+            return BadRequest(result.Message);
+        }
+        public class SendCustomEmailRequest
+        {
+            public int UserId { get; set; }
+            public string Subject { get; set; }
+            public string MessageBody { get; set; }
+        }
     }
 }

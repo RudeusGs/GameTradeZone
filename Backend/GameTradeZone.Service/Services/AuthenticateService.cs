@@ -488,5 +488,101 @@ namespace GameTradeZone.Service.Services
                 return new ApiResult { Message = $"An error occurred while verifying OTP: {ex.Message}" };
             }
         }
+        public async Task<ApiResult> SendCustomEmailAsync(int userId, string subject, string messageBody)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId.ToString());
+                if (user == null || user.DeleteDate.HasValue)
+                {
+                    return new ApiResult { Message = "Người dùng không tồn tại hoặc đã bị xóa." };
+                }
+
+                if (string.IsNullOrWhiteSpace(user.Email))
+                {
+                    return new ApiResult { Message = "Người dùng không có địa chỉ email hợp lệ." };
+                }
+
+                if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(messageBody))
+                {
+                    return new ApiResult { Message = "Tiêu đề và nội dung email không được để trống." };
+                }
+
+                // Kiểm tra độ dài chuỗi để tránh lỗi cơ sở dữ liệu
+                if (subject.Length > 255)
+                {
+                    return new ApiResult { Message = "Tiêu đề email không được dài quá 255 ký tự." };
+                }
+
+                if (user.Email.Length > 255)
+                {
+                    return new ApiResult { Message = "Địa chỉ email người nhận không được dài quá 255 ký tự." };
+                }
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress("gametradezone.gtz@gmail.com"),
+                    Subject = subject,
+                    Body = messageBody,
+                    IsBodyHtml = true
+                };
+                mailMessage.To.Add(user.Email);
+
+                var smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential("gametradezone.gtz@gmail.com", "vgcz gkhd xoic rgmd"),
+                    EnableSsl = true
+                };
+
+                // Tạo bản ghi EmailLog
+                var emailLog = new EmailLog
+                {
+                    UserId = userId,
+                    Subject = subject,
+                    MessageBody = messageBody,
+                    SenderEmail = "gametradezone.gtz@gmail.com",
+                    ReceiverEmail = user.Email,
+                    SentDate = DateTime.Now,
+                    IsSuccess = true, // Sẽ cập nhật nếu gửi thất bại
+                    CreatedDate = DateTime.Now
+                };
+
+                try
+                {
+                    await smtpClient.SendMailAsync(mailMessage);
+                }
+                catch (Exception ex)
+                {
+                    emailLog.IsSuccess = false;
+                    emailLog.ErrorMessage = ex.Message.Length > 1000 ? ex.Message.Substring(0, 1000) : ex.Message;
+                }
+
+                // Lưu bản ghi vào cơ sở dữ liệu
+                try
+                {
+                    await _dbContext.EmailLogs.AddAsync(emailLog);
+                    await _dbContext.SaveChangesAsync();
+                }
+                catch (Exception dbEx)
+                {
+                    var innerException = dbEx.InnerException?.Message ?? dbEx.Message;
+                    return new ApiResult { Message = $"Lỗi khi lưu bản ghi email vào cơ sở dữ liệu: {innerException}" };
+                }
+
+                if (!emailLog.IsSuccess)
+                {
+                    return new ApiResult { Message = $"Lỗi khi gửi email: {emailLog.ErrorMessage}" };
+                }
+
+                return new ApiResult
+                {
+                    Data = new { Message = "Gửi email thành công." }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult { Message = $"Lỗi khi gửi email: {ex.Message}" };
+            }
+        }
     }
 }

@@ -1,6 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import WithdrawRequestsView from "@/views/WithdrawRequestsView.vue";
+import HomeView from "@/views/HomeView.vue";
+import LoginView from "@/views/LoginView.vue";
+import AdminWebsiteAccount from "@/views/AdminWebsiteAccount.vue";
+import GameInforView from "@/views/GameInforView.vue";
 import StaticView from "@/views/StaticView.vue";
+import GameAccountView from "@/views/GameAccountView.vue";
+import DisputeView from "@/views/DisputeView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -30,10 +36,26 @@ const router = createRouter({
       component: GameInforView,
     },
     {
+      path: "/game-account",
+      name: "game-account",
+      component: GameAccountView,
+    },
+    {
       path: "/withdraw-requests",
       name: "withdraw-requests",
       component: WithdrawRequestsView,
     },
+    {
+      path: "/static",
+      name: "static",
+      component: StaticView,
+    },
+    {
+      path: "/dispute",
+      name: "dispute",
+      component: DisputeView,
+    },
+    
   ],
 });
 

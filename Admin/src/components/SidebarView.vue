@@ -82,12 +82,12 @@ const logout = () => {
       </li>
       <li>
         <router-link
-          to="/admin/products"
+          to="/dispute"
           class="menu-link"
-          :class="{ active: $route.path === '/admin/products' }"
+          :class="{ active: $route.path === '/dispute' }"
         >
-          <i class="material-icons">store</i>
-          <span class="menu-text" v-if="!isCollapsed">Dịch vụ</span>
+          <i class="material-icons">flag</i>
+          <span class="menu-text" v-if="!isCollapsed">Tố cáo</span>
         </router-link>
       </li>
       <!-- Đấu giá -->

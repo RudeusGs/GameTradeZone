@@ -13,5 +13,6 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> UpdateUser(string userId, UpdateUserModel model);
         Task<ApiResult> SendOtpForEmailVerificationAsync(string email);
         Task<ApiResult> VerifyOtpForEmailVerificationAsync(VerifyOtpModel model);
+        Task<ApiResult> SendCustomEmailAsync(int userId, string subject, string messageBody);
     } 
 }
