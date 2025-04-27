@@ -86,4 +86,17 @@ public class RechargeBankController : BaseController
         }
 
     }
+    [HttpGet("all-withdraws")]
+    public async Task<IActionResult> GetAllWithdrawMoneyRequest()
+    {
+        try
+        {
+            var result = await _rechargeBankService.GetAllWithdrawMoneyRequest();
+            return Response(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

@@ -176,7 +176,7 @@ const logout = () => {
           </li>
           <li>
             <router-link
-              to="/admin/transactions/withdraw"
+              to="/withdraw-requests"
               :class="{
                 active: $route.path === '/admin/transactions/withdraw',
               }"

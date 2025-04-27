@@ -177,7 +177,51 @@ public class RechargeBankService : IRechargeBankService
         }
     }
 
+    public async Task<ApiResult> GetAllWithdrawMoneyRequest()
+    {
+        try
+        {
+            // Truy vấn tất cả các yêu cầu rút tiền và kết hợp với thông tin người dùng
+            var withdrawals = await _context.WithDrawnMoneys
+                .Join(
+                    _context.Users,
+                    withdrawal => withdrawal.UserID,
+                    user => user.Id,
+                    (withdrawal, user) => new
+                    {
+                        withdrawal.Id,
+                        withdrawal.UserID,
+                        withdrawal.Amount,
+                        withdrawal.Status,
+                        withdrawal.DrawnType,
+                        withdrawal.CreatedDate,
+                        withdrawal.UpdatedDate,
+                        withdrawal.DeleteDate,
+                        user.UserName,    // Lấy tên người dùng
+                        user.BankNumber,  // Lấy số tài khoản
+                        user.BankName     // Lấy tên ngân hàng
+                    }
+                )
+                .ToListAsync();
 
+            // Kiểm tra nếu không có yêu cầu rút tiền nào
+            if (withdrawals == null || withdrawals.Count == 0)
+            {
+                return new ApiResult { Message = "No withdrawal requests found." };
+            }
+
+            // Trả về danh sách yêu cầu rút tiền
+            return new ApiResult
+            {
+                Data = withdrawals,
+                Message = "Withdrawal requests retrieved successfully."
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResult { Message = $"An error occurred: {ex.Message}" };
+        }
+    }
     public async Task<ApiResult> WithdrawMoneyRequest(WithdrawMoneyModel model)
     {
         try
