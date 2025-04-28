@@ -177,5 +177,19 @@ namespace GameTradeZone.Controllers
                 return Response(e.Message, 500);
             }
         }
+        [Authorize]
+        [HttpPost("Check-TimeOut")]
+        public async Task<IActionResult> CheckConfirmationTimeout(int id)
+        {
+            try
+            {
+                var result = await _purchasedAccountService.CheckConfirmationTimeout(id);
+                return Response(result);
+            }
+            catch (Exception e)
+            {
+                return Response(e.Message, 500);
+            }
+        }
     }
 }

@@ -391,23 +391,22 @@ namespace GameTradeZone.Service.Services
             }
         }
 
-        // Updated method to check and process OTP timeouts
-        public async Task<ApiResult> CheckOTPTimeout(int id)
+        public async Task<ApiResult> CheckConfirmationTimeout(int id)
         {
             var purchased = await _dataContext.PurchasedAccounts.FirstOrDefaultAsync(x => x.Id == id);
             if (purchased == null || purchased.IsDelete == true)
             {
                 return new ApiResult { Message = "Không tìm thấy giao dịch này" };
             }
-            if (purchased.OTPSentTime == null || purchased.StatusBuyer == "Mua thành công" || purchased.StatusBuyer == "Đã từ chối")
+            if (purchased.ConfirmationDeadline == null || purchased.StatusBuyer == "Mua thành công" || purchased.StatusBuyer == "Đã từ chối")
             {
                 return new ApiResult { Message = "Giao dịch không đủ điều kiện kiểm tra timeout" };
             }
 
-            var timeElapsed = DateTime.Now - purchased.OTPSentTime.Value;
-            if (timeElapsed.TotalHours < OTP_TIMEOUT_HOURS)
+            var timeElapsed = DateTime.Now - purchased.ConfirmationDeadline.Value;
+            if (timeElapsed.TotalHours < 0)
             {
-                return new ApiResult { Message = "OTP vẫn còn hiệu lực" };
+                return new ApiResult { Message = "Thời gian xác nhận vẫn còn hiệu lực" };
             }
 
             var buyer = await _dataContext.Users.FirstOrDefaultAsync(x => x.Id == purchased.UserID);
@@ -421,22 +420,18 @@ namespace GameTradeZone.Service.Services
             var tran = await _dataContext.Database.BeginTransactionAsync();
             try
             {
-                // Cộng tiền cho người bán
                 decimal sellerAmount = purchased.Price * 0.93m;
                 seller.Balance += sellerAmount;
                 UpdateSellerLevel(seller, (long)purchased.Price);
-                UpdateSellerLevel(buyer, (long)purchased.Price); // Cộng kinh nghiệm cho người mua như giao dịch thành công
+                UpdateSellerLevel(buyer, (long)purchased.Price);
 
-                // Trừ kinh nghiệm của người mua vì không xác nhận
                 buyer.Experience = Math.Max(0, buyer.Experience - EXPERIENCE_PENALTY);
 
-                // Cập nhật trạng thái giao dịch thành công
                 purchased.StatusBuyer = "Mua thành công";
                 purchased.StatusSeller = "Thành công";
                 purchased.Reason = "Tự động hoàn tất do người mua không xác nhận trong thời gian quy định";
                 purchased.UpdatedDate = DateTime.Now;
 
-                // Gửi thông báo cho cả hai bên
                 var buyerNoti = new Notification
                 {
                     TypeNoti = "Giao dịch hoàn tất",
@@ -465,7 +460,7 @@ namespace GameTradeZone.Service.Services
                 _dataContext.Notifications.Add(sellerNoti);
                 await _dataContext.SaveChangesAsync();
                 await tran.CommitAsync();
-                return new ApiResult { Message = "Đã xử lý giao dịch do OTP hết hạn" };
+                return new ApiResult { Message = "Đã xử lý giao dịch do hết thời gian xác nhận" };
             }
             catch (Exception ex)
             {

@@ -773,6 +773,9 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<string>("AccountName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("ConfirmationDeadline")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("CreatedDate")
                         .HasColumnType("datetime2");
 

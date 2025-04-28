@@ -137,9 +137,9 @@
                 {{ getStatusText(account.statusBuyer ?? undefined) }}
               </div>
               <button 
-                v-if="account.statusBuyer !== 'Mua thành công'" 
+                v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối'" 
                 class="report-btn" 
-                @click="openReportModal(account.id)"
+                @click="openDisputeModal(account.id)"
               >
                 <i class="fas fa-exclamation-triangle"></i>
               </button>
@@ -174,10 +174,19 @@
                     <div class="detail-value price-value">{{ formatPrice(account.price) }}</div>
                   </div>
                 </div>
+                <div v-if="account.statusBuyer === 'Chưa xác nhận'" class="detail-row">
+                  <div class="detail-icon"><i class="fas fa-clock"></i></div>
+                  <div class="detail-content">
+                    <div class="detail-label">THỜI GIAN XÁC NHẬN</div>
+                    <div class="detail-value countdown-value" @click="openCountdownModal(account.id)">
+                      <i class="fas fa-clock"></i>
+                      {{ getCountdown(account.id) || 'Hết hạn' }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="account-actions">
-              <!-- Direct Confirm Button (Chỉ hiển thị khi chưa xác nhận) -->
               <button
                 v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối'"
                 class="cyber-button direct-confirm-btn"
@@ -186,7 +195,6 @@
                 <span class="button-content">XÁC NHẬN TRỰC TIẾP</span>
                 <span class="button-glitch"></span>
               </button>
-              <!-- Reject Button (Chỉ hiển thị khi chưa xác nhận) -->
               <button
                 v-if="account.statusBuyer !== 'Mua thành công' && account.statusBuyer !== 'Đã từ chối'"
                 class="cyber-button reject-btn"
@@ -233,7 +241,10 @@
               <div class="status-badge status-trading">
                 ĐANG GIAO DỊCH
               </div>
-              <button class="report-btn" @click="openReportModal(account.id)">
+              <button 
+                class="report-btn" 
+                @click="openDisputeModal(account.id)"
+              >
                 <i class="fas fa-exclamation-triangle"></i>
               </button>
             </div>
@@ -253,12 +264,20 @@
                     <div class="detail-value price-value">{{ formatPrice(account.price) }}</div>
                   </div>
                 </div>
+                <div v-if="account.statusBuyer === 'Chưa xác nhận'" class="detail-row">
+                  <div class="detail-icon"><i class="fas fa-clock"></i></div>
+                  <div class="detail-content">
+                    <div class="detail-label">THỜI GIAN XÁC NHẬN</div>
+                    <div class="detail-value countdown-value" @click="openCountdownModal(account.id)">
+                      <i class="fas fa-clock"></i>
+                      {{ getCountdown(account.id) || 'Hết hạn' }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="account-actions">
-              <!-- Buyer's Actions -->
               <template v-if="account.userID === userId">
-                <!-- Direct Confirm Button (Chỉ hiển thị khi chưa xác nhận) -->
                 <button
                   class="cyber-button direct-confirm-btn"
                   @click="openDirectConfirmModal(account.id)"
@@ -266,7 +285,6 @@
                   <span class="button-content">XÁC NHẬN TRỰC TIẾP</span>
                   <span class="button-glitch"></span>
                 </button>
-                <!-- Reject Button (Chỉ hiển thị khi chưa xác nhận) -->
                 <button
                   class="cyber-button reject-btn"
                   @click="openRejectModal(account.id)"
@@ -274,10 +292,6 @@
                   <span class="button-content">TỪ CHỐI</span>
                   <span class="button-glitch"></span>
                 </button>
-              </template>
-              <!-- Seller's Actions -->
-              <template v-else-if="account.sellerID === userId">
-                <!-- No actions for seller in this simplified version -->
               </template>
             </div>
           </div>
@@ -354,6 +368,66 @@
         </div>
       </div>
 
+      <!-- Dispute Modal -->
+      <div v-if="showDisputeModal" class="modal-overlay" @click.self="closeDisputeModal">
+        <div class="cyber-modal dispute-modal">
+          <div class="modal-header">
+            <h3>BÁO CÁO TRANH CHẤP</h3>
+            <button class="close-btn" @click="closeDisputeModal">×</button>
+          </div>
+          <div class="modal-content">
+            <p>Vui lòng nhập lý do tranh chấp và tải lên các file liên quan (nếu có):</p>
+            <textarea 
+              v-model="disputeReason" 
+              placeholder="Nhập lý do..." 
+              rows="4"
+              class="cyber-textarea"
+            ></textarea>
+            <input type="file" multiple @change="handleFileUpload" class="file-input" />
+          </div>
+          <div class="modal-actions">
+            <button @click="closeDisputeModal" class="cyber-button cancel-btn">
+              <span class="button-content">HỦY</span>
+              <span class="button-glitch"></span>
+            </button>
+            <button @click="submitDispute" class="cyber-button confirm-btn">
+              <span class="button-content">GỬI BÁO CÁO</span>
+              <span class="button-glitch"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Countdown Modal -->
+      <div v-if="showCountdownModal" class="modal-overlay" @click.self="closeCountdownModal">
+        <div class="cyber-modal countdown-modal">
+          <div class="modal-header">
+            <h3>THỜI GIAN XÁC NHẬN</h3>
+            <button class="close-btn" @click="closeCountdownModal">×</button>
+          </div>
+          <div class="modal-content">
+            <div class="modal-hologram">
+              <div class="hologram-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+              </div>
+              <div class="hologram-icon countdown-icon">
+                <i class="fas fa-clock"></i>
+              </div>
+            </div>
+            <p v-if="countdownTime">Thời gian còn lại để xác nhận tài khoản: <strong>{{ countdownTime }}</strong></p>
+            <p v-else>Thời hạn xác nhận đã hết. Hệ thống sẽ tự động hoàn tất giao dịch.</p>
+            <p>Nếu không xác nhận trong thời gian quy định, giao dịch sẽ tự động hoàn tất, bạn sẽ bị trừ 100,000 điểm kinh nghiệm, và số tiền sẽ được chuyển cho người bán.</p>
+          </div>
+          <div class="modal-actions">
+            <button @click="closeCountdownModal" class="cyber-button ok-btn">
+              <span class="button-content">XÁC NHẬN</span>
+              <span class="button-glitch"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Result Modal -->
       <div v-if="showResultModal" class="modal-overlay" @click.self="closeResultModal">
         <div class="cyber-modal result-modal">
@@ -381,42 +455,12 @@
           </div>
         </div>
       </div>
-
-      <!-- Dispute Report Modal -->
-      <div v-if="showReportModal" class="modal-overlay" @click.self="closeReportModal">
-        <div class="cyber-modal report-modal">
-          <div class="modal-header">
-            <h3>BÁO CÁO TRANH CHẤP</h3>
-            <button class="close-btn" @click="closeReportModal">×</button>
-          </div>
-          <div class="modal-content">
-            <p>Vui lòng nhập lý do báo cáo và tải lên các file liên quan (nếu có):</p>
-            <textarea 
-              v-model="reportReason" 
-              placeholder="Nhập lý do..." 
-              rows="4"
-              class="cyber-textarea"
-            ></textarea>
-            <input type="file" multiple @change="handleFileUpload" class="file-input" />
-          </div>
-          <div class="modal-actions">
-            <button @click="closeReportModal" class="cyber-button cancel-btn">
-              <span class="button-content">HỦY</span>
-              <span class="button-glitch"></span>
-            </button>
-            <button @click="submitReport" class="cyber-button confirm-btn">
-              <span class="button-content">GỬI BÁO CÁO</span>
-              <span class="button-glitch"></span>
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { userStore } from '@/stores/auth';
 import purchasedApi from '@/api/purchased.api';
 import disputeApi from '@/api/dispute.api';
@@ -433,15 +477,18 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const showDirectConfirmModal = ref(false);
 const showRejectModal = ref(false);
-const showReportModal = ref(false);
+const showDisputeModal = ref(false);
 const showResultModal = ref(false);
+const showCountdownModal = ref(false);
 const selectedAccountId = ref<number | null>(null);
 const rejectionReason = ref('');
-const reportReason = ref('');
-const reportFiles = ref<File[]>([]);
+const disputeReason = ref('');
+const disputeFiles = ref<File[]>([]);
 const resultMessage = ref('');
 const resultType = ref<'success' | 'error' | 'info'>('info');
 const activeTab = ref('purchased');
+const countdownTimers = ref<{ [key: number]: string }>({});
+const countdownInterval = ref<number | null>(null);
 
 // Computed properties
 const resultIconClass = computed(() => {
@@ -456,6 +503,13 @@ const getResultIcon = computed(() => {
   if (resultType.value === 'success') return 'fas fa-check';
   if (resultType.value === 'error') return 'fas fa-times';
   return 'fas fa-info';
+});
+
+const countdownTime = computed(() => {
+  if (selectedAccountId.value !== null) {
+    return countdownTimers.value[selectedAccountId.value] || '';
+  }
+  return '';
 });
 
 // Helper functions
@@ -484,6 +538,60 @@ function copyToClipboard(text: string) {
   showResultModal.value = true;
 }
 
+function getCountdown(accountId: number) {
+  return countdownTimers.value[accountId];
+}
+
+function updateCountdowns() {
+  const now = new Date();
+  [...purchasedAccounts.value, ...tradingAccounts.value].forEach(account => {
+    if (account.statusBuyer === 'Chưa xác nhận' && account.createdDate) {
+      const createdStr = typeof account.createdDate === 'string' && account.createdDate.includes('+07:00') 
+        ? account.createdDate 
+        : `${account.createdDate}+07:00`;
+      const created = new Date(createdStr);
+      const elapsedTime = now.getTime() - created.getTime();
+      const totalTime = 24 * 60 * 60 * 1000;
+      const remainingTime = totalTime - elapsedTime;
+
+      if (remainingTime <= 0) {
+        countdownTimers.value[account.id] = '';
+        checkTimeout(account.id);
+      } else {
+        const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+        const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+        countdownTimers.value[account.id] = `${hours.toString().padStart(2, '0')}:${minutes
+          .toString()
+          .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+    }
+  });
+}
+
+// API call to check timeout
+        
+        // Format remaining time and update countdown timer
+async function checkTimeout(accountId: number) {
+  try {
+    const response = await purchasedApi.checkConfirmationTimeout(accountId);
+    if (response.data.result.isSuccess) {
+      resultType.value = 'info';
+      resultMessage.value = response.data.result.message || 'Giao dịch đã được xử lý do hết thời gian xác nhận.';
+      showResultModal.value = true;
+      await fetchAllAccounts();
+    } else {
+      resultType.value = 'error';
+      resultMessage.value = response.data.result.message || 'Lỗi khi kiểm tra thời gian xác nhận.';
+      showResultModal.value = true;
+    }
+  } catch (err) {
+    resultType.value = 'error';
+    resultMessage.value = 'Lỗi khi kiểm tra thời gian xác nhận: ' + (err as Error).message;
+    showResultModal.value = true;
+  }
+}
+
 // Fetch all accounts
 async function fetchAllAccounts() {
   try {
@@ -493,6 +601,13 @@ async function fetchAllAccounts() {
     if (purchasedResponse.data.result.isSuccess) {
       const data = purchasedResponse.data.result.data ?? [];
       purchasedAccounts.value = Array.isArray(data) ? data.filter(account => account !== null) : [];
+      // Log để kiểm tra ConfirmationDeadline
+      console.log('Purchased Accounts:', purchasedAccounts.value);
+      purchasedAccounts.value.forEach(account => {
+        if (account.ConfirmationDeadline) {
+          console.log(`Account ${account.id} - ConfirmationDeadline: ${new Date(account.ConfirmationDeadline)}`);
+        }
+      });
     } else {
       error.value = purchasedResponse.data.result?.message || 'Lỗi khi tải dữ liệu tài khoản đã mua';
       return;
@@ -508,6 +623,11 @@ async function fetchAllAccounts() {
       } else {
         tradingAccounts.value = [];
       }
+      tradingAccounts.value.forEach(account => {
+        if (account.ConfirmationDeadline) {
+          console.log(`Account ${account.id} - ConfirmationDeadline: ${new Date(account.ConfirmationDeadline)}`);
+        }
+      });
     } else {
       error.value = tradingResponse.data.result?.message || 'Lỗi khi tải dữ liệu tài khoản đang giao dịch';
     }
@@ -516,6 +636,7 @@ async function fetchAllAccounts() {
     console.error(err);
   } finally {
     loading.value = false;
+    updateCountdowns();
   }
 }
 
@@ -547,6 +668,16 @@ function cancelReject() {
   selectedAccountId.value = null;
 }
 
+function openCountdownModal(id: number) {
+  selectedAccountId.value = id;
+  showCountdownModal.value = true;
+}
+
+function closeCountdownModal() {
+  showCountdownModal.value = false;
+  selectedAccountId.value = null;
+}
+
 async function handleDirectConfirm() {
   if (selectedAccountId.value !== null) {
     const success = await confirmAccount(selectedAccountId.value);
@@ -565,7 +696,10 @@ async function confirmReject() {
       if (response.data.result.isSuccess && response.data.result.data) {
         const account = purchasedAccounts.value.find((a) => a.id === selectedAccountId.value) ||
                        tradingAccounts.value.find((a) => a.id === selectedAccountId.value);
-        if (account) account.statusBuyer = 'Đã từ chối';
+        if (account) {
+          account.statusBuyer = 'Đã từ chối';
+          openDisputeModal(selectedAccountId.value!);
+        }
         resultType.value = 'info';
         resultMessage.value = 'Bạn đã từ chối tài khoản này';
         showResultModal.value = true;
@@ -582,7 +716,6 @@ async function confirmReject() {
     } finally {
       showRejectModal.value = false;
       rejectionReason.value = '';
-      selectedAccountId.value = null;
     }
   } else {
     resultType.value = 'error';
@@ -623,28 +756,30 @@ function closeResultModal() {
 }
 
 // Dispute-related functions
-function openReportModal(id: number) {
+function openDisputeModal(id: number) {
   selectedAccountId.value = id;
-  showReportModal.value = true;
+  disputeReason.value = rejectionReason.value;
+  showDisputeModal.value = true;
 }
 
-function closeReportModal() {
-  showReportModal.value = false;
-  reportReason.value = '';
-  reportFiles.value = [];
+function closeDisputeModal() {
+  showDisputeModal.value = false;
+  disputeReason.value = '';
+  disputeFiles.value = [];
+  selectedAccountId.value = null;
 }
 
 function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target.files) {
-    reportFiles.value = Array.from(target.files);
+    disputeFiles.value = Array.from(target.files);
   }
 }
 
-async function submitReport() {
-  if (reportReason.value.trim() === '') {
+async function submitDispute() {
+  if (disputeReason.value.trim() === '') {
     resultType.value = 'error';
-    resultMessage.value = 'Vui lòng nhập lý do báo cáo!';
+    resultMessage.value = 'Vui lòng nhập lý do tranh chấp!';
     showResultModal.value = true;
     return;
   }
@@ -658,8 +793,8 @@ async function submitReport() {
 
   const formData = new FormData();
   formData.append('purchasedAccountID', selectedAccountId.value.toString());
-  formData.append('reason', reportReason.value);
-  reportFiles.value.forEach((file, index) => {
+  formData.append('reason', disputeReason.value);
+  disputeFiles.value.forEach((file, index) => {
     formData.append(`files[${index}]`, file);
   });
 
@@ -669,7 +804,7 @@ async function submitReport() {
       resultType.value = 'success';
       resultMessage.value = 'Báo cáo tranh chấp đã được gửi thành công!';
       showResultModal.value = true;
-      closeReportModal();
+      closeDisputeModal();
     } else {
       resultType.value = 'error';
       resultMessage.value = response.data.result?.message || 'Lỗi khi gửi báo cáo tranh chấp';
@@ -738,10 +873,18 @@ function initCyberLines() {
   }
 }
 
+// Lifecycle hooks
 onMounted(() => {
   fetchAllAccounts();
   initParticles();
   initCyberLines();
+  countdownInterval.value = setInterval(updateCountdowns, 1000);
+});
+
+onUnmounted(() => {
+  if (countdownInterval.value) {
+    clearInterval(countdownInterval.value);
+  }
 });
 </script>
 
@@ -1242,6 +1385,12 @@ onMounted(() => {
   box-shadow: 0 0 30px rgba(255, 165, 0, 0.5);
 }
 
+.countdown-icon {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+}
+
 .empty-title {
   font-size: 2rem;
   color: #ffffff;
@@ -1495,6 +1644,21 @@ onMounted(() => {
 .price-value {
   color: #00ff7f;
   font-weight: 600;
+}
+
+.countdown-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #ffa500;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.countdown-value:hover {
+  color: #ffcc00;
+  text-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
 }
 
 /* Account Actions */

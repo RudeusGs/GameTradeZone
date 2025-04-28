@@ -15,4 +15,5 @@ export interface PurchasedAccount extends IEntityBase {
   reason?: string | null;
   OTPSentTime?: string | null;
   isDelete?: boolean | null;
+  ConfirmationDeadline: string | null;
 }

@@ -101,7 +101,7 @@ namespace GameTradeZone.Service.Services
             {
                 return new ApiResult { Message = "Số dư không đủ" };
             }
-            if(buyer.Id == seller.Id )
+            if (buyer.Id == seller.Id)
             {
                 return new ApiResult { Message = "Không thể tự mua tài khoản của chính mình" };
             }
@@ -109,9 +109,9 @@ namespace GameTradeZone.Service.Services
             {
                 try
                 {
+                    DateTime now = DateTime.Now;
                     buyer.Balance -= accountGame.Price;
                     _dataContext.Users.Update(buyer);
-
                     var newPurchasedAccount = new PurchasedAccount
                     {
                         UserID = _userService.UserId,
@@ -125,8 +125,10 @@ namespace GameTradeZone.Service.Services
                         StatusSeller = "Đang chờ",
                         IsDelete = false,
                         CreatedDate = DateTime.Now,
-                    };
-                    
+                        ConfirmationDeadline = now.AddHours(23).AddMinutes(59).AddSeconds(59),
+
+                };
+
                     _dataContext.Add(newPurchasedAccount);
                     accountGame.Status = "Đã bán";
                     _dataContext.Update(accountGame);
@@ -144,7 +146,7 @@ namespace GameTradeZone.Service.Services
         }
 
 
-        public async Task<ApiResult> Delete(int id)
+    public async Task<ApiResult> Delete(int id)
         {
             var accountGame = await _dataContext.AccountGames.FirstOrDefaultAsync(x => x.Id == id);
             if(accountGame == null || accountGame.IsDelete == true)

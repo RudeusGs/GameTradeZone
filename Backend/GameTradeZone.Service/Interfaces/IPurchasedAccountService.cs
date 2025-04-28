@@ -17,5 +17,6 @@ namespace GameTradeZone.Service.Interfaces
         Task<ApiResult> GetDontConfirm();
         Task<ApiResult> ResendOTP(int id, string response);
         Task<ApiResult> ResendEmail(int id, string email);
+       Task<ApiResult> CheckConfirmationTimeout(int id);
     }
 }

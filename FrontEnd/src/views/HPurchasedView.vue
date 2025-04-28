@@ -160,12 +160,6 @@ const getStatusClass = (status: string) => {
     <div class="content-wrapper">
       <!-- Sidebar -->
       <div class="sidebar">
-        <div class="sidebar-header">
-          <div class="logo">
-            <i class="fas fa-gamepad"></i>
-            <span>Game Center</span>
-          </div>
-        </div>
         <div class="sidebar-menu">
           <div 
             class="menu-item" 
@@ -425,7 +419,7 @@ const getStatusClass = (status: string) => {
 /* Base Styles */
 .purchase-history-container {
   font-family: 'Poppins', 'Roboto', sans-serif;
-  color: #333;
+  color: #ffffff;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -440,7 +434,6 @@ const getStatusClass = (status: string) => {
 /* Sidebar Styles */
 .sidebar {
   width: 260px;
-  background: linear-gradient(135deg, #6e8efb, #a777e3);
   color: white;
   display: flex;
   flex-direction: column;
@@ -498,7 +491,6 @@ const getStatusClass = (status: string) => {
 /* Main Content Styles */
 .main-content {
   flex: 1;
-  background: #f8f9fc;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -506,7 +498,6 @@ const getStatusClass = (status: string) => {
 
 /* Header Styles */
 .header {
-  background: white;
   padding: 24px 32px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   display: flex;
@@ -549,8 +540,6 @@ const getStatusClass = (status: string) => {
   border-radius: 50px;
   font-size: 14px;
   transition: all 0.2s ease;
-  background: white;
-  color: #333;
 }
 
 .search-input:focus {
@@ -601,7 +590,6 @@ const getStatusClass = (status: string) => {
 }
 
 .tab-content {
-  background: white;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   flex: 1;
@@ -648,8 +636,7 @@ const getStatusClass = (status: string) => {
 }
 
 .data-table th {
-  background: #f8f9fc;
-  color: #495057;
+  color: #ffffff;
   font-weight: 600;
   text-align: left;
   padding: 16px;
@@ -660,7 +647,7 @@ const getStatusClass = (status: string) => {
 .data-table td {
   padding: 16px;
   border-bottom: 1px solid #e9ecef;
-  color: #495057;
+  color: #ffffff;
   font-size: 14px;
   vertical-align: middle;
 }
@@ -669,9 +656,6 @@ const getStatusClass = (status: string) => {
   transition: background 0.2s ease;
 }
 
-.table-row:hover {
-  background: #f8f9fc;
-}
 
 .text-center {
   text-align: center;

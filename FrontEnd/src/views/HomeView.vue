@@ -6,7 +6,7 @@ import gameAccountApi from '@/api/gameaccount.api';
 import gamefieldApi from '@/api/gamefield.api';
 import serviceApi from '@/api/service.api';
 import GamingLoader from '@/components/LoadingPage.vue';
-import SellerTooltip from '@/components/SellerTooltip.vue'; // Import SellerTooltip
+import SellerTooltip from '@/components/SellerTooltip.vue';
 import { userStore } from '@/stores/auth';
 
 interface Game {
@@ -26,6 +26,7 @@ interface Account {
   fields: { fieldName: string; fieldValue: string }[];
   priceMin: number;
   createdDate: string;
+  isCheck: boolean;
 }
 
 interface Service {
@@ -90,6 +91,10 @@ const purchaseStatus = ref<'success' | 'error'>('success');
 const purchaseMessage = ref<string>('');
 
 const showMoreDetails = ref<number[]>([]);
+
+// Trạng thái cho modal xác nhận mua
+const showConfirmBuyModal = ref(false);
+const confirmBuyAccount = ref<Account | null>(null);
 
 // Trạng thái cho modal thuê dịch vụ
 const showConfirmModal = ref(false);
@@ -198,6 +203,7 @@ const fetchAccounts = async () => {
           fields,
           priceMin: account.priceMin || 0,
           createdDate: account.createdDate || 'Không xác định',
+          isCheck: account.isCheck ?? false,
         };
       });
       accounts.value = await Promise.all(accountPromises);
@@ -407,6 +413,24 @@ const isOwnAccount = (account: Account) => {
 
 const isOwnService = (service: Service) => {
   return user.value && service.createrID === user.value.id;
+};
+
+// Hàm xử lý modal xác nhận mua
+const openConfirmBuyModal = (account: Account) => {
+  confirmBuyAccount.value = account;
+  showConfirmBuyModal.value = true;
+};
+
+const closeConfirmBuyModal = () => {
+  showConfirmBuyModal.value = false;
+  confirmBuyAccount.value = null;
+};
+
+const confirmBuy = async () => {
+  if (!confirmBuyAccount.value) return;
+  const accountId = confirmBuyAccount.value.id;
+  closeConfirmBuyModal();
+  await buyAccount(accountId);
 };
 
 const buyAccount = async (accountId: number) => {
@@ -691,6 +715,9 @@ const rentService = async () => {
               <div class="card-banner">
                 <img :src="account.images[0]" :alt="account.game" class="card-img">
                 <div class="game-badge">{{ account.game }}</div>
+                <div class="verify-badge" :class="{ 'verified': account.isCheck }">
+                  {{ account.isCheck ? 'Đã xác thực' : 'Chưa xác thực' }}
+                </div>
                 <div v-if="account.status === 'Đã bán'" class="sold-tag">Đã bán</div>
                 <button @click="openImageModal(account)" class="view-more-images">
                   <span class="btn-glow"></span>
@@ -734,7 +761,7 @@ const rentService = async () => {
                   <button class="bid-btn">
                     <i class="fas fa-gavel"></i> Trả giá
                   </button>
-                  <button class="buy-btn" @click="buyAccount(account.id)">
+                  <button class="buy-btn" @click="openConfirmBuyModal(account)">
                     <i class="fas fa-shopping-cart"></i> Mua ngay
                   </button>
                 </div>
@@ -842,6 +869,23 @@ const rentService = async () => {
         </div>
       </div>
     </section>
+
+    <!-- Modal xác nhận mua -->
+    <teleport to="body">
+      <div v-if="showConfirmBuyModal" class="confirm-modal" @click="closeConfirmBuyModal">
+        <div class="modal-content animated" @click.stop>
+          <h3>Xác nhận mua tài khoản</h3>
+          <p v-if="confirmBuyAccount?.isCheck">Bạn có muốn mua tài khoản này không?</p>
+          <p v-else>
+            <strong>Cảnh báo:</strong> Tài khoản này chưa được xác thực. Rủi ro an toàn của giao dịch rất cao. Bạn có chắc chắn muốn mua không?
+          </p>
+          <div class="modal-actions">
+            <button class="modal-btn cancel-btn" @click="closeConfirmBuyModal">Không</button>
+            <button class="modal-btn confirm-btn" @click="confirmBuy">Có</button>
+          </div>
+        </div>
+      </div>
+    </teleport>
 
     <!-- Modal xác nhận thuê dịch vụ -->
     <teleport to="body">
@@ -972,7 +1016,7 @@ const rentService = async () => {
                   <span>Trả giá</span>
                   <div class="btn-glow"></div>
                 </button>
-                <button class="game-action-btn buy-btn" @click.stop="buyAccount(selectedAccount.id)">
+                <button class="game-action-btn buy-btn" @click.stop="openConfirmBuyModal(selectedAccount)">
                   <i class="fas fa-shopping-cart"></i>
                   <span>Mua ngay</span>
                   <div class="btn-glow"></div>
@@ -2918,7 +2962,36 @@ h1, h2, h3, h4, .banner-title {
   .filter-bar { flex-direction: column; align-items: stretch; }
   .filter-bar select, .filter-bar input { min-width: unset; width: 100%; }
 }
+.verify-badge {
+  position: absolute;
+  top: 40px; /* Below game-badge */
+  left: 12px;
+  background: linear-gradient(to right, #ff4b4b, #b91c1c); /* Unverified */
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
 
+.verify-badge.verified {
+  background: linear-gradient(to right, #00E0AA, #009B8F); /* Verified */
+  box-shadow: 0 4px 10px rgba(0, 224, 170, 0.4);
+}
+
+.verify-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.verify-badge.verified:hover {
+  box-shadow: 0 6px 12px rgba(0, 224, 170, 0.5);
+}
 @media (max-width: 576px) {
   .banner-title { font-size: 2.5rem; }
   .banner-subtitle { font-size: 1rem; }

@@ -40,4 +40,7 @@ export default {
   resendEmail: async (id: number, model: string): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post(`PurchasedAccount/Resend-Email?id=${id}&model=${encodeURIComponent(model)}`, null);
   },
+  checkConfirmationTimeout: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
+    return await baseApi.post(`PurchasedAccount/Check-TimeOut?id=${id}`, null);
+  },
 };
