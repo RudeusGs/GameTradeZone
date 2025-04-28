@@ -195,6 +195,7 @@ interface ChatMessage {
   text: string;
   time: string;
   isMine: boolean;
+  isSystemMessage?: boolean; // Thêm để phân biệt tin nhắn hệ thống
 }
 
 interface AddAuctionDetail {
@@ -300,7 +301,32 @@ export default defineComponent({
             this.scrollToBottom();
           }
         );
+        SignalRService.onPriceUpdate(
+          (auctionId: number, newPrice: number, userId: number) => {
+            console.log("Received price update:", auctionId, newPrice, userId);
+            if (this.auction && this.auction.id === auctionId) {
+              this.auction.currentPrice = newPrice;
+              this.showNotification = true;
+              this.notificationMessage = `Người dùng ${userId} vừa đặt giá ${this.formatCurrency(
+                newPrice
+              )}!`;
+              setTimeout(() => (this.showNotification = false), 3000);
 
+              // Thêm thông báo vào khung chat
+              this.chatMessages.push({
+                sender: "Hệ thống",
+                text: `Người dùng ${userId} đã đặt giá ${this.formatCurrency(newPrice)}`,
+                time: new Date().toLocaleTimeString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                isMine: false,
+                isSystemMessage: true, // Đánh dấu là tin nhắn hệ thống
+              });
+              this.scrollToBottom();
+            }
+          }
+        );
         const auctionId = parseInt(this.id);
         await SignalRService.joinGroup(auctionId); // Gọi joinGroup sau khi kết nối thành công
       } catch (error) {
@@ -465,7 +491,8 @@ export default defineComponent({
         console.log("Response:", response.data);
 
         if (response.data.result.isSuccess) {
-          this.auction.currentPrice = this.bidAmount!;
+          // Xóa dòng này
+          // this.auction.currentPrice = this.bidAmount!;
           this.showNotification = true;
           this.notificationMessage = `Đặt giá ${this.formatCurrency(
             this.bidAmount!

@@ -59,5 +59,13 @@ namespace GameTradeZone.Service.Hubs
                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             );
         }
+
+        // Phương thức mới để gửi thông báo cập nhật giá
+        public async Task UpdatePrice(int auctionId, int newPrice, int userId)
+        {
+            string groupName = $"Auction_{auctionId}";
+            Console.WriteLine($"Sending price update to group {groupName}: {newPrice} by user {userId}");
+            await Clients.Group(groupName).SendAsync("PriceUpdate", auctionId, newPrice, userId);
+        }
     }
 }

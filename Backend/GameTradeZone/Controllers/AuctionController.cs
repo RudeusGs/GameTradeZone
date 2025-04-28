@@ -1,7 +1,9 @@
 ﻿using GameTradeZone.Domain.Entities;
+using GameTradeZone.Service.Common.IServices;
 using GameTradeZone.Service.Hubs;
 using GameTradeZone.Service.Interfaces;
 using GameTradeZone.Service.Models.Auction;
+using GameTradeZone.Service.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -14,10 +16,16 @@ namespace GameTradeZone.Controllers
     {
         private readonly IAuctionService _auctionService;
         private readonly IHubContext<AuctionHub> _hubContext;
+        private readonly IUserService _userService; 
 
-        public AuctionController(IAuctionService auctionService)
+        public AuctionController(
+            IHubContext<AuctionHub> hubContext,
+            IAuctionService auctionService,
+            IUserService userService)
         {
+            _hubContext = hubContext;
             _auctionService = auctionService;
+            _userService = userService;
         }
 
         [HttpGet("Get-All_Auction")]
@@ -83,23 +91,27 @@ namespace GameTradeZone.Controllers
         {
             try
             {
+                // Lấy UserId từ token
+                int userId = _userService.UserId;
+                if (userId == 0)
+                {
+                    throw new Exception("User ID not found");
+                }
+
                 var result = await _auctionService.AddAuctionDetail(model);
-                //if (result.IsSuccess)
-                //{
-                //    var auctionDetail = result.Data as AuctionDetail;
-                //    if (auctionDetail != null)
-                //    {
-                //        await _hubContext.Clients.Group("AuctionDetailGroup")
-                //            .SendAsync("AuctionDetailAdded", new
-                //            {
-                //                Id = auctionDetail.Id,
-                //                AuctionId = auctionDetail.AuctionId,
-                //                UserId = auctionDetail.UserId,
-                //                RaisePrice = auctionDetail.RaisePrice,
-                //                RaiseDateTime = auctionDetail.RaiseDateTime
-                //            });
-                //    }
-                //}
+                if (result.IsSuccess)
+                {
+                    // Lấy thông tin trực tiếp từ model
+                    int auctionId = model.AuctionId;
+                    if (!int.TryParse(model.RaisePrice, out int newPrice))
+                    {
+                        return Response("Giá đặt không hợp lệ", 400);
+                    }
+
+                    // Gửi thông báo cập nhật giá qua SignalR
+                    await _hubContext.Clients.Group($"Auction_{auctionId}")
+                        .SendAsync("PriceUpdate", auctionId, newPrice, userId);
+                }
                 return Response(result);
             }
             catch (Exception e)

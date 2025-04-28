@@ -82,7 +82,7 @@ class SignalRService {
         }
 
         try {
-            await this.waitForConnection(); // Chờ cho đến khi trạng thái là Connected
+            await this.waitForConnection();
             await this.connection.invoke("JoinAuctionDetailGroup", auctionId);
             console.log(`Joined group Auction_${auctionId}`);
         } catch (err) {
