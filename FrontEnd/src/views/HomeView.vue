@@ -322,6 +322,8 @@ const isWithinTimeFilter = (dateStr: string, filter: string): boolean => {
 // Lọc và phân trang cho tài khoản
 const filteredAccounts = computed(() => {
   let result = accounts.value;
+
+  // Áp dụng các bộ lọc
   if (accountsFilters.value.game !== 'All') {
     result = result.filter(account => account.game === accountsFilters.value.game);
   }
@@ -342,11 +344,15 @@ const filteredAccounts = computed(() => {
   if (accountsFilters.value.timeFilter !== 'all') {
     result = result.filter(account => isWithinTimeFilter(account.createdDate, accountsFilters.value.timeFilter));
   }
+
   result.sort((a, b) => {
     if (a.status === 'Còn hàng' && b.status !== 'Còn hàng') return -1;
     if (a.status !== 'Còn hàng' && b.status === 'Còn hàng') return 1;
-    return 0;
+    const dateA = new Date(a.createdDate);
+    const dateB = new Date(b.createdDate);
+    return dateB.getTime() - dateA.getTime();
   });
+
   return result;
 });
 
@@ -757,7 +763,7 @@ const rentService = async () => {
                     <span class="price-value">{{ account.priceMin.toLocaleString() }} VNĐ</span>
                   </div>
                 </div>
-                <div class="card-actions" v-if="!isOwnAccount(account) && account.status !== 'Đã bán'">
+                <div class="card-actions" v-if="!isOwnAccount(account) && account.status !== 'Đã bán' && account.status !== 'Đang tranh chấp'">
                   <button class="bid-btn">
                     <i class="fas fa-gavel"></i> Trả giá
                   </button>
@@ -765,8 +771,8 @@ const rentService = async () => {
                     <i class="fas fa-shopping-cart"></i> Mua ngay
                   </button>
                 </div>
-                <div v-else-if="account.status === 'Đã bán'" class="sold-message">
-                  <i class="fas fa-times-circle"></i> Đã bán
+                <div v-else-if="account.status === 'Đã bán' || account.status === 'Đang tranh chấp'" class="sold-message">
+                  <i class="fas fa-times-circle"></i> {{ account.status }}
                 </div>
                 <div v-else class="own-account-message">
                   <i class="fas fa-info-circle"></i> Tài khoản của bạn
@@ -1010,7 +1016,7 @@ const rentService = async () => {
                   </div>
                 </div>
               </div>
-              <div class="game-action-buttons" v-if="!isOwnAccount(selectedAccount) && selectedAccount.status !== 'Đã bán'">
+              <div class="game-action-buttons" v-if="!isOwnAccount(selectedAccount) && selectedAccount.status !== 'Đã bán' && selectedAccount.status !== 'Đang tranh chấp'">
                 <button class="game-action-btn bid-btn" @click.stop>
                   <i class="fas fa-gavel"></i>
                   <span>Trả giá</span>
@@ -1022,8 +1028,8 @@ const rentService = async () => {
                   <div class="btn-glow"></div>
                 </button>
               </div>
-              <div v-else-if="selectedAccount.status === 'Đã bán'" class="sold-message">
-                <i class="fas fa-times-circle"></i> Đã bán
+              <div v-else-if="selectedAccount.status === 'Đã bán' || selectedAccount.status === 'Đang tranh chấp'" class="sold-message">
+                <i class="fas fa-times-circle"></i> {{ selectedAccount.status }}
               </div>
               <div v-else class="own-account-message">
                 <i class="fas fa-info-circle"></i> Tài khoản của bạn

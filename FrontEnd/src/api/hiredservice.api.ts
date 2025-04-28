@@ -32,10 +32,6 @@ export default {
   doneService: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post(`HiredService/Done-Service?id=${id}`, null);
   },
-
-  getRemainingTime: async (id: number): Promise<AxiosResponse<ApiResult<any>>> => {
-    return await baseApi.get(`HiredService/Get-Remaining-Time?id=${id}`);
-  },
   extendTime: async (id: number, extensionTime: string): Promise<AxiosResponse<ApiResult<any>>> => {
     return await baseApi.post(`HiredService/Extend-Time?id=${id}&extensionTime=${extensionTime}`, null);
   },

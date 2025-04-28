@@ -105,19 +105,6 @@ namespace GameTradeZone.Controllers
             }
         }
 
-        [HttpGet("Get-Remaining-Time")]
-        public async Task<IActionResult> GetRemainingTime(int id)
-        {
-            try
-            {
-                var result = await _hiredServiceService.GetRemainingTime(id);
-                return Ok(result);
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, new ApiResult { Message = e.Message });
-            }
-        }
         [Authorize]
         [HttpPost("Extend-Time")]
         public async Task<IActionResult> ExtendTime(int id, TimeSpan extensionTime)

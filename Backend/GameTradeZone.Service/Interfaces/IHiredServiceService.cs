@@ -11,5 +11,4 @@ public interface IHiredServiceService
     Task<ApiResult> SendProof(ProofDoneService model);
     Task<ApiResult> DoneService(int id);
     Task<ApiResult> ExtendTime(int Id, TimeSpan extensionTime);
-    Task<ApiResult> GetRemainingTime(int hiredServiceId);
 }

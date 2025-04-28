@@ -14,6 +14,7 @@ namespace GameTradeZone.Domain.Entities
         public string? FeedBack { get; set; }
         public string? Image { get; set; }
         public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
         public bool ExtensionRequested { get; set; } = false;
         public TimeSpan? RequestedExtensionTime { get; set; }
         public bool ExtensionApproved { get; set; } = false;

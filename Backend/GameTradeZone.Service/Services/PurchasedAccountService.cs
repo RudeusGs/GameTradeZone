@@ -49,10 +49,12 @@ namespace GameTradeZone.Service.Services
                 {
                     if (model.Status == "Từ chối")
                     {
+                        accountGame.Status = "Đang tranh chấp";
                         purchased.StatusBuyer = "Đã từ chối";
                         purchased.StatusSeller = "Người mua từ chối";
                         purchased.Reason = model.Reason;
                         purchased.UpdatedDate = DateTime.Now;
+                        _dataContext.AccountGames.Update(accountGame);
                         _dataContext.Users.Update(buyer);
                         _dataContext.PurchasedAccounts.Update(purchased);
                         await _dataContext.SaveChangesAsync();

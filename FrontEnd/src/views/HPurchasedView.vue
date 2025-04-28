@@ -34,6 +34,7 @@ onMounted(async () => {
   
   try {
     const responsePurchases = await purchasedAccountApi.getAllByUserID(userId);
+    console.log('Purchases:', responsePurchases);
     purchases.value = Array.isArray(responsePurchases.data.result.data) ? responsePurchases.data.result.data : [];
     purchases.value.forEach(purchase => {
       showPasswords[purchase.id] = false;
@@ -45,7 +46,6 @@ onMounted(async () => {
   
   try {
     const responseGameAccounts = await gameAccountApi.getAllByUserID(userId);
-    console.log('Game accounts:', responseGameAccounts);
     gameAccounts.value = Array.isArray(responseGameAccounts.data.result.data) ? responseGameAccounts.data.result.data : [];
     gameAccounts.value.forEach(account => {
       showPasswords[account.id] = false;
@@ -142,8 +142,8 @@ const togglePasswordInModal = () => {
 
 // Get status label
 const getStatusLabel = (status: string) => {
-  if (status === 'completed') return 'Hoàn tất';
-  if (status === 'processing') return 'Đang xử lý';
+  if (status === 'Mua thành công') return 'Hoàn tất';
+  if (status === 'Đã từ chối') return 'Thất bại';
   return 'Hủy';
 };
 

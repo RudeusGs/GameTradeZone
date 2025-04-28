@@ -524,6 +524,9 @@ namespace GameTradeZone.Infrastructure.Migrations
                     b.Property<DateTime?>("DeleteDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("ExtensionApproved")
                         .HasColumnType("bit");
 

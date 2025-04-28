@@ -19,28 +19,6 @@ namespace GameTradeZone.Service.Services
             _ftpDirectoryService = ftpDirectoryService;
             _fileUploadService = fileUploadService;
         }
-        public async Task<ApiResult> GetRemainingTime(int hiredServiceId)
-        {
-            var hiredService = await _dataContext.HiredServices
-                .FirstOrDefaultAsync(x => x.Id == hiredServiceId && x.IsDelete == false);
-            if (hiredService == null || hiredService.StartTime == null)
-            {
-                return new ApiResult { Message = "Không tìm thấy dịch vụ hoặc dịch vụ chưa bắt đầu" };
-            }
-            var service = await _dataContext.Services
-                .FirstOrDefaultAsync(x => x.Id == hiredService.ServiceID);
-            if (service == null)
-            {
-                return new ApiResult { Message = "Dịch vụ không tồn tại" };
-            }
-            var endTime = hiredService.StartTime + service.ServiceTime;
-            var remainingTime = endTime - DateTime.UtcNow;
-            if (remainingTime <= TimeSpan.Zero)
-            {
-                return new ApiResult ();
-            }
-            return new ApiResult { Data = remainingTime };
-        }
         public async Task<ApiResult> ConfirmService(AcceptServiceModel model)
         {
             var hiredService = await _dataContext.HiredServices.FirstOrDefaultAsync(x => x.Id == model.Id);
@@ -82,7 +60,8 @@ namespace GameTradeZone.Service.Services
                 else if (model.Status == "Đồng ý")
                 {
                     hiredService.Status = "Trạng thái chờ";
-                    hiredService.StartTime = DateTime.UtcNow;
+                    hiredService.StartTime = DateTime.Now;
+                    hiredService.EndTime = hiredService.StartTime + service.ServiceTime;
                     ongoingService.Status = "Đã duyệt, vui lòng chờ";
                     ongoingService.EndTime = hiredService.StartTime + service.ServiceTime;
                     _dataContext.HiredServices.Update(hiredService);
@@ -162,20 +141,20 @@ namespace GameTradeZone.Service.Services
             }
         }
 
-        public async Task<ApiResult> ExtendTime(int onGoingServiceId, TimeSpan extensionTime)
+        public async Task<ApiResult> ExtendTime(int Id, TimeSpan extensionTime)
         {
-            var onGoingService = await _dataContext.OnGoingServices
-                .FirstOrDefaultAsync(x => x.Id == onGoingServiceId && x.IsDelete == false);
+            var onGoingService = await _dataContext.HiredServices
+                .FirstOrDefaultAsync(x => x.Id == Id && x.IsDelete == false);
             if (onGoingService == null)
             {
                 return new ApiResult { Message = "Không tìm thấy dịch vụ này" };
             }
-            if (onGoingService.Status != "Đã duyệt, vui lòng chờ")
+            if (onGoingService.Status != "Trạng thái chờ")
             {
                 return new ApiResult { Message = "Dịch vụ không ở trạng thái có thể gia hạn" };
             }
-            var hiredService = await _dataContext.HiredServices
-                .FirstOrDefaultAsync(x => x.OnGoingServiceId == onGoingServiceId && x.IsDelete == false);
+            var hiredService = await _dataContext.OnGoingServices
+                .FirstOrDefaultAsync(x => x. == Id && x.IsDelete == false);
             if (hiredService == null)
             {
                 return new ApiResult { Message = "Không tìm thấy dịch vụ thuê tương ứng" };

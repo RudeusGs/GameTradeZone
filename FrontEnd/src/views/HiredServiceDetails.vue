@@ -79,21 +79,17 @@
               </span>
             </td>
             <td>{{ formatDate(service.createdDate) }}</td>
-            <td>{{ formatRemainingTime(service.remainingTime) }}</td>
+            <td>{{ formatRemainingTime(service.endTime) }}</td>
             <td>
               <div class="action-buttons">
                 <template v-if="service.status === 'Vui lòng xác nhận'">
-                  <button class="confirm-button" @click="confirmService(service.id, 'Đồng ý')">Xác nhận</button>
+                  <button class="confirm-button" @click="openConfirmModal(service.id)">Xác nhận</button>
                   <button class="reject-button" @click="openRejectModal(service.id)">Từ chối</button>
                 </template>
                 <template v-else-if="service.status === 'Trạng thái chờ'">
                   <button class="done-button" @click="doneService(service.id)">
                     <font-awesome-icon :icon="['fas', 'check']" />
                     <span>Hoàn thành</span>
-                  </button>
-                  <button class="extend-button" @click="openExtendModal(service.id)">
-                    <font-awesome-icon :icon="['fas', 'clock']" />
-                    <span>Gia hạn</span>
                   </button>
                 </template>
                 <template v-else-if="service.status === 'Đã từ chối'">
@@ -108,6 +104,43 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Confirm Modal -->
+    <transition name="modal">
+      <div v-if="showConfirmModal" class="modal confirm-modal">
+        <div class="modal-backdrop" @click="closeConfirmModal"></div>
+        <div class="modal-content">
+          <div class="modal-glow"></div>
+          <div class="modal-hologram">
+            <div class="hologram-scanline"></div>
+          </div>
+
+          <div class="modal-header">
+            <h2>Xác nhận dịch vụ</h2>
+            <button class="close-button" @click="closeConfirmModal">
+              <font-awesome-icon :icon="['fas', 'times']" />
+            </button>
+          </div>
+
+          <div class="confirm-content">
+            <p>Bạn có chắc chắn muốn xác nhận dịch vụ này không?</p>
+          </div>
+
+          <div class="form-actions">
+            <button class="submit-button" @click="submitConfirm">
+              <font-awesome-icon :icon="['fas', 'check']" />
+              <span>Xác nhận</span>
+              <div class="button-glow"></div>
+            </button>
+            <button class="cancel-button" @click="closeConfirmModal">
+              <font-awesome-icon :icon="['fas', 'times']" />
+              <span>Hủy</span>
+              <div class="button-glow"></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Reject Modal -->
     <transition name="modal">
@@ -181,52 +214,11 @@
         </div>
       </div>
     </transition>
-
-    <!-- Extend Time Modal -->
-    <transition name="modal">
-      <div v-if="showExtendModal" class="modal extend-modal">
-        <div class="modal-backdrop" @click="closeExtendModal"></div>
-        <div class="modal-content">
-          <div class="modal-glow"></div>
-          <div class="modal-hologram">
-            <div class="hologram-scanline"></div>
-          </div>
-
-          <div class="modal-header">
-            <h2>Gia hạn dịch vụ</h2>
-            <button class="close-button" @click="closeExtendModal">
-              <font-awesome-icon :icon="['fas', 'times']" />
-            </button>
-          </div>
-
-          <div class="form-group">
-            <label for="extensionTime">Thời gian gia hạn (HH:mm:ss)</label>
-            <div class="input-container">
-              <input type="text" id="extensionTime" v-model="extensionTime" placeholder="HH:mm:ss" />
-              <div class="input-glow"></div>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button class="submit-button" @click="submitExtend">
-              <font-awesome-icon :icon="['fas', 'save']" />
-              <span>Gửi yêu cầu</span>
-              <div class="button-glow"></div>
-            </button>
-            <button class="cancel-button" @click="closeExtendModal">
-              <font-awesome-icon :icon="['fas', 'times']" />
-              <span>Hủy</span>
-              <div class="button-glow"></div>
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, watch, computed } from 'vue';
+import { defineComponent, ref, onMounted, watch, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import hiredServiceApi from '@/api/hiredservice.api';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -254,33 +246,24 @@ export default defineComponent({
       status: string;
       createdDate: string;
       decriptions: string;
-      remainingTime?: string;
+      endTime?: string;
     }
 
     const hiredServices = ref<HiredService[]>([]);
+    const showConfirmModal = ref(false);
     const showRejectModal = ref(false);
     const rejectReason = ref('');
     const selectedRejectId = ref<number | null>(null);
+    const selectedConfirmId = ref<number | null>(null);
     const showDescriptionModal = ref(false);
     const currentDescription = ref('');
-    const showExtendModal = ref(false);
-    const extensionTime = ref('');
-    const selectedExtendId = ref<number | null>(null);
+    let countdownInterval: number | null = null;
 
     const fetchHiredServices = async () => {
       try {
         const response = await hiredServiceApi.getAllByServiceId(props.serviceId);
         if (response.data?.result?.isSuccess && response.data.result.data) {
-          const services = response.data.result.data;
-          for (const service of services) {
-            const remainingTimeResponse = await hiredServiceApi.getRemainingTime(service.id);
-            if (remainingTimeResponse.data?.result?.isSuccess) {
-              service.remainingTime = remainingTimeResponse.data.result.data;
-            } else {
-              service.remainingTime = 'Không xác định';
-            }
-          }
-          hiredServices.value = services;
+          hiredServices.value = response.data.result.data;
         } else {
           hiredServices.value = [];
         }
@@ -290,16 +273,36 @@ export default defineComponent({
       }
     };
 
+    // Khởi tạo đếm ngược
+    const startCountdown = () => {
+      countdownInterval = window.setInterval(() => {
+        hiredServices.value = [...hiredServices.value];
+      }, 1000); // Cập nhật mỗi giây
+    };
+
+    onUnmounted(() => {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+    });
+
     const goBack = () => {
       router.push({ name: 'service-list' });
     };
 
     onMounted(() => {
-      fetchHiredServices();
+      fetchHiredServices().then(() => {
+        startCountdown();
+      });
     });
 
     watch(() => props.serviceId, () => {
-      fetchHiredServices();
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+      fetchHiredServices().then(() => {
+        startCountdown();
+      });
     });
 
     const confirmService = async (id: number, status: string, reason = '') => {
@@ -333,6 +336,23 @@ export default defineComponent({
       }
     };
 
+    const openConfirmModal = (id: number) => {
+      selectedConfirmId.value = id;
+      showConfirmModal.value = true;
+    };
+
+    const closeConfirmModal = () => {
+      showConfirmModal.value = false;
+      selectedConfirmId.value = null;
+    };
+
+    const submitConfirm = async () => {
+      if (selectedConfirmId.value !== null) {
+        await confirmService(selectedConfirmId.value, 'Đồng ý');
+      }
+      closeConfirmModal();
+    };
+
     const openRejectModal = (id: number) => {
       selectedRejectId.value = id;
       rejectReason.value = '';
@@ -364,38 +384,6 @@ export default defineComponent({
       currentDescription.value = '';
     };
 
-    const openExtendModal = (id: number) => {
-      selectedExtendId.value = id;
-      extensionTime.value = '';
-      showExtendModal.value = true;
-    };
-
-    const closeExtendModal = () => {
-      showExtendModal.value = false;
-      selectedExtendId.value = null;
-      extensionTime.value = '';
-    };
-
-    const submitExtend = async () => {
-      if (!extensionTime.value.trim()) {
-        alert('Vui lòng nhập thời gian gia hạn');
-        return;
-      }
-      try {
-        const response = await hiredServiceApi.extendTime(selectedExtendId.value!, extensionTime.value);
-        if (response.data?.result?.isSuccess) {
-          alert('Yêu cầu gia hạn đã được gửi');
-          closeExtendModal();
-          await fetchHiredServices();
-        } else {
-          alert('Gửi yêu cầu gia hạn thất bại: ' + response.data?.result?.message);
-        }
-      } catch (error) {
-        console.error('Lỗi khi gửi yêu cầu gia hạn:', error);
-        alert('Đã xảy ra lỗi khi gửi yêu cầu gia hạn');
-      }
-    };
-
     const formatDate = (dateString: string) => {
       const date = new Date(dateString);
       return date.toLocaleDateString('vi-VN', {
@@ -407,46 +395,56 @@ export default defineComponent({
       });
     };
 
-    const formatRemainingTime = (remainingTime?: string) => {
-      if (!remainingTime || remainingTime === 'Không xác định') return 'Không xác định';
-      const [hours, minutes, seconds] = remainingTime.split(':').map(Number);
-      return `${hours} giờ ${minutes} phút ${seconds} giây`;
+    const formatRemainingTime = (endTime?: string) => {
+      if (!endTime) return 'Không xác định';
+
+      const end = new Date(endTime).getTime();
+      const now = new Date().getTime();
+      const remainingMs = Math.max(end - now, 0);
+
+      if (remainingMs === 0) return 'Hết thời gian';
+
+      const seconds = Math.floor((remainingMs / 1000) % 60);
+      const minutes = Math.floor((remainingMs / (1000 * 60)) % 60);
+      const hours = Math.floor((remainingMs / (1000 * 60 * 60)));
+
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
 
     const getStatusClass = (status: string) => {
-      if (status === 'Completed') return 'status-completed';
-      if (status === 'In Progress') return 'status-progress';
-      return 'status-pending';
+      if (status === 'Thành công') return 'status-completed';
+      if (status === 'Trạng thái chờ' || status === 'Đang thực hiện') return 'status-progress';
+      if (status === 'Vui lòng xác nhận') return 'status-pending';
+      return 'status-rejected'; // Cho trạng thái 'Đã từ chối'
     };
 
     const getCompletedCount = computed(() => {
-      return hiredServices.value.filter(service => service.status === 'Completed').length;
+      return hiredServices.value.filter(service => service.status === 'Thành công').length;
     });
 
     const getInProgressCount = computed(() => {
-      return hiredServices.value.filter(service => service.status === 'In Progress').length;
+      return hiredServices.value.filter(service => service.status === 'Trạng thái chờ' || service.status === 'Đang thực hiện').length;
     });
 
     return {
       hiredServices,
+      showConfirmModal,
       showRejectModal,
       rejectReason,
       selectedRejectId,
+      selectedConfirmId,
       showDescriptionModal,
       currentDescription,
-      showExtendModal,
-      extensionTime,
-      selectedExtendId,
       confirmService,
       doneService,
+      openConfirmModal,
+      closeConfirmModal,
+      submitConfirm,
       openRejectModal,
       closeRejectModal,
       submitReject,
       openDescriptionModal,
       closeDescriptionModal,
-      openExtendModal,
-      closeExtendModal,
-      submitExtend,
       formatDate,
       formatRemainingTime,
       getStatusClass,
@@ -720,6 +718,18 @@ export default defineComponent({
   box-shadow: 0 0 8px #ffa500;
 }
 
+.status-rejected {
+  background-color: rgba(255, 0, 0, 0.2);
+  color: #ff0000;
+  border: 1px solid #ff0000;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.status-rejected .status-dot {
+  background-color: #ff0000;
+  box-shadow: 0 0 8px #ff0000;
+}
+
 /* Action Buttons */
 .action-buttons {
   display: flex;
@@ -730,8 +740,7 @@ export default defineComponent({
 .confirm-button,
 .reject-button,
 .done-button,
-.view-button,
-.extend-button {
+.view-button {
   padding: 8px 15px;
   border: none;
   border-radius: 5px;
@@ -788,18 +797,6 @@ export default defineComponent({
 }
 
 .done-button:hover {
-  background: linear-gradient(to right, #ffcc00, #ff9900);
-  box-shadow: 0 0 15px rgba(255, 153, 0, 0.5);
-  transform: translateY(-2px);
-}
-
-.extend-button {
-  background: linear-gradient(to right, #ff9900, #cc7a00);
-  color: #fff;
-  box-shadow: 0 0 10px rgba(255, 153, 0, 0.3);
-}
-
-.extend-button:hover {
   background: linear-gradient(to right, #ffcc00, #ff9900);
   box-shadow: 0 0 15px rgba(255, 153, 0, 0.5);
   transform: translateY(-2px);
@@ -1024,7 +1021,8 @@ export default defineComponent({
   transform: translateX(100%);
 }
 
-.description-content {
+.description-content,
+.confirm-content {
   margin-bottom: 25px;
   padding: 20px;
   background: rgba(0, 0, 0, 0.3);
@@ -1034,7 +1032,8 @@ export default defineComponent({
   overflow-y: auto;
 }
 
-.description-content p {
+.description-content p,
+.confirm-content p {
   margin: 0;
   color: #e0e0e0;
   font-size: 1.1rem;
