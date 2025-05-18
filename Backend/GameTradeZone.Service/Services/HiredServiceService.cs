@@ -143,41 +143,7 @@ namespace GameTradeZone.Service.Services
 
         public async Task<ApiResult> ExtendTime(int Id, TimeSpan extensionTime)
         {
-            var onGoingService = await _dataContext.HiredServices
-                .FirstOrDefaultAsync(x => x.Id == Id && x.IsDelete == false);
-            if (onGoingService == null)
-            {
-                return new ApiResult { Message = "Không tìm thấy dịch vụ này" };
-            }
-            if (onGoingService.Status != "Trạng thái chờ")
-            {
-                return new ApiResult { Message = "Dịch vụ không ở trạng thái có thể gia hạn" };
-            }
-            var hiredService = await _dataContext.OnGoingServices
-                .FirstOrDefaultAsync(x => x. == Id && x.IsDelete == false);
-            if (hiredService == null)
-            {
-                return new ApiResult { Message = "Không tìm thấy dịch vụ thuê tương ứng" };
-            }
-            if (hiredService.ExtensionRequested)
-            {
-                return new ApiResult { Message = "Đã có yêu cầu gia hạn đang chờ xử lý" };
-            }
-            var tran = await _dataContext.Database.BeginTransactionAsync();
-            try
-            {
-                hiredService.ExtensionRequested = true;
-                hiredService.RequestedExtensionTime = extensionTime;
-                _dataContext.HiredServices.Update(hiredService);
-                await _dataContext.SaveChangesAsync();
-                await tran.CommitAsync();
-                return new ApiResult();
-            }
-            catch (Exception e)
-            {
-                await tran.RollbackAsync();
-                return new ApiResult { Message = $"Error: {e.Message}" };
-            }
+            return null;
         }
 
         public async Task<ApiResult> GetAll()
